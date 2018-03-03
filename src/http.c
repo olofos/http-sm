@@ -124,9 +124,16 @@ void http_parse_header(struct http_request *request, char c)
                     if(strstr(val, "chunked") != 0) {
                         request->flags |= HTTP_FLAG_CHUNKED;
                     }
+                } else if((val = cmp_str_prefix(request->line, "Content-Length: ")) != 0) {
+                    char *p;
+                    request->content_length = strtol(val, &p, 10);
+                    if(!p || *p) {
+                        http_parse_header_next_state(request, HTTP_STATE_ERROR);
+                        request->error = HTTP_STATUS_BAD_REQUEST;
+                        printf("Error parsing content length \"%s\"\n", val);
+                        return;
+                    }
                 }
-                // "Content-Length: "
-
 
                 http_parse_header_next_state(request, HTTP_STATE_READ_HEADER | HTTP_STATE_READ_NL);
             }

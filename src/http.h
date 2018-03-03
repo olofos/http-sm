@@ -64,6 +64,8 @@ struct http_request
     int line_index;
     int line_len;
 
+    int content_length;
+
     char *path;
     char *query;
     char *host;

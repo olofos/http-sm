@@ -21,6 +21,7 @@ void create_request(struct http_request *request, int state)
     request->flags = 0;
     request->status = 0;
     request->error = 0;
+    request->content_length = -1;
 }
 
 void free_request(struct http_request *request)
@@ -189,6 +190,19 @@ void test__http_parse_header__can_parse_transfer_encoding_chunked(void)
 }
 
 
+void test__http_parse_header__can_parse_content_length(void)
+{
+    struct http_request request;
+    create_request(&request, HTTP_STATE_READ_HEADER);
+
+    parse_header_helper(&request, "Content-Length: 10\r\n");
+
+    TEST_ASSERT_EQUAL(10, request.content_length);
+
+    free_request(&request);
+}
+
+
 void test__http_parse_header__missing_newline_in_header_gives_error(void)
 {
     struct http_request request;
@@ -233,6 +247,7 @@ int main(void)
     RUN_TEST(test__http_parse_header__can_parse_accept_encoding_gzip);
     RUN_TEST(test__http_parse_header__can_parse_accept_encoding_no_gzip);
     RUN_TEST(test__http_parse_header__can_parse_transfer_encoding_chunked);
+    RUN_TEST(test__http_parse_header__can_parse_content_length);
 
     RUN_TEST(test__http_parse_header__missing_newline_in_header_gives_error);
 
