@@ -176,6 +176,18 @@ void test__http_parse_header__can_parse_accept_encoding_no_gzip(void)
     free_request(&request);
 }
 
+void test__http_parse_header__can_parse_transfer_encoding_chunked(void)
+{
+    struct http_request request;
+    create_request(&request, HTTP_STATE_READ_HEADER);
+
+    parse_header_helper(&request, "Transfer-Encoding: chunked\r\n");
+
+    TEST_ASSERT_BITS_HIGH(HTTP_FLAG_CHUNKED, request.flags);
+
+    free_request(&request);
+}
+
 
 void test__http_parse_header__missing_newline_in_header_gives_error(void)
 {
@@ -220,13 +232,11 @@ int main(void)
     RUN_TEST(test__http_parse_header__can_parse_host_header);
     RUN_TEST(test__http_parse_header__can_parse_accept_encoding_gzip);
     RUN_TEST(test__http_parse_header__can_parse_accept_encoding_no_gzip);
-
+    RUN_TEST(test__http_parse_header__can_parse_transfer_encoding_chunked);
 
     RUN_TEST(test__http_parse_header__missing_newline_in_header_gives_error);
 
-
     RUN_TEST(test__http_parse_header__can_read_response);
-
 
     return UNITY_END();
 }

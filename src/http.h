@@ -48,14 +48,8 @@ enum http_status
 enum http_flags
 {
     HTTP_FLAG_ACCEPT_GZIP = 0x01,
+    HTTP_FLAG_CHUNKED     = 0x02,
 };
-
-enum http_transfer_encoding
-{
-    HTTP_TE_IDENTITY,
-    HTTP_TE_CHUNKED,
-};
-
 
 struct http_request
 {

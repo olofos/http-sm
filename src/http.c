@@ -120,8 +120,11 @@ void http_parse_header(struct http_request *request, char c)
                     if(strstr(val, "gzip") != 0) {
                         request->flags |= HTTP_FLAG_ACCEPT_GZIP;
                     }
+                } else if((val = cmp_str_prefix(request->line, "Transfer-Encoding: ")) != 0) {
+                    if(strstr(val, "chunked") != 0) {
+                        request->flags |= HTTP_FLAG_CHUNKED;
+                    }
                 }
-
                 // "Content-Length: "
 
 
