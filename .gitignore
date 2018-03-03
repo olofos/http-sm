@@ -1,0 +1,5 @@
+*~
+obj/
+bin/
+.deps/
+test/results
