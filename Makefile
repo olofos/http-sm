@@ -53,11 +53,11 @@ test: build_dirs $(TST_RESULTS)
 	@echo "-----------------------"
 	@echo "IGNORE:" `grep -o ':IGNORE' $(RESULTDIR)/*.txt|wc -l`
 	@echo "-----------------------"
-	@echo `grep -s ':IGNORE' $(RESULTDIR)/*.txt`
+	@grep -s ':IGNORE' $(RESULTDIR)/*.txt || true
 	@echo "\n-----------------------"
 	@echo "FAIL:" `grep -o ':FAIL' $(RESULTDIR)/*.txt|wc -l`
 	@echo "-----------------------"
-	@echo `grep -s ':FAIL' $(RESULTDIR)/*.txt`
+	@grep -s ':FAIL' $(RESULTDIR)/*.txt || true
 	@echo "\n-----------------------"
 	@echo "PASS:" `grep -o ':PASS' $(RESULTDIR)/*.txt|wc -l`
 	@echo "-----------------------"
