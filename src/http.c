@@ -5,6 +5,16 @@
 
 #include "http.h"
 
+static char *cmp_str_prefix(char *str, const char *prefix)
+{
+    int len = strlen(prefix);
+    if(strncmp(str, prefix, len) == 0) {
+        return str + len;
+    } else {
+        return 0;
+    }
+}
+
 static void http_parse_header_next_state(struct http_request *request, int state)
 {
     request->state = state;
@@ -13,12 +23,11 @@ static void http_parse_header_next_state(struct http_request *request, int state
 
 void http_parse_header(struct http_request *request, char c)
 {
-    printf("state = 0x%02X\n", request->state);
     if(request->state & HTTP_STATE_READ_NL) {
         if(c == '\n') {
             request->state &= ~HTTP_STATE_READ_NL;
         } else {
-            printf("Expected '\\n' but got '%c'", c);
+            printf("Expected '\\n' but got '%c'\n", c);
             request->status = HTTP_STATUS_BAD_REQUEST;
             request->state = HTTP_STATE_ERROR;
         }
@@ -43,10 +52,7 @@ void http_parse_header(struct http_request *request, char c)
                 request->status = HTTP_STATUS_METHOD_NOT_ALLOWED;
                 http_parse_header_next_state(request, HTTP_STATE_ERROR);
             }
-        } else {
-            if(request->line_index < request->line_len - 1) {
-                request->line[request->line_index++] = c;
-            }
+            return;
         }
         break;
 
@@ -61,10 +67,7 @@ void http_parse_header(struct http_request *request, char c)
             } else {
                 http_parse_header_next_state(request, HTTP_STATE_READ_VERSION);
             }
-        } else {
-            if(request->line_index < request->line_len - 1) {
-                request->line[request->line_index++] = c;
-            }
+            return;
         }
         break;
 
@@ -75,10 +78,8 @@ void http_parse_header(struct http_request *request, char c)
             strcpy(request->query, request->line);
 
             http_parse_header_next_state(request, HTTP_STATE_READ_VERSION);
-        } else {
-            if(request->line_index < request->line_len - 1) {
-                request->line[request->line_index++] = c;
-            }
+
+            return;
         }
         break;
 
@@ -88,7 +89,7 @@ void http_parse_header(struct http_request *request, char c)
             if(strcmp(request->line, "HTTP/1.1") == 0) {
                 http_parse_header_next_state(request, HTTP_STATE_READ_HEADER | HTTP_STATE_READ_NL);
             } else if(strcmp(request->line, "HTTP/1.0") == 0) {
-                printf("HTTP/1.0 not supported");
+                printf("HTTP/1.0 not supported\n");
                 request->status = HTTP_STATUS_VERSION_NOT_SUPPORTED;
                 http_parse_header_next_state(request, HTTP_STATE_ERROR);
             } else {
@@ -96,14 +97,43 @@ void http_parse_header(struct http_request *request, char c)
                 request->status = HTTP_STATUS_BAD_REQUEST;
                 http_parse_header_next_state(request, HTTP_STATE_ERROR);
             }
-        } else {
-            if(request->line_index < request->line_len - 1) {
-                request->line[request->line_index++] = c;
-            }
+
+            return;
         }
         break;
 
-    default:
+    case HTTP_STATE_READ_HEADER:
+        if(c == '\r') {
+            request->line[request->line_index] = 0;
+            printf("line = '%s'\n", request->line);
+
+            if(request->line_index == 0) {
+                http_parse_header_next_state(request, HTTP_STATE_DONE | HTTP_STATE_READ_NL);
+            } else {
+
+                char *val;
+
+                if((val = cmp_str_prefix(request->line, "Host: ")) != 0) {
+                    request->host = malloc(strlen(val) + 1);
+                    strcpy(request->host, val);
+                }
+
+                http_parse_header_next_state(request, HTTP_STATE_READ_HEADER | HTTP_STATE_READ_NL);
+            }
+
+            return;
+        }
         break;
+
+    case HTTP_STATE_ERROR:
+        return;
+
+    default:
+        printf("Unhandled state 0x%02X\n", request->state);
+        break;
+    }
+
+    if(request->line_index < request->line_len - 1) {
+        request->line[request->line_index++] = c;
     }
 }

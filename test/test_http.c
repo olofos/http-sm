@@ -17,18 +17,23 @@ void create_request(struct http_request *request, int state)
     request->line_index = 0;
     request->path = 0;
     request->query = 0;
+    request->host = 0;
 }
+
+void free_request(struct http_request *request)
+{
+    free(request->line);
+    free(request->path);
+    free(request->host);
+    free(request->query);
+}
+
 
 void parse_header_helper(struct http_request *request, const char *s)
 {
     for(int i = 0; i < strlen(s); i++) {
         http_parse_header(request, s[i]);
     }
-}
-
-void free_request(struct http_request *request)
-{
-    free(request->line);
 }
 
 void test__http_parse_header__can_parse_get_request_without_query(void)
@@ -133,6 +138,19 @@ void test__http_parse_header__missing_newline_gives_error(void)
     free_request(&request);
 }
 
+void test__http_parse_header__can_parse_host_header(void)
+{
+    struct http_request request;
+    create_request(&request, HTTP_STATE_READ_HEADER);
+
+    parse_header_helper(&request, "Host: www.example.com\r\n");
+
+    TEST_ASSERT_NOT_NULL(request.host);
+    TEST_ASSERT_EQUAL_STRING("www.example.com", request.host);
+
+    free_request(&request);
+}
+
 
 int main(void)
 {
@@ -145,6 +163,8 @@ int main(void)
     RUN_TEST(test__http_parse_header__http_version_10_gives_error);
     RUN_TEST(test__http_parse_header__unknown_http_version_gives_error);
     RUN_TEST(test__http_parse_header__missing_newline_gives_error);
+
+    RUN_TEST(test__http_parse_header__can_parse_host_header);
 
 
     return UNITY_END();

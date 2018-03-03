@@ -53,6 +53,7 @@ struct http_request
 
     char *path;
     char *query;
+    char *host;
 };
 
 void http_parse_header(struct http_request *request, char c);
