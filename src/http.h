@@ -65,14 +65,17 @@ struct http_request
     int line_len;
 
     int content_length;
+    int chunk_length;
 
     char *path;
     char *query;
     char *host;
+
+    int fd;
 };
 
 void http_parse_header(struct http_request *request, char c);
 
-
+int http_fgetc(struct http_request *request);
 
 #endif
