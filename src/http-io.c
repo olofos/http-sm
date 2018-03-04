@@ -100,16 +100,20 @@ int http_fgetc(struct http_request *request)
         }
         return c;
     } else {
-        char c;
-        int ret = read(request->fd, &c, 1);
-        if(ret < 0) {
-            perror("read");
-            return -1;
-        } else if(ret == 0) {
-            printf("Got EOF\n");
+        if(request->content_length > 0) {
+            char c;
+            int ret = read(request->fd, &c, 1);
+            if(ret < 0) {
+                perror("read");
+                return -1;
+            } else if(ret == 0) {
+                printf("Got EOF\n");
+                return 0;
+            }
+            request->content_length--;
+            return c;
+        } else {
             return 0;
         }
-
-        return c;
     }
 }
