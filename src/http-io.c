@@ -70,7 +70,7 @@ static int read_chunk_footer(struct http_request *request)
     return 1;
 }
 
-int http_fgetc(struct http_request *request)
+int http_getc(struct http_request *request)
 {
     if(request->flags & HTTP_FLAG_CHUNKED) {
         int ret;

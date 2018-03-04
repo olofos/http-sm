@@ -76,6 +76,6 @@ struct http_request
 
 void http_parse_header(struct http_request *request, char c);
 
-int http_fgetc(struct http_request *request);
+int http_getc(struct http_request *request);
 
 #endif

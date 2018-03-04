@@ -95,7 +95,7 @@ static void test__http_getc__can_read_correctly_with_te_identity(void)
     request.content_length = strlen(str);
 
     for(int i = 0; i < strlen(str); i++) {
-        TEST_ASSERT_EQUAL(str[i], http_fgetc(&request));
+        TEST_ASSERT_EQUAL(str[i], http_getc(&request));
     }
 
     close(fd);
@@ -112,8 +112,8 @@ static void test__http_getc__doesnt_read_more_than_content_length_with_te_identi
     init_request(&request, fd);
     request.content_length = 1;
 
-    TEST_ASSERT_EQUAL('0', http_fgetc(&request));
-    TEST_ASSERT_EQUAL(0, http_fgetc(&request));
+    TEST_ASSERT_EQUAL('0', http_getc(&request));
+    TEST_ASSERT_EQUAL(0, http_getc(&request));
 
     close(fd);
 }
@@ -142,12 +142,12 @@ static void test__http_getc__can_read_correctly_with_te_chunked(void)
     request.content_length = strlen(str);
 
     for(int i = 0; i < strlen(str); i++) {
-        int c = http_fgetc(&request);
+        int c = http_getc(&request);
         TEST_ASSERT_EQUAL(str[i], c);
     }
 
     for(int i = 0; i < strlen(str); i++) {
-        int c = http_fgetc(&request);
+        int c = http_getc(&request);
         TEST_ASSERT_EQUAL(str[i], c);
     }
 
