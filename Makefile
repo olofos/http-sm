@@ -1,4 +1,4 @@
-SOURCES := main.c http.c
+SOURCES := main.c http-parser.c
 
 TARGET=http-test
 
@@ -94,7 +94,7 @@ $(TSTBINDIR)/test_%: $(TSTOBJDIR)/test_%.o $(TSTOBJDIR)/%.o $(TSTOBJDIR)/unity.o
 	$(TST_CC) -o $@ $^
 
 clean:
-	-rm -f $(OBJ) $(OBJDIR)/libuser.a $(OBJDIR)/user.elf $(TSTOBJDIR)/*.o $(TSTBINDIR)/test_* $(RESULTDIR)/*.txt $(BINDIR/$(TARGET)
+	-rm -f $(OBJ) $(DEPS) $(TST_DEPS) $(TSTOBJDIR)/*.o $(TSTBINDIR)/test_* $(RESULTDIR)/*.txt $(BINDIR/$(TARGET)
 
 .PRECIOUS: $(TSTBINDIR)/test_%
 .PRECIOUS: $(DEPDIR)/%.d

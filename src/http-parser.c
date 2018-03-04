@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "http.h"
 
@@ -21,8 +20,27 @@ static void http_parse_header_next_state(struct http_request *request, int state
     request->line_index = 0;
 }
 
+void escaped_putchar(char c)
+{
+    if(c == '\r') {
+        printf("\\r");
+    } else if(c == '\n') {
+        printf("\\n");
+    } else {
+        putchar(c);
+    }
+}
+
 void http_parse_header(struct http_request *request, char c)
 {
+    // printf("state = 0x%02X, c = '", request->state);
+    // escaped_putchar(c);
+    // printf("', line = \"");
+    // for(int i = 0; i < request->line_index; i++) {
+    //     escaped_putchar(request->line[i]);
+    // }
+    // printf("\"\n");
+
     if(request->state & HTTP_STATE_READ_NL) {
         if(c == '\n') {
             request->state &= ~HTTP_STATE_READ_NL;
@@ -105,7 +123,12 @@ void http_parse_header(struct http_request *request, char c)
     case HTTP_STATE_READ_HEADER:
         if(c == '\r') {
             request->line[request->line_index] = 0;
-            printf("line = '%s'\n", request->line);
+
+            printf("line = \"");
+            for(const char *s = request->line; *s; s++) {
+                escaped_putchar(*s);
+            }
+            printf("\"\n");
 
             if(request->line_index == 0) {
                 http_parse_header_next_state(request, HTTP_STATE_DONE | HTTP_STATE_READ_NL);
@@ -173,8 +196,10 @@ void http_parse_header(struct http_request *request, char c)
     case HTTP_STATE_READ_RESP_STATUS_DESC:
         if(c == '\r') {
             request->line[request->line_index] = 0;
-            printf("Status %d: %s\n", request->status, request->line);
+            printf("Status %d %s\n", request->status, request->line);
             http_parse_header_next_state(request, HTTP_STATE_READ_HEADER | HTTP_STATE_READ_NL);
+
+            return;
         }
         break;
 
