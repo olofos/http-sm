@@ -1,12 +1,18 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <sys/socket.h>
+#include <signal.h>
 
 #include "unity.h"
 
 #include "http.h"
+
+static pid_t child_pid;
 
 static int open_tmp_file(void)
 {
@@ -37,6 +43,81 @@ static int write_string(int fd, const char *s)
     }
     return num;
 }
+
+static int open_socket(pid_t *pid)
+{
+    int fds[2];
+    if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) < 0) {
+        perror("socketpair");
+        return -1;
+    }
+
+    *pid = fork();
+
+    if(*pid < 0) {
+        perror("fork");
+        return -1;
+    }
+
+    if(*pid > 0) {
+        close(fds[1]);
+
+        struct timeval tv;
+        tv.tv_sec = 0;
+        tv.tv_usec = 1000;
+        setsockopt(fds[0], SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&tv, sizeof(struct timeval));
+        return fds[0];
+
+    } else {
+        close(fds[0]);
+        return fds[1];
+    }
+}
+
+static void close_socket(int fd)
+{
+    kill(child_pid, SIGINT);
+
+    int status;
+    if(waitpid(child_pid, &status, 0) < 0) {
+        perror("wait");
+    }
+
+    close(fd);
+}
+
+static int write_socket(const char *str)
+{
+    int fd = open_socket(&child_pid);
+
+    if(!child_pid) {
+        write_string(fd, str);
+        for(;;) {
+        }
+    }
+
+    return fd;
+}
+
+static int write_socket_n(const char *s[])
+{
+    int fd = open_socket(&child_pid);
+
+    if(!child_pid) {
+        while(*s) {
+            if(write_string(fd, *s++) < 0)
+            {
+                break;
+            }
+        }
+
+        for(;;) {
+        }
+    }
+
+    return fd;
+}
+
 
 static int write_tmp_file(const char *s)
 {
@@ -203,7 +284,7 @@ static void test__http_getc__can_read_non_ascii_characters_with_te_chunked(void)
 static void test__http_getc__returns_zero_when_reading_eof_with_te_identity(void)
 {
     char *str = "X";
-    int fd = write_tmp_file(str);
+    int fd = write_socket(str);
     TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
 
     struct http_request request;
@@ -214,7 +295,7 @@ static void test__http_getc__returns_zero_when_reading_eof_with_te_identity(void
     TEST_ASSERT_EQUAL(0, http_getc(&request));
     TEST_ASSERT_EQUAL(0, http_getc(&request));
 
-    close(fd);
+    close_socket(fd);
 }
 
 static void test__http_getc__returns_zero_when_reading_eof_with_te_chunked(void)
@@ -227,7 +308,7 @@ static void test__http_getc__returns_zero_when_reading_eof_with_te_chunked(void)
         0
     };
 
-    int fd = write_tmp_file_n(s);
+    int fd = write_socket_n(s);
     TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
 
     struct http_request request;
@@ -238,7 +319,7 @@ static void test__http_getc__returns_zero_when_reading_eof_with_te_chunked(void)
     TEST_ASSERT_EQUAL(0, http_getc(&request));
     TEST_ASSERT_EQUAL(0, http_getc(&request));
 
-    close(fd);
+    close_socket(request.fd);
 }
 
 void test__http_peek__returns_the_next_character_with_te_identity(void)
