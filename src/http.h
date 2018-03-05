@@ -67,6 +67,8 @@ struct http_request
     int content_length;
     int chunk_length;
 
+    int poke;
+
     char *path;
     char *query;
     char *host;
@@ -74,8 +76,12 @@ struct http_request
     int fd;
 };
 
+int http_hex_to_int(char c);
+
 void http_parse_header(struct http_request *request, char c);
 
 int http_getc(struct http_request *request);
+int http_peek(struct http_request *request);
+
 
 #endif

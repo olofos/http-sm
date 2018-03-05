@@ -81,6 +81,7 @@ static void init_request(struct http_request *request, int fd)
 {
     memset(request, 0, sizeof(*request));
     request->fd = fd;
+    request->poke = -1;
 }
 
 static void test__http_getc__can_read_correctly_with_te_identity(void)
@@ -154,6 +155,57 @@ static void test__http_getc__can_read_correctly_with_te_chunked(void)
     close(fd);
 }
 
+void test__http_peek__returns_the_next_character_with_te_identity(void)
+{
+    char *str = "0123";
+
+    int fd = write_tmp_file(str);
+    TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+    request.content_length = strlen(str);
+
+    TEST_ASSERT_EQUAL('0', http_peek(&request));
+    TEST_ASSERT_EQUAL('0', http_peek(&request));
+    TEST_ASSERT_EQUAL('0', http_getc(&request));
+    TEST_ASSERT_EQUAL('1', http_getc(&request));
+    TEST_ASSERT_EQUAL('2', http_peek(&request));
+    TEST_ASSERT_EQUAL('2', http_peek(&request));
+    TEST_ASSERT_EQUAL('2', http_getc(&request));
+
+    close(fd);
+}
+
+void test__http_peek__returns_the_next_character_with_te_chunked(void)
+{
+    char *str = "0123";
+
+    const char *s[] = {
+        "4\r\n",
+        str,
+        "\r\n0\r\n",
+        0
+    };
+
+    int fd = write_tmp_file_n(s);
+    TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+    request.flags |= HTTP_FLAG_CHUNKED;
+
+    TEST_ASSERT_EQUAL('0', http_peek(&request));
+    TEST_ASSERT_EQUAL('0', http_peek(&request));
+    TEST_ASSERT_EQUAL('0', http_getc(&request));
+    TEST_ASSERT_EQUAL('1', http_getc(&request));
+    TEST_ASSERT_EQUAL('2', http_peek(&request));
+    TEST_ASSERT_EQUAL('2', http_peek(&request));
+    TEST_ASSERT_EQUAL('2', http_getc(&request));
+
+    close(fd);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -161,6 +213,8 @@ int main(void)
     RUN_TEST(test__http_getc__can_read_correctly_with_te_identity);
     RUN_TEST(test__http_getc__can_read_correctly_with_te_chunked);
     RUN_TEST(test__http_getc__doesnt_read_more_than_content_length_with_te_identity);
+    RUN_TEST(test__http_peek__returns_the_next_character_with_te_identity);
+    RUN_TEST(test__http_peek__returns_the_next_character_with_te_chunked);
 
     return UNITY_END();
 }

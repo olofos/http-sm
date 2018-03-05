@@ -32,12 +32,11 @@ TST_RESULTS = $(patsubst $(TSTDIR)/test_%.c,$(RESULTDIR)/test_%.txt,$(SOURCES_TS
 TST_DEPS = $(TSTDEPDIR)/*.d
 
 
-.SECONDEXPANSION:
-TEST_json-util_EXTRA:=
-
 .PHONY: all bin clean erase test build_dirs
 
 all: $(BINDIR)/$(TARGET)
+
+$(TSTBINDIR)/test_http-io: $(TSTOBJDIR)/http-parser.o
 
 -include $(DEPS)
 -include $(TST_DEPS)
@@ -88,8 +87,8 @@ $(TSTOBJDIR)/%.o : $(UNITYDIR)/%.c
 	@$(TST_CC) $(TST_CFLAGS) -c $< -o $@
 	@$(TST_CC) -MM -MT $@ $(TST_CFLAGS) $< > $(TSTDEPDIR)/$*.d
 
-$(TSTBINDIR)/test_%: $(TSTOBJDIR)/test_%.o $(TSTOBJDIR)/%.o $(TSTOBJDIR)/unity.o $$(TEST_$$*_EXTRA)
-	echo $*
+$(TSTBINDIR)/test_%: $(TSTOBJDIR)/test_%.o $(TSTOBJDIR)/%.o $(TSTOBJDIR)/unity.o
+	echo $^
 	@echo CC $@
 	$(TST_CC) -o $@ $^
 

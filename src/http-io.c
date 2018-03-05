@@ -3,18 +3,6 @@
 
 #include "http.h"
 
-static int hex_to_int(char c)
-{
-    if('0' <= c && c <= '9') {
-        return c - '0';
-    } else if('A' <= c && c <= 'F') {
-        return 0xA + c - 'A';
-    } else  if('a' <= c && c <= 'f') {
-        return 0xA + c - 'a';
-    }
-    return 0;
-}
-
 static int read_chunk_header(struct http_request *request)
 {
     char c;
@@ -33,7 +21,7 @@ static int read_chunk_header(struct http_request *request)
             break;
         }
 
-        request->chunk_length = (request->chunk_length << 4) | hex_to_int(c);
+        request->chunk_length = (request->chunk_length << 4) | http_hex_to_int(c);
     }
 
     for(;;) {
@@ -72,6 +60,12 @@ static int read_chunk_footer(struct http_request *request)
 
 int http_getc(struct http_request *request)
 {
+    if(request->poke >= 0) {
+        int c = request->poke;
+        request->poke = -1;
+        return c;
+    }
+
     if(request->flags & HTTP_FLAG_CHUNKED) {
         int ret;
         char c;
@@ -116,4 +110,13 @@ int http_getc(struct http_request *request)
             return 0;
         }
     }
+}
+
+int http_peek(struct http_request *request)
+{
+    if(request->poke < 0) {
+        request->poke = http_getc(request);
+    }
+
+    return request->poke;
 }
