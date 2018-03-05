@@ -69,7 +69,7 @@ int http_getc(struct http_request *request)
 
     if(request->flags & HTTP_FLAG_CHUNKED) {
         int ret;
-        char c;
+        unsigned char c;
 
         if(request->chunk_length == 0) {
             if((ret = read_chunk_header(request)) <= 0) {
@@ -96,7 +96,7 @@ int http_getc(struct http_request *request)
         return c;
     } else {
         if(request->content_length > 0) {
-            char c;
+            unsigned char c;
             int ret = read(request->fd, &c, 1);
             if(ret < 0) {
                 perror("read");

@@ -155,6 +155,48 @@ static void test__http_getc__can_read_correctly_with_te_chunked(void)
     close(fd);
 }
 
+static void test__http_getc__can_read_non_ascii_characters_with_te_identity(void)
+{
+    char *str = "\xBA\xAD\xF0\x0D";
+
+    int fd = write_tmp_file(str);
+    TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+    request.content_length = strlen(str);
+
+    TEST_ASSERT_EQUAL(0xBA, http_getc(&request));
+    TEST_ASSERT_EQUAL(0xAD, http_getc(&request));
+    TEST_ASSERT_EQUAL(0xF0, http_getc(&request));
+    TEST_ASSERT_EQUAL(0x0D, http_getc(&request));
+}
+
+static void test__http_getc__can_read_non_ascii_characters_with_te_chunked(void)
+{
+    char *str = "\xBA\xAD\xF0\x0D";
+
+    char *s[] = {
+        "4\r\n",
+        str,
+        "\r\n0\r\n",
+        0
+    };
+
+    int fd = write_tmp_file_n(s);
+    TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+    request.flags |= HTTP_FLAG_CHUNKED;
+
+    TEST_ASSERT_EQUAL(0xBA, http_getc(&request));
+    TEST_ASSERT_EQUAL(0xAD, http_getc(&request));
+    TEST_ASSERT_EQUAL(0xF0, http_getc(&request));
+    TEST_ASSERT_EQUAL(0x0D, http_getc(&request));
+}
+
+
 void test__http_peek__returns_the_next_character_with_te_identity(void)
 {
     char *str = "0123";
@@ -213,6 +255,10 @@ int main(void)
     RUN_TEST(test__http_getc__can_read_correctly_with_te_identity);
     RUN_TEST(test__http_getc__can_read_correctly_with_te_chunked);
     RUN_TEST(test__http_getc__doesnt_read_more_than_content_length_with_te_identity);
+
+    RUN_TEST(test__http_getc__can_read_non_ascii_characters_with_te_identity);
+    RUN_TEST(test__http_getc__can_read_non_ascii_characters_with_te_chunked);
+
     RUN_TEST(test__http_peek__returns_the_next_character_with_te_identity);
     RUN_TEST(test__http_peek__returns_the_next_character_with_te_chunked);
 
