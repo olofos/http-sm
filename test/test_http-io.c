@@ -176,7 +176,7 @@ static void test__http_getc__can_read_non_ascii_characters_with_te_chunked(void)
 {
     char *str = "\xBA\xAD\xF0\x0D";
 
-    char *s[] = {
+    const char *s[] = {
         "4\r\n",
         str,
         "\r\n0\r\n",
