@@ -5,6 +5,7 @@
 #include "unity.h"
 
 #include "http.h"
+#include "http-private.h"
 
 void create_request(struct http_request *request, int state)
 {

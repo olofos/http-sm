@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "http.h"
+#include "http-private.h"
 
 static int read_chunk_header(struct http_request *request)
 {

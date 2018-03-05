@@ -78,8 +78,6 @@ struct http_request
     int fd;
 };
 
-int http_hex_to_int(char c);
-
 void http_parse_header(struct http_request *request, char c);
 
 int http_getc(struct http_request *request);
