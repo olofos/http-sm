@@ -227,3 +227,51 @@ void http_parse_header(struct http_request *request, char c)
         request->line[request->line_index++] = c;
     }
 }
+
+int http_urldecode(char *dest, const char* src, int max_len)
+{
+    int len = 0;
+    int esc = 0;
+    int c;
+
+    while(*src) {
+        if(esc == 0) {
+            if(*src == '%') {
+                esc = 1;
+                c = 0;
+            } else {
+                if(dest) {
+                    if(len < max_len) {
+                        dest[len++] = *src;
+                    } else {
+                        break;
+                    }
+                } else {
+                    len++;
+                }
+            }
+        } else if(esc == 1) {
+            c = http_hex_to_int(*src);
+            esc = 2;
+        } else if(esc == 2) {
+            if(dest) {
+                if(len < max_len) {
+                    dest[len++] = (c << 4) | http_hex_to_int(*src);
+                } else {
+                    break;
+                }
+            } else {
+                len++;
+            }
+            esc = 0;
+        }
+
+        src++;
+    }
+
+    if(dest && len < max_len) {
+        dest[len] = 0;
+    }
+
+    return len;
+}

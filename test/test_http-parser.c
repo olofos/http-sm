@@ -230,6 +230,60 @@ void test__http_parse_header__can_read_response(void)
 }
 
 
+void test__http_urldecode__returns_the_length_of_the_decoded_string(void)
+{
+    TEST_ASSERT_EQUAL(0, http_urldecode(0, "", 0));
+    TEST_ASSERT_EQUAL(4, http_urldecode(0, "ABCD", 0));
+    TEST_ASSERT_EQUAL(1, http_urldecode(0, "%20", 0));
+    TEST_ASSERT_EQUAL(2, http_urldecode(0, "X%20", 0));
+    TEST_ASSERT_EQUAL(2, http_urldecode(0, "%20X", 0));
+    TEST_ASSERT_EQUAL(3, http_urldecode(0, "X%20X", 0));
+    TEST_ASSERT_EQUAL(3, http_urldecode(0, "%20%20%20", 0));
+}
+
+void test__http_urldecode__copies_up_to_given_number_of_characters(void)
+{
+    char buf[4];
+    int ret;
+
+    ret = http_urldecode(buf, "ABC", sizeof(buf));
+    TEST_ASSERT_EQUAL(3, ret);
+    TEST_ASSERT_EQUAL_STRING("ABC", buf);
+
+    ret = http_urldecode(buf, "%20", sizeof(buf));
+    TEST_ASSERT_EQUAL(1, ret);
+    TEST_ASSERT_EQUAL_STRING(" ", buf);
+
+    ret = http_urldecode(buf, "X%20", sizeof(buf));
+    TEST_ASSERT_EQUAL(2, ret);
+    TEST_ASSERT_EQUAL_STRING("X ", buf);
+
+    ret = http_urldecode(buf, "%20X", sizeof(buf));
+    TEST_ASSERT_EQUAL(2, ret);
+    TEST_ASSERT_EQUAL_STRING(" X", buf);
+
+    memset(buf, 0, sizeof(buf));
+    ret = http_urldecode(buf, "ABC", 2);
+    TEST_ASSERT_EQUAL(2, ret);
+    TEST_ASSERT_EQUAL_STRING("AB", buf);
+
+    memset(buf, 0, sizeof(buf));
+    ret = http_urldecode(buf, "X%20Y", 2);
+    TEST_ASSERT_EQUAL(2, ret);
+    TEST_ASSERT_EQUAL_STRING("X ", buf);
+
+    memset(buf, 0, sizeof(buf));
+    ret = http_urldecode(buf, "XY%20", 2);
+    TEST_ASSERT_EQUAL(2, ret);
+    TEST_ASSERT_EQUAL_STRING("XY", buf);
+
+    memset(buf, 0, sizeof(buf));
+    ret = http_urldecode(buf, "%20%20%20", 2);
+    TEST_ASSERT_EQUAL(2, ret);
+    TEST_ASSERT_EQUAL_STRING("  ", buf);
+}
+
+
 
 int main(void)
 {
@@ -252,6 +306,9 @@ int main(void)
     RUN_TEST(test__http_parse_header__missing_newline_in_header_gives_error);
 
     RUN_TEST(test__http_parse_header__can_read_response);
+
+    RUN_TEST(test__http_urldecode__returns_the_length_of_the_decoded_string);
+    RUN_TEST(test__http_urldecode__copies_up_to_given_number_of_characters);
 
     return UNITY_END();
 }

@@ -83,5 +83,7 @@ void http_parse_header(struct http_request *request, char c);
 int http_getc(struct http_request *request);
 int http_peek(struct http_request *request);
 
+int http_urldecode(char *dest, const char* src, int max_len);
+
 
 #endif
