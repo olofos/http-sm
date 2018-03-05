@@ -170,6 +170,8 @@ static void test__http_getc__can_read_non_ascii_characters_with_te_identity(void
     TEST_ASSERT_EQUAL(0xAD, http_getc(&request));
     TEST_ASSERT_EQUAL(0xF0, http_getc(&request));
     TEST_ASSERT_EQUAL(0x0D, http_getc(&request));
+
+    close(fd);
 }
 
 static void test__http_getc__can_read_non_ascii_characters_with_te_chunked(void)
@@ -194,6 +196,8 @@ static void test__http_getc__can_read_non_ascii_characters_with_te_chunked(void)
     TEST_ASSERT_EQUAL(0xAD, http_getc(&request));
     TEST_ASSERT_EQUAL(0xF0, http_getc(&request));
     TEST_ASSERT_EQUAL(0x0D, http_getc(&request));
+
+    close(fd);
 }
 
 
