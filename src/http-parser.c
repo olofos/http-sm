@@ -242,7 +242,11 @@ int http_urldecode(char *dest, const char* src, int max_len)
             } else {
                 if(dest) {
                     if(len < max_len) {
-                        dest[len++] = *src;
+                        if(*src == '+') {
+                            dest[len++] = ' ';
+                        } else {
+                            dest[len++] = *src;
+                        }
                     } else {
                         break;
                     }

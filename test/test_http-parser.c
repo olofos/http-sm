@@ -235,6 +235,7 @@ void test__http_urldecode__returns_the_length_of_the_decoded_string(void)
     TEST_ASSERT_EQUAL(0, http_urldecode(0, "", 0));
     TEST_ASSERT_EQUAL(4, http_urldecode(0, "ABCD", 0));
     TEST_ASSERT_EQUAL(1, http_urldecode(0, "%20", 0));
+    TEST_ASSERT_EQUAL(1, http_urldecode(0, "+", 0));
     TEST_ASSERT_EQUAL(2, http_urldecode(0, "X%20", 0));
     TEST_ASSERT_EQUAL(2, http_urldecode(0, "%20X", 0));
     TEST_ASSERT_EQUAL(3, http_urldecode(0, "X%20X", 0));
@@ -251,6 +252,10 @@ void test__http_urldecode__copies_up_to_given_number_of_characters(void)
     TEST_ASSERT_EQUAL_STRING("ABC", buf);
 
     ret = http_urldecode(buf, "%20", sizeof(buf));
+    TEST_ASSERT_EQUAL(1, ret);
+    TEST_ASSERT_EQUAL_STRING(" ", buf);
+
+    ret = http_urldecode(buf, "+", sizeof(buf));
     TEST_ASSERT_EQUAL(1, ret);
     TEST_ASSERT_EQUAL_STRING(" ", buf);
 
