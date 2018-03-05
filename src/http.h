@@ -73,6 +73,8 @@ struct http_request
     char *query;
     char *host;
 
+    char **query_list;
+
     int fd;
 };
 
@@ -84,6 +86,8 @@ int http_getc(struct http_request *request);
 int http_peek(struct http_request *request);
 
 int http_urldecode(char *dest, const char* src, int max_len);
+
+const char *http_get_query_arg(struct http_request *request, const char *name);
 
 
 #endif

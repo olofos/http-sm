@@ -242,6 +242,7 @@ void test__http_urldecode__returns_the_length_of_the_decoded_string(void)
     TEST_ASSERT_EQUAL(3, http_urldecode(0, "%20%20%20", 0));
 }
 
+
 void test__http_urldecode__copies_up_to_given_number_of_characters(void)
 {
     char buf[4];
@@ -289,6 +290,99 @@ void test__http_urldecode__copies_up_to_given_number_of_characters(void)
 }
 
 
+void test__http_get_query_arg__returns_null_when_argument_not_found(void)
+{
+    struct http_request request;
+
+    request.query = 0;
+    request.query_list = 0;
+    TEST_ASSERT_NULL(http_get_query_arg(&request, 0));
+    TEST_ASSERT_NULL(http_get_query_arg(&request, "test"));
+
+    request.query = strdup("");
+    request.query_list = 0;
+    TEST_ASSERT_NULL(http_get_query_arg(&request, 0));
+    TEST_ASSERT_NULL(http_get_query_arg(&request, "test"));
+    free(request.query);
+    free(request.query_list);
+
+    request.query = strdup("a=1");;
+    request.query_list = 0;
+    TEST_ASSERT_NULL(http_get_query_arg(&request, 0));
+    TEST_ASSERT_NULL(http_get_query_arg(&request, "test"));
+    free(request.query);
+    free(request.query_list);
+
+    request.query = strdup("a=1&b=2");
+    request.query_list = 0;
+    TEST_ASSERT_NULL(http_get_query_arg(&request, 0));
+    TEST_ASSERT_NULL(http_get_query_arg(&request, "test"));
+    free(request.query);
+    free(request.query_list);
+}
+
+void test__http_get_query_arg__finds_the_argument(void)
+{
+    struct http_request request;
+
+    request.query = strdup("a=1");
+    request.query_list = 0;
+    TEST_ASSERT_NOT_NULL(http_get_query_arg(&request, "a"));
+    TEST_ASSERT_EQUAL_STRING("1", http_get_query_arg(&request, "a"));
+    free(request.query);
+    free(request.query_list);
+
+    request.query = strdup("a=1&b=2");
+    request.query_list = 0;
+    TEST_ASSERT_NOT_NULL(http_get_query_arg(&request, "a"));
+    TEST_ASSERT_EQUAL_STRING("1", http_get_query_arg(&request, "a"));
+    free(request.query);
+    free(request.query_list);
+
+    request.query = strdup("b=2&a=1");
+    request.query_list = 0;
+    TEST_ASSERT_NOT_NULL(http_get_query_arg(&request, "a"));
+    TEST_ASSERT_EQUAL_STRING("1", http_get_query_arg(&request, "a"));
+    free(request.query);
+    free(request.query_list);
+
+    request.query = strdup("aa=2&a=1");
+    request.query_list = 0;
+    TEST_ASSERT_NOT_NULL(http_get_query_arg(&request, "a"));
+    TEST_ASSERT_EQUAL_STRING("1", http_get_query_arg(&request, "a"));
+    free(request.query);
+    free(request.query_list);
+
+    request.query = strdup("b=2&a=X+Y");
+    request.query_list = 0;
+    TEST_ASSERT_NOT_NULL(http_get_query_arg(&request, "a"));
+    TEST_ASSERT_EQUAL_STRING("X Y", http_get_query_arg(&request, "a"));
+    free(request.query);
+    free(request.query_list);
+
+    request.query = strdup("aa=2&a=X+Y");
+    request.query_list = 0;
+    TEST_ASSERT_NOT_NULL(http_get_query_arg(&request, "a"));
+    TEST_ASSERT_EQUAL_STRING("X Y", http_get_query_arg(&request, "a"));
+    free(request.query);
+    free(request.query_list);
+
+    request.query = strdup("aa=Z%20W&a=X%20Y");
+    request.query_list = 0;
+    TEST_ASSERT_NOT_NULL(http_get_query_arg(&request, "a"));
+    TEST_ASSERT_EQUAL_STRING("X Y", http_get_query_arg(&request, "a"));
+    free(request.query);
+    free(request.query_list);
+
+    request.query = strdup("b&a=1");
+    request.query_list = 0;
+    TEST_ASSERT_NOT_NULL(http_get_query_arg(&request, "a"));
+    TEST_ASSERT_EQUAL_STRING("1", http_get_query_arg(&request, "a"));
+    free(request.query);
+    free(request.query_list);
+}
+
+
 
 int main(void)
 {
@@ -314,6 +408,9 @@ int main(void)
 
     RUN_TEST(test__http_urldecode__returns_the_length_of_the_decoded_string);
     RUN_TEST(test__http_urldecode__copies_up_to_given_number_of_characters);
+
+    RUN_TEST(test__http_get_query_arg__returns_null_when_argument_not_found);
+    RUN_TEST(test__http_get_query_arg__finds_the_argument);
 
     return UNITY_END();
 }

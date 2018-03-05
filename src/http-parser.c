@@ -279,3 +279,83 @@ int http_urldecode(char *dest, const char* src, int max_len)
 
     return len;
 }
+
+
+
+static void parse_query_string(struct http_request *request)
+{
+    if(!request->query) {
+        request->query_list = 0;
+    }
+
+    int n = 0;
+    if(request->query && *request->query) {
+        n++;
+    }
+
+    for(char *s = request->query; *s; s++) {
+        if(*s == '&') {
+            n++;
+        }
+    }
+
+    request->query_list = malloc(sizeof(char*) * (n+1));
+    printf("Found %d arguments\n", n);
+
+    char *name = request->query;
+
+    int i = 0;
+    for(;;) {
+        if(name) {
+            printf("Arg %d at %p\n", i, name);
+            request->query_list[i++] = name;
+        }
+
+        char *delim = strchr(name, '&');
+
+        if(delim) {
+            *delim = 0;
+        }
+
+        char *value = strchr(name, '=');
+        if(value) {
+            value++;
+            printf("Decoding '%s'\n", value);
+            http_urldecode(value, value, strlen(value));
+        } else {
+            printf("Query parameter '%s' has no value\n", name);
+        }
+
+        if(!delim) {
+            printf("End of args\n");
+            request->query_list[i] = 0;
+            break;
+        }
+
+        name = delim + 1;
+    }
+
+}
+
+
+const char *http_get_query_arg(struct http_request *request, const char *name)
+{
+    if(name && request->query) {
+        if(!request->query_list) {
+            parse_query_string(request);
+        }
+
+        int name_len = strlen(name);
+
+        for(char **query_ptr = request->query_list; *query_ptr; query_ptr++)
+        {
+            if(strncmp(name, *query_ptr, name_len) == 0) {
+                if(*(*query_ptr + name_len) == '=') {
+                    return *query_ptr + name_len + 1;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
