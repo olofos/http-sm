@@ -166,5 +166,7 @@ int http_begin_request(struct http_request *request)
     }
     write_string(request->fd, " HTTP/1.1\r\n");
 
+    http_write_header(request, "Host", request->host);
+
     return 1;
 }

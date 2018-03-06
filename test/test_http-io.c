@@ -384,6 +384,27 @@ void test__http_begin_request__writes_the_request_line_with_query(void)
 
     http_begin_request(&request);
     TEST_ASSERT_EQUAL_STRING_PREFIX("GET /?a=1 HTTP/1.1\r\n", get_file_content(fd));
+
+    close(fd);
+}
+
+void test__http_begin_request__sends_host_header(void)
+{
+    int fd = open_tmp_file();
+    TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
+
+    struct http_request request = {
+        .fd = fd,
+        .method = HTTP_METHOD_GET,
+        .host = "www.example.com",
+        .path = "/",
+        .query = "a=1",
+        .port = 80,
+    };
+
+    http_begin_request(&request);
+    TEST_ASSERT_STRING_CONTAINS_SUBSTRING("Host: www.example.com\r\n", get_file_content(fd));
+
     close(fd);
 }
 
@@ -415,6 +436,7 @@ int main(void)
 
     RUN_TEST(test__http_begin_request__writes_the_request_line_without_query);
     RUN_TEST(test__http_begin_request__writes_the_request_line_with_query);
+    RUN_TEST(test__http_begin_request__sends_host_header);
 
     return UNITY_END();
 }
