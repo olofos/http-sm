@@ -158,7 +158,11 @@ void http_write_header(struct http_request *request, const char *name, const cha
 
 int http_begin_request(struct http_request *request)
 {
-    write_string(request->fd, "GET ");
+    if(request->method == HTTP_METHOD_POST) {
+        write_string(request->fd, "POST ");
+    } else {
+        write_string(request->fd, "GET ");
+    }
     write_string(request->fd, request->path);
     if(request->query && request->query[0]) {
         write_string(request->fd, "?");
