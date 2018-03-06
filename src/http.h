@@ -23,6 +23,8 @@ enum http_state
     //
     HTTP_STATE_READ_HEADER           = 0x18,
     //
+    HTTP_STATE_READ_BODY             = 0x19,
+    //
     HTTP_STATE_WRITE                 = 0x20,
     //
     HTTP_STATE_READ_NL               = 0x80,

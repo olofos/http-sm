@@ -163,6 +163,7 @@ static void init_request(struct http_request *request, int fd)
     memset(request, 0, sizeof(*request));
     request->fd = fd;
     request->poke = -1;
+    request->state = HTTP_STATE_READ_BODY;
 }
 
 static void test__http_getc__can_read_correctly_with_te_identity(void)

@@ -38,7 +38,7 @@ static int read_chunk_header(struct http_request *request)
             break;
         }
     }
-    return 1;
+    return request->chunk_length;
 }
 
 static int read_chunk_footer(struct http_request *request)
@@ -67,13 +67,22 @@ int http_getc(struct http_request *request)
         return c;
     }
 
+    if(request->state == HTTP_STATE_DONE) {
+        return 0;
+    }
+
     if(request->flags & HTTP_FLAG_CHUNKED) {
         int ret;
         unsigned char c;
 
         if(request->chunk_length == 0) {
-            if((ret = read_chunk_header(request)) <= 0) {
+           if((ret = read_chunk_header(request)) < 0) {
                 return ret;
+            }
+
+            if(request->chunk_length == 0) {
+                request->state = HTTP_STATE_DONE;
+                return 0;
             }
         }
 
