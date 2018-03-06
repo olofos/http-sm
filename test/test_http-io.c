@@ -313,6 +313,8 @@ void test__http_write_header__writes_the_header(void)
 
     http_write_header(&request, "Connection", "close");
     TEST_ASSERT_EQUAL_STRING("Connection: close\r\n", get_file_content(fd));
+
+    close(fd);
 }
 
 void test__http_write_header__writes_nothing_when_name_is_null(void)
@@ -325,6 +327,8 @@ void test__http_write_header__writes_nothing_when_name_is_null(void)
 
     http_write_header(&request, NULL, "close");
     TEST_ASSERT_EQUAL_STRING("", get_file_content(fd));
+
+    close(fd);
 }
 
 void test__http_write_header__writes_nothing_when_value_is_null(void)
@@ -337,6 +341,8 @@ void test__http_write_header__writes_nothing_when_value_is_null(void)
 
     http_write_header(&request, "Test", NULL);
     TEST_ASSERT_EQUAL_STRING("", get_file_content(fd));
+
+    close(fd);
 }
 
 // Main ////////////////////////////////////////////////////////////////////////
