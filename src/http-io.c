@@ -186,5 +186,7 @@ int http_begin_request(struct http_request *request)
         free(buf);
     }
 
+    http_write_header(request, "User-Agent", HTTP_USER_AGENT);
+
     return 1;
 }

@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#ifndef HTTP_USER_AGENT
+#define HTTP_USER_AGENT "esp8266-http/0.1"
+#endif
 
 enum http_state
 {

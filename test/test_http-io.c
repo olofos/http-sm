@@ -487,6 +487,26 @@ void test__http_begin_request__writes_the_POST_request_line(void)
     close(fd);
 }
 
+void test__http_begin_request__sends_user_agent_header(void)
+{
+    int fd = open_tmp_file();
+    TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
+
+    struct http_request request = {
+        .fd = fd,
+        .method = HTTP_METHOD_GET,
+        .host = "www.example.com",
+        .path = "/",
+        .query = "a=1",
+        .port = 80,
+    };
+
+    http_begin_request(&request);
+    TEST_ASSERT_STRING_CONTAINS_SUBSTRING("User-Agent: " HTTP_USER_AGENT, get_file_content(fd));
+
+    close(fd);
+}
+
 // Main ////////////////////////////////////////////////////////////////////////
 
 int main(void)
@@ -520,6 +540,7 @@ int main(void)
     RUN_TEST(test__http_begin_request__sends_host_header_with_port_if_port_is_not_80);
     RUN_TEST(test__http_begin_request__has_GET_as_default_method);
     RUN_TEST(test__http_begin_request__writes_the_POST_request_line);
+    RUN_TEST(test__http_begin_request__sends_user_agent_header);
 
     return UNITY_END();
 }
