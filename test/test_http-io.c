@@ -14,157 +14,16 @@
 
 static pid_t child_pid;
 
-static int open_tmp_file(void)
-{
-    char filename[] = "/tmp/http-test-XXXXXX";
-    int fd = mkstemp(filename);
+static void init_request(struct http_request *request, int fd);
 
-    if(fd < 0) {
-        perror("mkstemp");
-    } else {
-        unlink(filename);
-    }
-    return fd;
-}
-
-static int write_string(int fd, const char *s)
-{
-    int num = 0;
-    int len = strlen(s);
-
-    while(num < len) {
-        int n = write(fd, s, len);
-        if(n < 0) {
-            perror("write");
-            break;
-        }
-        num += n;
-        s += n;
-    }
-    return num;
-}
-
-static int open_socket(pid_t *pid)
-{
-    int fds[2];
-    if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) < 0) {
-        perror("socketpair");
-        return -1;
-    }
-
-    *pid = fork();
-
-    if(*pid < 0) {
-        perror("fork");
-        return -1;
-    }
-
-    if(*pid > 0) {
-        close(fds[1]);
-
-        struct timeval tv;
-        tv.tv_sec = 0;
-        tv.tv_usec = 1000;
-        setsockopt(fds[0], SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&tv, sizeof(struct timeval));
-        return fds[0];
-
-    } else {
-        close(fds[0]);
-        return fds[1];
-    }
-}
-
-static void close_socket(int fd)
-{
-    kill(child_pid, SIGINT);
-
-    int status;
-    if(waitpid(child_pid, &status, 0) < 0) {
-        perror("wait");
-    }
-
-    close(fd);
-}
-
-static int write_socket(const char *str)
-{
-    int fd = open_socket(&child_pid);
-
-    if(!child_pid) {
-        write_string(fd, str);
-        for(;;) {
-        }
-    }
-
-    return fd;
-}
-
-static int write_socket_n(const char *s[])
-{
-    int fd = open_socket(&child_pid);
-
-    if(!child_pid) {
-        while(*s) {
-            if(write_string(fd, *s++) < 0)
-            {
-                break;
-            }
-        }
-
-        for(;;) {
-        }
-    }
-
-    return fd;
-}
+static int write_tmp_file(const char *s);
+static int write_tmp_file_n(const char *s[]);
+static int write_socket(const char *s);
+static int write_socket_n(const char *s[]);
+static void close_socket(int fd);
 
 
-static int write_tmp_file(const char *s)
-{
-    int fd = open_tmp_file();
-    if(fd < 0) {
-        return fd;
-    }
-
-    if(write_string(fd, s) < 0) {
-        return -1;
-    }
-
-    if(lseek(fd, SEEK_SET, 0) != 0) {
-        return -1;
-    }
-
-    return fd;
-}
-
-static int write_tmp_file_n(const char *s[])
-{
-    int fd = open_tmp_file();
-    if(fd < 0) {
-        return fd;
-    }
-
-    while(*s) {
-        if(write_string(fd, *s++) < 0)
-        {
-            return -1;
-        }
-    }
-
-    if(lseek(fd, SEEK_SET, 0) != 0) {
-        return -1;
-    }
-
-    return fd;
-}
-
-static void init_request(struct http_request *request, int fd)
-{
-    memset(request, 0, sizeof(*request));
-    request->fd = fd;
-    request->poke = -1;
-    request->state = HTTP_STATE_READ_BODY;
-}
+// Tests ///////////////////////////////////////////////////////////////////////
 
 static void test__http_getc__can_read_correctly_with_te_identity(void)
 {
@@ -441,6 +300,8 @@ void test__http_peek__returns_the_next_character_with_te_chunked(void)
     close(fd);
 }
 
+// Main ////////////////////////////////////////////////////////////////////////
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -462,4 +323,159 @@ int main(void)
     RUN_TEST(test__http_peek__returns_the_next_character_with_te_chunked);
 
     return UNITY_END();
+}
+
+// Support functions for testing read:s ////////////////////////////////////////
+
+static int open_tmp_file(void)
+{
+    char filename[] = "/tmp/http-test-XXXXXX";
+    int fd = mkstemp(filename);
+
+    if(fd < 0) {
+        perror("mkstemp");
+    } else {
+        unlink(filename);
+    }
+    return fd;
+}
+
+static int write_string(int fd, const char *s)
+{
+    int num = 0;
+    int len = strlen(s);
+
+    while(num < len) {
+        int n = write(fd, s, len);
+        if(n < 0) {
+            perror("write");
+            break;
+        }
+        num += n;
+        s += n;
+    }
+    return num;
+}
+
+static int open_socket(pid_t *pid)
+{
+    int fds[2];
+    if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) < 0) {
+        perror("socketpair");
+        return -1;
+    }
+
+    *pid = fork();
+
+    if(*pid < 0) {
+        perror("fork");
+        return -1;
+    }
+
+    if(*pid > 0) {
+        close(fds[1]);
+
+        struct timeval tv;
+        tv.tv_sec = 0;
+        tv.tv_usec = 1000;
+        setsockopt(fds[0], SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&tv, sizeof(struct timeval));
+        return fds[0];
+
+    } else {
+        close(fds[0]);
+        return fds[1];
+    }
+}
+
+static void close_socket(int fd)
+{
+    kill(child_pid, SIGINT);
+
+    int status;
+    if(waitpid(child_pid, &status, 0) < 0) {
+        perror("wait");
+    }
+
+    close(fd);
+}
+
+static int write_socket(const char *str)
+{
+    int fd = open_socket(&child_pid);
+
+    if(!child_pid) {
+        write_string(fd, str);
+        for(;;) {
+        }
+    }
+
+    return fd;
+}
+
+static int write_socket_n(const char *s[])
+{
+    int fd = open_socket(&child_pid);
+
+    if(!child_pid) {
+        while(*s) {
+            if(write_string(fd, *s++) < 0)
+            {
+                break;
+            }
+        }
+
+        for(;;) {
+        }
+    }
+
+    return fd;
+}
+
+static int write_tmp_file(const char *s)
+{
+    int fd = open_tmp_file();
+    if(fd < 0) {
+        return fd;
+    }
+
+    if(write_string(fd, s) < 0) {
+        return -1;
+    }
+
+    if(lseek(fd, SEEK_SET, 0) != 0) {
+        return -1;
+    }
+
+    return fd;
+}
+
+static int write_tmp_file_n(const char *s[])
+{
+    int fd = open_tmp_file();
+    if(fd < 0) {
+        return fd;
+    }
+
+    while(*s) {
+        if(write_string(fd, *s++) < 0)
+        {
+            return -1;
+        }
+    }
+
+    if(lseek(fd, SEEK_SET, 0) != 0) {
+        return -1;
+    }
+
+    return fd;
+}
+
+// Support functions for test setup ////////////////////////////////////////////
+
+static void init_request(struct http_request *request, int fd)
+{
+    memset(request, 0, sizeof(*request));
+    request->fd = fd;
+    request->poke = -1;
+    request->state = HTTP_STATE_READ_BODY;
 }
