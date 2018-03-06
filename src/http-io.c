@@ -160,7 +160,7 @@ int http_begin_request(struct http_request *request)
 {
     write_string(request->fd, "GET ");
     write_string(request->fd, request->path);
-    if(request->query) {
+    if(request->query && request->query[0]) {
         write_string(request->fd, "?");
         write_string(request->fd, request->query);
     }
