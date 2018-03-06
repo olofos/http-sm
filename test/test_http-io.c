@@ -428,6 +428,26 @@ void test__http_begin_request__sends_host_header(void)
     close(fd);
 }
 
+void test__http_begin_request__sends_host_header_with_port_if_port_is_not_80(void)
+{
+    int fd = open_tmp_file();
+    TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
+
+    struct http_request request = {
+        .fd = fd,
+        .method = HTTP_METHOD_GET,
+        .host = "www.example.com",
+        .path = "/",
+        .query = "a=1",
+        .port = 8080,
+    };
+
+    http_begin_request(&request);
+    TEST_ASSERT_STRING_CONTAINS_SUBSTRING("Host: www.example.com:8080\r\n", get_file_content(fd));
+
+    close(fd);
+}
+
 // Main ////////////////////////////////////////////////////////////////////////
 
 int main(void)
@@ -458,6 +478,7 @@ int main(void)
     RUN_TEST(test__http_begin_request__writes_the_request_line_with_query);
     RUN_TEST(test__http_begin_request__writes_the_request_line_with_empty_query);
     RUN_TEST(test__http_begin_request__sends_host_header);
+    RUN_TEST(test__http_begin_request__sends_host_header_with_port_if_port_is_not_80);
 
     return UNITY_END();
 }

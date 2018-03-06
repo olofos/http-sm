@@ -166,7 +166,21 @@ int http_begin_request(struct http_request *request)
     }
     write_string(request->fd, " HTTP/1.1\r\n");
 
-    http_write_header(request, "Host", request->host);
+    if(request->port == 80) {
+        http_write_header(request, "Host", request->host);
+    } else {
+        int len = strlen(request->host) + strlen(":65535");
+        char *buf = malloc(len + 1);
+
+        if(!buf) {
+            perror("malloc");
+            return 0;
+        }
+
+        snprintf(buf, len, "%s:%d", request->host, request->port);
+        http_write_header(request, "Host", buf);
+        free(buf);
+    }
 
     return 1;
 }
