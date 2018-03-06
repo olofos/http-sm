@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "http.h"
@@ -129,4 +130,28 @@ int http_peek(struct http_request *request)
     }
 
     return request->poke;
+}
+
+static void write_string(int fd, const char *str)
+{
+    int len = strlen(str);
+    while(len > 0) {
+        int n = write(fd, str, len);
+        if(n < 0) {
+            perror("write");
+            return;
+        }
+        str += n;
+        len -= n;
+    }
+}
+
+void http_write_header(struct http_request *request, const char *name, const char *value)
+{
+    if(name && value) {
+        write_string(request->fd, name);
+        write_string(request->fd, ": ");
+        write_string(request->fd, value);
+        write_string(request->fd, "\r\n");
+    }
 }

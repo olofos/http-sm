@@ -16,12 +16,14 @@ static pid_t child_pid;
 
 static void init_request(struct http_request *request, int fd);
 
+static int open_tmp_file(void);
 static int write_tmp_file(const char *s);
 static int write_tmp_file_n(const char *s[]);
 static int write_socket(const char *s);
 static int write_socket_n(const char *s[]);
 static void close_socket(int fd);
 
+static const char *get_file_content(int fd);
 
 // Tests ///////////////////////////////////////////////////////////////////////
 
@@ -300,6 +302,43 @@ void test__http_peek__returns_the_next_character_with_te_chunked(void)
     close(fd);
 }
 
+
+void test__http_write_header__writes_the_header(void)
+{
+    int fd = open_tmp_file();
+    TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+
+    http_write_header(&request, "Connection", "close");
+    TEST_ASSERT_EQUAL_STRING("Connection: close\r\n", get_file_content(fd));
+}
+
+void test__http_write_header__writes_nothing_when_name_is_null(void)
+{
+    int fd = open_tmp_file();
+    TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+
+    http_write_header(&request, NULL, "close");
+    TEST_ASSERT_EQUAL_STRING("", get_file_content(fd));
+}
+
+void test__http_write_header__writes_nothing_when_value_is_null(void)
+{
+    int fd = open_tmp_file();
+    TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+
+    http_write_header(&request, "Test", NULL);
+    TEST_ASSERT_EQUAL_STRING("", get_file_content(fd));
+}
+
 // Main ////////////////////////////////////////////////////////////////////////
 
 int main(void)
@@ -322,10 +361,14 @@ int main(void)
     RUN_TEST(test__http_peek__returns_the_next_character_with_te_identity);
     RUN_TEST(test__http_peek__returns_the_next_character_with_te_chunked);
 
+    RUN_TEST(test__http_write_header__writes_the_header);
+    RUN_TEST(test__http_write_header__writes_nothing_when_name_is_null);
+    RUN_TEST(test__http_write_header__writes_nothing_when_value_is_null);
+
     return UNITY_END();
 }
 
-// Support functions for testing read:s ////////////////////////////////////////
+// Support functions for testing reads /////////////////////////////////////////
 
 static int open_tmp_file(void)
 {
@@ -468,6 +511,35 @@ static int write_tmp_file_n(const char *s[])
     }
 
     return fd;
+}
+
+// Support functions for testing writes ////////////////////////////////////////
+
+static const char *get_file_content(int fd)
+{
+    static char buf[4096];
+
+    off_t off;
+    if((off = lseek(fd, 0, SEEK_SET)) < 0) {
+        perror("lseek");
+        return 0;
+    }
+
+    int n;
+
+    if((n = read(fd, buf, sizeof(buf) - 1)) < 0) {
+        perror("read");
+        return 0;
+    }
+
+    buf[n] = 0;
+
+    if(lseek(fd, off, SEEK_SET) < 0) {
+        perror("lseek");
+        return 0;
+    }
+
+    return buf;
 }
 
 // Support functions for test setup ////////////////////////////////////////////

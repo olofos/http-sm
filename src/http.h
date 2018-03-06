@@ -89,5 +89,7 @@ int http_urldecode(char *dest, const char* src, int max_len);
 
 const char *http_get_query_arg(struct http_request *request, const char *name);
 
+void http_write_header(struct http_request *request, const char *name, const char *value);
+
 
 #endif
