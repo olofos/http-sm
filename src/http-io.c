@@ -155,3 +155,16 @@ void http_write_header(struct http_request *request, const char *name, const cha
         write_string(request->fd, "\r\n");
     }
 }
+
+int http_begin_request(struct http_request *request)
+{
+    write_string(request->fd, "GET ");
+    write_string(request->fd, request->path);
+    if(request->query) {
+        write_string(request->fd, "?");
+        write_string(request->fd, request->query);
+    }
+    write_string(request->fd, " HTTP/1.1\r\n");
+
+    return 1;
+}

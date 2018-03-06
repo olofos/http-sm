@@ -78,6 +78,7 @@ struct http_request
     char **query_list;
 
     int fd;
+    uint16_t port;
 };
 
 void http_parse_header(struct http_request *request, char c);
@@ -89,6 +90,7 @@ int http_urldecode(char *dest, const char* src, int max_len);
 
 const char *http_get_query_arg(struct http_request *request, const char *name);
 
+int http_begin_request(struct http_request *request);
 void http_write_header(struct http_request *request, const char *name, const char *value);
 
 
