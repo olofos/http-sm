@@ -10,6 +10,9 @@
 
 #include "unity.h"
 
+#define TEST_ASSERT_EQUAL_STRING_PREFIX(s1, s2) TEST_ASSERT_EQUAL_STRING_LEN(s1, s2, strlen(s1))
+#define TEST_ASSERT_STRING_CONTAINS_SUBSTRING(s1, s2) TEST_ASSERT_NOT_NULL_MESSAGE(strstr(s2, s1), "Expected substring \"" s1 "\"")
+
 #include "http.h"
 
 static pid_t child_pid;
