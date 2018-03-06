@@ -323,6 +323,73 @@ static void test__http_getc__returns_zero_when_reading_eof_with_te_chunked(void)
     close_socket(request.fd);
 }
 
+void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te_identity(void)
+{
+    char *str = "0123";
+
+    int fd = write_tmp_file(str);
+    TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+    request.content_length = strlen(str);
+
+    enum http_state states[] = {
+        HTTP_STATE_DONE,
+        HTTP_STATE_ERROR,
+        HTTP_STATE_READ_REQ_METHOD,
+        HTTP_STATE_READ_REQ_PATH,
+        HTTP_STATE_READ_REQ_QUERY,
+        HTTP_STATE_READ_REQ_VERSION,
+        HTTP_STATE_READ_RESP_VERSION,
+        HTTP_STATE_READ_RESP_STATUS,
+        HTTP_STATE_READ_RESP_STATUS_DESC,
+        HTTP_STATE_READ_HEADER,
+    };
+
+    for(int i = 0; i < sizeof(states)/sizeof(states[0]); i++) {
+        request.state = states[i];
+        TEST_ASSERT_EQUAL(0, http_getc(&request));
+    }
+
+    close(fd);
+}
+
+void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te_chunked(void)
+{
+    char *str =
+        "4\r\n"
+        "0123\r\n"
+        "0\r\n";
+
+    int fd = write_tmp_file(str);
+    TEST_ASSERT_GREATER_OR_EQUAL(0, fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+    request.flags |= HTTP_FLAG_CHUNKED;
+
+    enum http_state states[] = {
+        HTTP_STATE_DONE,
+        HTTP_STATE_ERROR,
+        HTTP_STATE_READ_REQ_METHOD,
+        HTTP_STATE_READ_REQ_PATH,
+        HTTP_STATE_READ_REQ_QUERY,
+        HTTP_STATE_READ_REQ_VERSION,
+        HTTP_STATE_READ_RESP_VERSION,
+        HTTP_STATE_READ_RESP_STATUS,
+        HTTP_STATE_READ_RESP_STATUS_DESC,
+        HTTP_STATE_READ_HEADER,
+    };
+
+    for(int i = 0; i < sizeof(states)/sizeof(states[0]); i++) {
+        request.state = states[i];
+        TEST_ASSERT_EQUAL(0, http_getc(&request));
+    }
+
+    close(fd);
+}
+
 void test__http_peek__returns_the_next_character_with_te_identity(void)
 {
     char *str = "0123";
@@ -387,6 +454,9 @@ int main(void)
 
     RUN_TEST(test__http_getc__returns_zero_when_reading_eof_with_te_identity);
     RUN_TEST(test__http_getc__returns_zero_when_reading_eof_with_te_chunked);
+
+    RUN_TEST(test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te_identity);
+    RUN_TEST(test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te_chunked);
 
     RUN_TEST(test__http_peek__returns_the_next_character_with_te_identity);
     RUN_TEST(test__http_peek__returns_the_next_character_with_te_chunked);
