@@ -35,7 +35,9 @@ TST_DEPS = $(TSTDEPDIR)/*.d
 
 all: $(BINDIR)/$(TARGET)
 
-$(TSTBINDIR)/test_http-io: $(TSTOBJDIR)/http-parser.o
+$(TSTBINDIR)/test_http-io: $(TSTOBJDIR)/http-io.o $(TSTOBJDIR)/http-util.o
+$(TSTBINDIR)/test_http-parser: $(TSTOBJDIR)/http-parser.o $(TSTOBJDIR)/http-util.o
+
 
 -include $(DEPS)
 -include $(TST_DEPS)
@@ -55,7 +57,7 @@ test: build_dirs $(TST_RESULTS)
 	@echo "\n-----------------------"
 	@echo "FAILED:" `grep -o '\[  FAILED  \]' $(RESULTDIR)/*.txt|wc -l`
 	@echo "-----------------------"
-	@grep -s 'FAILED' $(RESULTDIR)/*.txt || true
+	@grep -s 'FAILED\|LINE\|ERROR' $(RESULTDIR)/*.txt || true
 	@echo "\n-----------------------"
 	@echo "PASSED:" `grep -o '\[       OK \]' $(RESULTDIR)/*.txt|wc -l`
 	@echo "-----------------------"
@@ -69,7 +71,7 @@ build_dirs:
 $(RESULTDIR)/%.txt: $(TSTBINDIR)/%
 	@echo Running $<
 	@echo
-	@./$< > $@ || true
+	@./$< > $@ 2>&1 || true
 
 $(TSTOBJDIR)/%.o : $(TSTDIR)/%.c
 	@echo CC $@
@@ -81,10 +83,9 @@ $(TSTOBJDIR)/%.o : $(SRCDIR)/%.c
 	@$(TST_CC) $(TST_CFLAGS) -c $< -o $@
 	@$(TST_CC) -MM -MT $@ $(TST_CFLAGS) $< > $(TSTDEPDIR)/$*.d
 
-$(TSTBINDIR)/test_%: $(TSTOBJDIR)/test_%.o $(TSTOBJDIR)/%.o
-	echo $^
+$(TSTBINDIR)/test_%: $(TSTOBJDIR)/test_%.o
 	@echo CC $@
-	$(TST_CC) -o $@ $(TST_CFLAGS) $^ -lcmocka
+	@$(TST_CC) -o $@ $(TST_CFLAGS) $^ -lcmocka
 
 clean:
 	-rm -f $(OBJ) $(DEPS) $(TST_DEPS) $(TSTOBJDIR)/*.o $(TSTBINDIR)/test_* $(RESULTDIR)/*.txt $(BINDIR/$(TARGET)
