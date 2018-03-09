@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "http.h"
+#include "log.h"
 
 int http_hex_to_int(char c)
 {
@@ -32,32 +33,34 @@ static void http_parse_header_next_state(struct http_request *request, int state
     request->line_index = 0;
 }
 
-void escaped_putchar(char c)
+const char *escaped_string(const char *in)
 {
-    if(c == '\r') {
-        printf("\\r");
-    } else if(c == '\n') {
-        printf("\\n");
-    } else {
-        putchar(c);
+    static char out[256];
+    int j = 0;
+
+    for(int i = 0; i < strlen(in) && j < sizeof(out) - 2; i++) {
+        if(in[i] == '\r') {
+            out[j++] = '\\';
+            out[j++] = 'r';
+        } else if(in[i] == '\n') {
+            out[j++] = '\\';
+            out[j++] = 'n';
+        } else {
+            out[j++] = in[i];
+        }
     }
+    out[j] = 0;
+
+    return out;
 }
 
 void http_parse_header(struct http_request *request, char c)
 {
-    // printf("state = 0x%02X, c = '", request->state);
-    // escaped_putchar(c);
-    // printf("', line = \"");
-    // for(int i = 0; i < request->line_index; i++) {
-    //     escaped_putchar(request->line[i]);
-    // }
-    // printf("\"\n");
-
     if(request->state & HTTP_STATE_READ_NL) {
         if(c == '\n') {
             request->state &= ~HTTP_STATE_READ_NL;
         } else {
-            printf("Expected '\\n' but got '%c'\n", c);
+            LOG("Expected '\\n' but got '%c'", c);
             request->error = HTTP_STATUS_BAD_REQUEST;
             request->state = HTTP_STATE_ERROR;
         }
@@ -77,7 +80,7 @@ void http_parse_header(struct http_request *request, char c)
                 request->method = HTTP_METHOD_POST;
                 http_parse_header_next_state(request, HTTP_STATE_READ_REQ_PATH);
             } else {
-                printf("Unsupported HTTP method \"%s\"\n", request->line);
+                LOG("Unsupported HTTP method \"%s\"", request->line);
                 request->method = HTTP_METHOD_UNSUPPORTED;
                 request->error = HTTP_STATUS_METHOD_NOT_ALLOWED;
                 http_parse_header_next_state(request, HTTP_STATE_ERROR);
@@ -119,11 +122,11 @@ void http_parse_header(struct http_request *request, char c)
             if(strcmp(request->line, "HTTP/1.1") == 0) {
                 http_parse_header_next_state(request, HTTP_STATE_READ_HEADER | HTTP_STATE_READ_NL);
             } else if(strcmp(request->line, "HTTP/1.0") == 0) {
-                printf("HTTP/1.0 not supported\n");
+                LOG("HTTP/1.0 not supported");
                 request->error = HTTP_STATUS_VERSION_NOT_SUPPORTED;
                 http_parse_header_next_state(request, HTTP_STATE_ERROR);
             } else {
-                printf("Unsupported HTTP version \"%s\"\n", request->line);
+                LOG("Unsupported HTTP version \"%s\"", request->line);
                 request->error = HTTP_STATUS_BAD_REQUEST;
                 http_parse_header_next_state(request, HTTP_STATE_ERROR);
             }
@@ -136,11 +139,7 @@ void http_parse_header(struct http_request *request, char c)
         if(c == '\r') {
             request->line[request->line_index] = 0;
 
-            printf("line = \"");
-            for(const char *s = request->line; *s; s++) {
-                escaped_putchar(*s);
-            }
-            printf("\"\n");
+            LOG("line = \"%s\"", escaped_string(request->line));
 
             if(request->line_index == 0) {
                 http_parse_header_next_state(request, HTTP_STATE_DONE | HTTP_STATE_READ_NL);
@@ -165,7 +164,7 @@ void http_parse_header(struct http_request *request, char c)
                     if(!p || *p) {
                         http_parse_header_next_state(request, HTTP_STATE_ERROR);
                         request->error = HTTP_STATUS_BAD_REQUEST;
-                        printf("Error parsing content length \"%s\"\n", val);
+                        LOG("Error parsing content length \"%s\"", val);
                         return;
                     }
                 }
@@ -181,7 +180,7 @@ void http_parse_header(struct http_request *request, char c)
         if(c == ' ') {
             request->line[request->line_index] = 0;
             if(strcmp(request->line, "HTTP/1.1") != 0) {
-                printf("Unexpected HTTP version \"%s\"\n", request->line);
+                LOG("Unexpected HTTP version \"%s\"", request->line);
             }
 
             http_parse_header_next_state(request, HTTP_STATE_READ_RESP_STATUS);
@@ -196,7 +195,7 @@ void http_parse_header(struct http_request *request, char c)
             request->line[request->line_index] = 0;
             request->status = strtol(request->line, &p, 10);
             if(!p || *p) {
-                printf("Error reading response code \"%s\" (%s)\n", request->line, p);
+                LOG("Error reading response code \"%s\" (%s)", request->line, p);
             }
 
             http_parse_header_next_state(request, HTTP_STATE_READ_RESP_STATUS_DESC);
@@ -208,7 +207,7 @@ void http_parse_header(struct http_request *request, char c)
     case HTTP_STATE_READ_RESP_STATUS_DESC:
         if(c == '\r') {
             request->line[request->line_index] = 0;
-            printf("Status %d %s\n", request->status, request->line);
+            LOG("Status %d %s", request->status, request->line);
             http_parse_header_next_state(request, HTTP_STATE_READ_HEADER | HTTP_STATE_READ_NL);
 
             return;
@@ -219,7 +218,7 @@ void http_parse_header(struct http_request *request, char c)
         return;
 
     default:
-        printf("Unhandled state 0x%02X\n", request->state);
+        LOG("Unhandled state 0x%02X", request->state);
         break;
     }
 
@@ -300,14 +299,14 @@ static void parse_query_string(struct http_request *request)
     }
 
     request->query_list = malloc(sizeof(char*) * (n+1));
-    printf("Found %d arguments\n", n);
+    LOG("Found %d arguments", n);
 
     char *name = request->query;
 
     int i = 0;
     for(;;) {
         if(name) {
-            printf("Arg %d at %p\n", i, name);
+            LOG("Arg %d at %p", i, name);
             request->query_list[i++] = name;
         }
 
@@ -320,14 +319,14 @@ static void parse_query_string(struct http_request *request)
         char *value = strchr(name, '=');
         if(value) {
             value++;
-            printf("Decoding '%s'\n", value);
+            LOG("Decoding '%s'", value);
             http_urldecode(value, value, strlen(value));
         } else {
-            printf("Query parameter '%s' has no value\n", name);
+            LOG("Query parameter '%s' has no value", name);
         }
 
         if(!delim) {
-            printf("End of args\n");
+            LOG("End of args");
             request->query_list[i] = 0;
             break;
         }

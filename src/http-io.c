@@ -4,6 +4,7 @@
 
 #include "http.h"
 #include "http-private.h"
+#include "log.h"
 
 static int read_chunk_header(struct http_request *request)
 {
@@ -15,7 +16,7 @@ static int read_chunk_header(struct http_request *request)
             perror("read");
             return -1;
         } else if(ret == 0) {
-            printf("Got EOF\n");
+            LOG("Got EOF");
             return 0;
         }
 
@@ -32,7 +33,7 @@ static int read_chunk_header(struct http_request *request)
             perror("read");
             return -1;
         } else if(ret == 0) {
-            printf("Got EOF\n");
+            LOG("Got EOF");
             return 0;
         }
         if(c == '\n') {
@@ -50,7 +51,7 @@ static int read_chunk_footer(struct http_request *request)
         perror("read");
         return -1;
     } else if(ret == 0) {
-        printf("Got EOF\n");
+        LOG("Got EOF");
         return 0;
     }
 
@@ -92,7 +93,7 @@ int http_getc(struct http_request *request)
             perror("read");
             return -1;
         } else if(ret == 0) {
-            printf("Got EOF\n");
+            LOG("Got EOF");
             return 0;
         }
 
@@ -112,7 +113,7 @@ int http_getc(struct http_request *request)
                 perror("read");
                 return -1;
             } else if(ret == 0) {
-                printf("Got EOF\n");
+                LOG("Got EOF");
                 return 0;
             }
             request->content_length--;
