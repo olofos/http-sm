@@ -96,5 +96,6 @@ const char *http_get_query_arg(struct http_request *request, const char *name);
 int http_begin_request(struct http_request *request);
 void http_write_header(struct http_request *request, const char *name, const char *value);
 
+int http_open(struct http_request *request);
 
 #endif
