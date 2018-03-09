@@ -3,7 +3,7 @@
 #include <setjmp.h>
 #include <stdarg.h>
 
-#include "cmocka.h"
+#include <cmocka.h>
 
 #include "http.h"
 #include "http-private.h"

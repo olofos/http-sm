@@ -37,6 +37,7 @@ all: $(BINDIR)/$(TARGET)
 
 $(TSTBINDIR)/test_http-io: $(TSTOBJDIR)/http-io.o $(TSTOBJDIR)/http-util.o
 $(TSTBINDIR)/test_http-parser: $(TSTOBJDIR)/http-parser.o $(TSTOBJDIR)/http-util.o
+$(TSTBINDIR)/test_http-util: $(TSTOBJDIR)/http-util.o
 
 
 -include $(DEPS)
