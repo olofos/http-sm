@@ -1,4 +1,4 @@
-SOURCES := main.c http-parser.c
+SOURCES := main.c http-parser.c log.c
 
 TARGET=http-test
 
@@ -11,7 +11,6 @@ TSTOBJDIR := test/obj
 TSTBINDIR := test/bin
 TSTDEPDIR := test/.deps
 RESULTDIR := test/results
-UNITYDIR := unity
 
 BUILD_DIRS = $(BINDIR) $(OBJDIR) $(DEPDIR) $(RESULTDIR) $(TSTOBJDIR) $(TSTBINDIR) $(TSTDEPDIR)
 
@@ -26,7 +25,7 @@ CFLAGS = -Wall -g
 
 
 TST_CC = gcc
-TST_CFLAGS = -Wall -I$(UNITYDIR) -I$(SRCDIR) -g
+TST_CFLAGS = -Wall -I$(SRCDIR) -g
 
 TST_RESULTS = $(patsubst $(TSTDIR)/test_%.c,$(RESULTDIR)/test_%.txt,$(SOURCES_TST))
 TST_DEPS = $(TSTDEPDIR)/*.d
@@ -50,18 +49,18 @@ $(OBJDIR)/%.o : $(SRCDIR)/%.c
 
 test: build_dirs $(TST_RESULTS)
 	@echo "-----------------------"
-	@echo "IGNORE:" `grep -o ':IGNORE' $(RESULTDIR)/*.txt|wc -l`
+	@echo "SKIPPED:" `grep -o '\[  SKIPPED \]' $(RESULTDIR)/*.txt|wc -l`
 	@echo "-----------------------"
-	@grep -s ':IGNORE' $(RESULTDIR)/*.txt || true
+	@grep -s '\[  SKIPPED \]' $(RESULTDIR)/*.txt || true
 	@echo "\n-----------------------"
-	@echo "FAIL:" `grep -o ':FAIL' $(RESULTDIR)/*.txt|wc -l`
+	@echo "FAILED:" `grep -o '\[  FAILED  \]' $(RESULTDIR)/*.txt|wc -l`
 	@echo "-----------------------"
-	@grep -s ':FAIL' $(RESULTDIR)/*.txt || true
+	@grep -s 'FAILED' $(RESULTDIR)/*.txt || true
 	@echo "\n-----------------------"
-	@echo "PASS:" `grep -o ':PASS' $(RESULTDIR)/*.txt|wc -l`
+	@echo "PASSED:" `grep -o '\[       OK \]' $(RESULTDIR)/*.txt|wc -l`
 	@echo "-----------------------"
 	@echo
-	@! grep -s FAIL $(RESULTDIR)/*.txt 2>&1 1>/dev/null
+	@! grep -s '\[  FAILED  \]' $(RESULTDIR)/*.txt 2>&1 1>/dev/null
 
 build_dirs:
 	@mkdir -p $(BUILD_DIRS)
@@ -82,15 +81,10 @@ $(TSTOBJDIR)/%.o : $(SRCDIR)/%.c
 	@$(TST_CC) $(TST_CFLAGS) -c $< -o $@
 	@$(TST_CC) -MM -MT $@ $(TST_CFLAGS) $< > $(TSTDEPDIR)/$*.d
 
-$(TSTOBJDIR)/%.o : $(UNITYDIR)/%.c
-	@echo CC $@
-	@$(TST_CC) $(TST_CFLAGS) -c $< -o $@
-	@$(TST_CC) -MM -MT $@ $(TST_CFLAGS) $< > $(TSTDEPDIR)/$*.d
-
-$(TSTBINDIR)/test_%: $(TSTOBJDIR)/test_%.o $(TSTOBJDIR)/%.o $(TSTOBJDIR)/unity.o
+$(TSTBINDIR)/test_%: $(TSTOBJDIR)/test_%.o $(TSTOBJDIR)/%.o
 	echo $^
 	@echo CC $@
-	$(TST_CC) -o $@ $^
+	$(TST_CC) -o $@ $(TST_CFLAGS) $^ -lcmocka
 
 clean:
 	-rm -f $(OBJ) $(DEPS) $(TST_DEPS) $(TSTOBJDIR)/*.o $(TSTBINDIR)/test_* $(RESULTDIR)/*.txt $(BINDIR/$(TARGET)
