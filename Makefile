@@ -47,11 +47,13 @@ $(TSTBINDIR)/test_http_get_request: $(TSTOBJDIR)/http.o $(TSTOBJDIR)/http-parser
 -include $(TST_DEPS)
 
 $(BINDIR)/$(TARGET): build_dirs $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) -o $@
+	@echo LD $@
+	@$(CC) $(CFLAGS) $(OBJ) -o $@
 
 $(OBJDIR)/%.o : $(SRCDIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
-	$(CC) -MM -MT $@ $(CFLAGS) $< > $(DEPDIR)/$*.d
+	@echo CC $<
+	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) -MM -MT $@ $(CFLAGS) $< > $(DEPDIR)/$*.d
 
 test: build_dirs $(TST_RESULTS)
 	@echo "-----------------------"
