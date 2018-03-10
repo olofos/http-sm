@@ -1,7 +1,14 @@
 #ifndef HTTP_PRIVATE_H_
 #define HTTP_PRIVATE_H_
 
-struct http_request;
+#include <sys/select.h>
+
+#include "http.h"
+
+struct http_server {
+    struct http_request request[HTTP_SERVER_MAX_CONNECTIONS];
+    int fd;
+};
 
 int http_hex_to_int(char c);
 
@@ -12,5 +19,7 @@ int http_begin_request(struct http_request *request);
 int http_open_request_socket(struct http_request *request);
 
 int http_open_listen_socket(int port);
+
+void http_create_select_sets(struct http_server *server, fd_set *set_read, fd_set *set_write, int *maxfd);
 
 #endif

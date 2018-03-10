@@ -485,9 +485,166 @@ static void test__http_open_listen_socket__fails_if_listen_fails(void **states)
 }
 
 
+static void test__http_create_select_sets__can_add_listen_fd(void **states)
+{
+    struct http_server server;
+    int maxfd;
+    fd_set set_read, set_write, set_test;
+
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        server.request[i].fd = -1;
+    }
+    server.fd = 3;
+
+    http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+
+    assert_int_equal(3, maxfd);
+
+    FD_ZERO(&set_test);
+    FD_SET(3, &set_test);
+    assert_memory_equal(&set_test, &set_read, sizeof(set_test));
+    assert_true(FD_ISSET(3, &set_read));
+
+    FD_ZERO(&set_test);
+    assert_memory_equal(&set_test, &set_write, sizeof(set_test));
+}
+
+static void test__http_create_select_sets__can_add_request_fd_less_than_listen_fd_to_read_set(void **states)
+{
+    struct http_server server;
+    int maxfd;
+    fd_set set_read, set_write, set_test;
+
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        server.request[i].fd = -1;
+    }
+    server.fd = 3;
+    server.request[0].fd = 2;
+    server.request[0].state = HTTP_STATE_READ_REQ_METHOD;
+
+    http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+
+    assert_int_equal(3, maxfd);
+
+    FD_ZERO(&set_test);
+    FD_SET(2, &set_test);
+    FD_SET(3, &set_test);
+    assert_memory_equal(&set_test, &set_read, sizeof(set_test));
+
+    FD_ZERO(&set_test);
+    assert_memory_equal(&set_test, &set_write, sizeof(set_test));
+}
+
+static void test__http_create_select_sets__can_add_request_fd_greater_than_listen_fd_to_read_set(void **states)
+{
+    struct http_server server;
+    int maxfd;
+    fd_set set_read, set_write, set_test;
+
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        server.request[i].fd = -1;
+    }
+    server.fd = 3;
+    server.request[0].fd = 5;
+    server.request[0].state = HTTP_STATE_READ_REQ_PATH;
+    server.request[2].fd = 2;
+    server.request[2].state = HTTP_STATE_READ_REQ_QUERY;
+
+    http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+
+    assert_int_equal(5, maxfd);
+
+    FD_ZERO(&set_test);
+    FD_SET(2, &set_test);
+    FD_SET(3, &set_test);
+    FD_SET(5, &set_test);
+    assert_memory_equal(&set_test, &set_read, sizeof(set_test));
+
+    FD_ZERO(&set_test);
+    assert_memory_equal(&set_test, &set_write, sizeof(set_test));
+}
+
+static void test__http_create_select_sets__does_not_add_listen_fd_if_full(void **states)
+{
+    struct http_server server;
+    int maxfd;
+    fd_set set_read, set_write;
+
+    server.fd = 3;
+
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        server.request[i].fd = 3 + 1 + i;
+        server.request[i].state = HTTP_STATE_READ_HEADER;
+    }
+
+    http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+
+    assert_int_equal(3 + HTTP_SERVER_MAX_CONNECTIONS, maxfd);
+
+    assert_false(FD_ISSET(3, &set_read));
+    assert_false(FD_ISSET(3, &set_write));
+}
+
+static void test__http_create_select_sets__can_add_request_fd_to_read_and_write_set(void **states)
+{
+    struct http_server server;
+    int maxfd;
+    fd_set set_read, set_write, set_test;
+
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        server.request[i].fd = -1;
+    }
+    server.fd = 3;
+    server.request[0].fd = 2;
+    server.request[0].state = HTTP_STATE_WRITE;
+    server.request[1].fd = 4;
+    server.request[1].state = HTTP_STATE_READ_RESP_STATUS_DESC;
+
+    http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+
+    assert_int_equal(4, maxfd);
+
+    FD_ZERO(&set_test);
+    FD_SET(3, &set_test);
+    FD_SET(4, &set_test);
+    assert_memory_equal(&set_test, &set_read, sizeof(set_test));
+
+    FD_ZERO(&set_test);
+    FD_SET(2, &set_test);
+    assert_memory_equal(&set_test, &set_write, sizeof(set_test));
+}
+
+void test__http_create_select_sets__does_not_add_nonready_socket_to_sets(void **states)
+{
+    struct http_server server;
+    int maxfd;
+    fd_set set_read, set_write, set_test;
+
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        server.request[i].fd = -1;
+    }
+    server.fd = 3;
+    server.request[0].fd = 2;
+    server.request[0].state = HTTP_STATE_DONE;
+    server.request[1].fd = 4;
+    server.request[1].state = HTTP_STATE_ERROR;
+
+    http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+
+    assert_int_equal(3, maxfd);
+
+    FD_ZERO(&set_test);
+    FD_SET(3, &set_test);
+    assert_memory_equal(&set_test, &set_read, sizeof(set_test));
+
+    FD_ZERO(&set_test);
+    assert_memory_equal(&set_test, &set_write, sizeof(set_test));
+
+}
+
 // Main ////////////////////////////////////////////////////////////////////////
 
-const struct CMUnitTest tests_for_http_open_request_socket[] = {
+const struct CMUnitTest tests_for_http_socket[] = {
     cmocka_unit_test(test__http_open_request_socket__can_open_a_socket),
     cmocka_unit_test(test__http_open_request_socket__can_open_a_socket_with_non_default_port),
     cmocka_unit_test(test__http_open_request_socket__default_port_is_80),
@@ -503,9 +660,17 @@ const struct CMUnitTest tests_for_http_open_request_socket[] = {
     cmocka_unit_test(test__http_open_listen_socket__fails_if_socket_fails),
     cmocka_unit_test(test__http_open_listen_socket__fails_if_bind_fails),
     cmocka_unit_test(test__http_open_listen_socket__fails_if_listen_fails),
+
+    cmocka_unit_test(test__http_create_select_sets__can_add_listen_fd),
+    cmocka_unit_test(test__http_create_select_sets__can_add_request_fd_less_than_listen_fd_to_read_set),
+    cmocka_unit_test(test__http_create_select_sets__can_add_request_fd_greater_than_listen_fd_to_read_set),
+    cmocka_unit_test(test__http_create_select_sets__does_not_add_listen_fd_if_full),
+    cmocka_unit_test(test__http_create_select_sets__can_add_request_fd_to_read_and_write_set),
+    cmocka_unit_test(test__http_create_select_sets__does_not_add_nonready_socket_to_sets),
+
 };
 
 int main(void)
 {
-    return cmocka_run_group_tests(tests_for_http_open_request_socket, NULL, NULL);
+    return cmocka_run_group_tests(tests_for_http_socket, NULL, NULL);
 }

@@ -8,6 +8,17 @@
 #include <netdb.h>
 
 #include "http.h"
+#include "http-private.h"
+
+int server_main(void)
+{
+    int listen_fd = http_open_listen_socket(8080);
+
+
+    return 0;
+}
+
+
 
 int main(void)
 {

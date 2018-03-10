@@ -3,11 +3,13 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 
 #include "http.h"
+#include "http-private.h"
 #include "log.h"
 
 int http_open_request_socket(struct http_request *request)
@@ -101,4 +103,64 @@ int http_open_listen_socket(int port)
     }
 
     return fd;
+}
+
+void http_create_select_sets(struct http_server *server, fd_set *set_read,
+                            fd_set *set_write, int *maxfd)
+{
+    *maxfd = 0;
+
+    FD_ZERO(set_read);
+    FD_ZERO(set_write);
+
+    int num = 0;
+
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        int fd = server->request[i].fd;
+        if(fd >= 0) {
+            if(server->request[i].state & HTTP_STATE_READ) {
+                FD_SET(fd, set_read);
+
+                if(fd > *maxfd) {
+                    *maxfd = fd;
+                    num++;
+                }
+            } else if(server->request[i].state & HTTP_STATE_WRITE) {
+                FD_SET(fd, set_write);
+
+                if(fd > *maxfd) {
+                    *maxfd = fd;
+                    num++;
+                }
+            } else {
+                LOG("Request %d (fd %d) is neither reading nor writing", i, fd);
+            }
+        }
+    }
+
+    if(num < HTTP_SERVER_MAX_CONNECTIONS) {
+        FD_SET(server->fd, set_read);
+
+        if(server->fd > *maxfd) {
+            *maxfd = server->fd;
+        }
+    };
+
+    char buf[64];
+    char *s = buf;
+
+    s += sprintf(s, "Selecting on ( ");
+    for(int i = 0; i <= *maxfd; i++) {
+        if(FD_ISSET(i, set_read)) {
+            s += sprintf(s, "%d ", i);
+        }
+    }
+    s += sprintf(s, ") ( ");
+    for(int i = 0; i <= *maxfd; i++) {
+        if(FD_ISSET(i, set_write)) {
+            s += sprintf(s, "%d ", i);
+        }
+    }
+    s += sprintf(s, ")");
+    LOG(buf);
 }
