@@ -121,6 +121,7 @@ static void test__http_open__can_open_a_socket(void **states)
 
     int fd = http_open(&request);
     assert_int_not_equal(-1, fd);
+    assert_int_equal(3, request.fd);
 }
 
 

@@ -61,5 +61,6 @@ int http_open(struct http_request *request)
 
     freeaddrinfo(res);
 
+    request->fd = s;
     return s;
 }
