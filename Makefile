@@ -1,4 +1,4 @@
-SOURCES := main.c http-parser.c log.c
+SOURCES := main.c http-parser.c http-io.c http-socket.c http-util.c http.c log.c
 
 TARGET=http-test
 
@@ -21,7 +21,7 @@ DEPS := $(SOURCES:%.c=$(DEPDIR)/%.d)
 SOURCES_TST = $(wildcard $(TSTDIR)/*.c)
 
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer
 
 
 TST_CC = gcc
