@@ -371,6 +371,19 @@ static void test__http_open__returns_minus_one_if_connect_fails(void **states)
     assert_int_equal(-1, fd);
 }
 
+static void test__http_close__closes_the_socket(void **states)
+{
+    struct http_request request = {
+        .fd = 3,
+    };
+
+    expect_value(close, fd, 3);
+    will_return(close, 0);
+
+    int ret = http_close(&request);
+    assert_int_equal(0, ret);
+}
+
 // Main ////////////////////////////////////////////////////////////////////////
 
 const struct CMUnitTest tests_for_http_open[] = {
@@ -381,6 +394,8 @@ const struct CMUnitTest tests_for_http_open[] = {
     cmocka_unit_test(test__http_open__returns_minus_one_if_getaddrinfo_gives_null_res),
     cmocka_unit_test(test__http_open__returns_minus_one_if_socket_fails),
     cmocka_unit_test(test__http_open__returns_minus_one_if_connect_fails),
+
+    cmocka_unit_test(test__http_close__closes_the_socket),
 };
 
 int main(void)

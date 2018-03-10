@@ -64,3 +64,9 @@ int http_open(struct http_request *request)
     request->fd = s;
     return s;
 }
+
+int http_close(struct http_request *request)
+{
+    close(request->fd);
+    return 0;
+}
