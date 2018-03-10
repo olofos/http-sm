@@ -53,6 +53,10 @@ int http_get_request(struct http_request *request)
         }
     }
 
+    free(request->line);
+    request->line = 0;
+    request->line_len = 0;
+
     request->state = HTTP_STATE_READ_BODY;
 
     return 1;
