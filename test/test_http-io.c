@@ -544,6 +544,21 @@ static void test__http_end_headers__sends_new_line(void **states)
     close(fd);
 }
 
+static void test__http_set_content_length__sets_variable_and_sends_header(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request = {
+        .fd = fd,
+        .content_length = -1,
+    };
+
+    http_set_content_length(&request, 10);
+    assert_int_equal(request.content_length, 10);
+    assert_string_equal("Content-Length: 10\r\n", get_file_content(fd));
+}
+
 // Main ////////////////////////////////////////////////////////////////////////
 
 const struct CMUnitTest tests_for_http_io[] = {
@@ -577,6 +592,8 @@ const struct CMUnitTest tests_for_http_io[] = {
     cmocka_unit_test(test__http_begin_request__sends_user_agent_header),
 
     cmocka_unit_test(test__http_end_headers__sends_new_line),
+
+    cmocka_unit_test(test__http_set_content_length__sets_variable_and_sends_header),
 };
 
 int main(void)

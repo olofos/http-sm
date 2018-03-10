@@ -196,3 +196,13 @@ void http_end_header(struct http_request *request)
 {
     write_string(request->fd, "\r\n");
 }
+
+void http_set_content_length(struct http_request *request, int length)
+{
+    request->content_length = length;
+
+    char buf[12];
+    snprintf(buf, sizeof(buf), "%d", length);
+
+    http_write_header(request, "Content-Length", buf);
+}
