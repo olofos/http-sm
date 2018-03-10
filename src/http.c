@@ -13,12 +13,14 @@ int http_get_request(struct http_request *request)
     err = http_open(request);
     if(err < 0) {
         LOG("http_open failed");
+        request->state = HTTP_STATE_ERROR;
         return err;
     }
 
     err = http_begin_request(request);
     if(err < 0) {
         LOG("http_begin_request failed");
+        request->state = HTTP_STATE_ERROR;
         return err;
     }
 
@@ -37,9 +39,12 @@ int http_get_request(struct http_request *request)
         int c;
         int ret = read(request->fd, &c, 1);
 
-        if(ret < 0) {
-            return -1;
-        } else if(ret == 0) {
+        if(ret <= 0) {
+            free(request->line);
+            request->line = 0;
+            request->line_len = 0;
+            request->state = HTTP_STATE_ERROR;
+
             return -1;
         } else {
             http_parse_header(request, c);
