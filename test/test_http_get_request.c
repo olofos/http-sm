@@ -24,7 +24,7 @@ void LOG(const char *fmt, ...)
 }
 
 
-int http_open(struct http_request *request)
+int http_open_request_socket(struct http_request *request)
 {
     check_expected(request);
     return mock();
@@ -60,8 +60,8 @@ static void test__http_get_request__parses_http_headers(void **states)
         .fd = fd,
     };
 
-    expect_any(http_open, request);
-    will_return(http_open, 1);
+    expect_any(http_open_request_socket, request);
+    will_return(http_open_request_socket, 1);
 
     expect_any(http_begin_request, request);
     will_return(http_begin_request, 1);
@@ -80,7 +80,7 @@ static void test__http_get_request__parses_http_headers(void **states)
     close(fd);
 }
 
-static void test__http_get_request__returns_minus_one_if_http_open_fails(void **states)
+static void test__http_get_request__returns_minus_one_if_http_open_request_socket_fails(void **states)
 {
     const char *reply =
         "HTTP/1.1 200 OK\r\n"
@@ -98,8 +98,8 @@ static void test__http_get_request__returns_minus_one_if_http_open_fails(void **
         .fd = fd,
     };
 
-    expect_any(http_open, request);
-    will_return(http_open, -1);
+    expect_any(http_open_request_socket, request);
+    will_return(http_open_request_socket, -1);
 
     int ret = http_get_request(&request);
 
@@ -129,8 +129,8 @@ static void test__http_get_request__returns_minus_one_if_http_begin_request_fail
         .fd = fd,
     };
 
-    expect_any(http_open, request);
-    will_return(http_open, 1);
+    expect_any(http_open_request_socket, request);
+    will_return(http_open_request_socket, 1);
 
     expect_any(http_begin_request, request);
     will_return(http_begin_request, -1);
@@ -161,8 +161,8 @@ static void test__http_get_request__returns_minus_one_if_header_is_incomplete(vo
         .fd = fd,
     };
 
-    expect_any(http_open, request);
-    will_return(http_open, 1);
+    expect_any(http_open_request_socket, request);
+    will_return(http_open_request_socket, 1);
 
     expect_any(http_begin_request, request);
     will_return(http_begin_request, 1);
@@ -181,7 +181,7 @@ static void test__http_get_request__returns_minus_one_if_header_is_incomplete(vo
 
 const struct CMUnitTest tests_for_http_get_request[] = {
     cmocka_unit_test(test__http_get_request__parses_http_headers),
-    cmocka_unit_test(test__http_get_request__returns_minus_one_if_http_open_fails),
+    cmocka_unit_test(test__http_get_request__returns_minus_one_if_http_open_request_socket_fails),
     cmocka_unit_test(test__http_get_request__returns_minus_one_if_http_begin_request_fails),
     cmocka_unit_test(test__http_get_request__returns_minus_one_if_header_is_incomplete),
 };

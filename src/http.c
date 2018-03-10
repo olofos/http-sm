@@ -10,9 +10,9 @@ int http_get_request(struct http_request *request)
 {
     int err;
 
-    err = http_open(request);
+    err = http_open_request_socket(request);
     if(err < 0) {
-        LOG("http_open failed");
+        LOG("http_open_request_socket failed");
         request->state = HTTP_STATE_ERROR;
         return err;
     }

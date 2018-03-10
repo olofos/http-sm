@@ -71,7 +71,7 @@ int close(int fd)
 // Tests ///////////////////////////////////////////////////////////////////////
 
 
-static void test__http_open__can_open_a_socket(void **states)
+static void test__http_open_request_socket__can_open_a_socket(void **states)
 {
     struct http_request request = {
         .host = "www.example.com",
@@ -120,13 +120,13 @@ static void test__http_open__can_open_a_socket(void **states)
     expect_value(connect, addrlen, res.ai_addrlen);
     will_return(connect, 0);
 
-    int fd = http_open(&request);
+    int fd = http_open_request_socket(&request);
     assert_int_not_equal(-1, fd);
     assert_int_equal(3, request.fd);
 }
 
 
-static void test__http_open__can_open_a_socket_with_non_default_port(void **states)
+static void test__http_open_request_socket__can_open_a_socket_with_non_default_port(void **states)
 {
     struct http_request request = {
         .host = "www.example.com",
@@ -170,12 +170,12 @@ static void test__http_open__can_open_a_socket_with_non_default_port(void **stat
     expect_any(connect, addrlen);
     will_return(connect, 0);
 
-    int fd = http_open(&request);
+    int fd = http_open_request_socket(&request);
     assert_int_not_equal(-1, fd);
 }
 
 
-static void test__http_open__default_port_is_80(void **states)
+static void test__http_open_request_socket__default_port_is_80(void **states)
 {
     struct http_request request = {
         .host = "www.example.com",
@@ -218,12 +218,12 @@ static void test__http_open__default_port_is_80(void **states)
     expect_any(connect, addrlen);
     will_return(connect, 0);
 
-    int fd = http_open(&request);
+    int fd = http_open_request_socket(&request);
     assert_int_not_equal(-1, fd);
 }
 
 
-static void test__http_open__returns_minus_one_if_getaddrinfo_returns_error(void **states)
+static void test__http_open_request_socket__returns_minus_one_if_getaddrinfo_returns_error(void **states)
 {
     struct http_request request = {
         .host = "www.example.com",
@@ -256,11 +256,11 @@ static void test__http_open__returns_minus_one_if_getaddrinfo_returns_error(void
 
     expect_value(freeaddrinfo, res, getaddrinfo_res);
 
-    int fd = http_open(&request);
+    int fd = http_open_request_socket(&request);
     assert_int_equal(-1, fd);
 }
 
-static void test__http_open__returns_minus_one_if_getaddrinfo_gives_null_res(void **states)
+static void test__http_open_request_socket__returns_minus_one_if_getaddrinfo_gives_null_res(void **states)
 {
     struct http_request request = {
         .host = "www.example.com",
@@ -276,11 +276,11 @@ static void test__http_open__returns_minus_one_if_getaddrinfo_gives_null_res(voi
     expect_any(getaddrinfo, hints);
     will_return(getaddrinfo, 0);
 
-    int fd = http_open(&request);
+    int fd = http_open_request_socket(&request);
     assert_int_equal(-1, fd);
 }
 
-static void test__http_open__returns_minus_one_if_socket_fails(void **states)
+static void test__http_open_request_socket__returns_minus_one_if_socket_fails(void **states)
 {
     struct http_request request = {
         .host = "www.example.com",
@@ -318,11 +318,11 @@ static void test__http_open__returns_minus_one_if_socket_fails(void **states)
 
     expect_value(freeaddrinfo, res, getaddrinfo_res);
 
-    int fd = http_open(&request);
+    int fd = http_open_request_socket(&request);
     assert_int_equal(-1, fd);
 }
 
-static void test__http_open__returns_minus_one_if_connect_fails(void **states)
+static void test__http_open_request_socket__returns_minus_one_if_connect_fails(void **states)
 {
     struct http_request request = {
         .host = "www.example.com",
@@ -368,7 +368,7 @@ static void test__http_open__returns_minus_one_if_connect_fails(void **states)
 
     expect_value(freeaddrinfo, res, getaddrinfo_res);
 
-    int fd = http_open(&request);
+    int fd = http_open_request_socket(&request);
     assert_int_equal(-1, fd);
 }
 
@@ -387,19 +387,19 @@ static void test__http_close__closes_the_socket(void **states)
 
 // Main ////////////////////////////////////////////////////////////////////////
 
-const struct CMUnitTest tests_for_http_open[] = {
-    cmocka_unit_test(test__http_open__can_open_a_socket),
-    cmocka_unit_test(test__http_open__can_open_a_socket_with_non_default_port),
-    cmocka_unit_test(test__http_open__default_port_is_80),
-    cmocka_unit_test(test__http_open__returns_minus_one_if_getaddrinfo_returns_error),
-    cmocka_unit_test(test__http_open__returns_minus_one_if_getaddrinfo_gives_null_res),
-    cmocka_unit_test(test__http_open__returns_minus_one_if_socket_fails),
-    cmocka_unit_test(test__http_open__returns_minus_one_if_connect_fails),
+const struct CMUnitTest tests_for_http_open_request_socket[] = {
+    cmocka_unit_test(test__http_open_request_socket__can_open_a_socket),
+    cmocka_unit_test(test__http_open_request_socket__can_open_a_socket_with_non_default_port),
+    cmocka_unit_test(test__http_open_request_socket__default_port_is_80),
+    cmocka_unit_test(test__http_open_request_socket__returns_minus_one_if_getaddrinfo_returns_error),
+    cmocka_unit_test(test__http_open_request_socket__returns_minus_one_if_getaddrinfo_gives_null_res),
+    cmocka_unit_test(test__http_open_request_socket__returns_minus_one_if_socket_fails),
+    cmocka_unit_test(test__http_open_request_socket__returns_minus_one_if_connect_fails),
 
     cmocka_unit_test(test__http_close__closes_the_socket),
 };
 
 int main(void)
 {
-    return cmocka_run_group_tests(tests_for_http_open, NULL, NULL);
+    return cmocka_run_group_tests(tests_for_http_open_request_socket, NULL, NULL);
 }

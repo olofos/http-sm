@@ -10,7 +10,7 @@
 #include "http.h"
 #include "log.h"
 
-int http_open(struct http_request *request)
+int http_open_request_socket(struct http_request *request)
 {
     const struct addrinfo hints = {
         .ai_family = AF_UNSPEC,
