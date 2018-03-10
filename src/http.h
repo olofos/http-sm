@@ -8,6 +8,8 @@
 #define HTTP_USER_AGENT "esp8266-http/0.1"
 #endif
 
+#define HTTP_SERVER_MAX_CONNECTIONS 3
+
 enum http_state
 {
     HTTP_STATE_DONE                  = 0x00,

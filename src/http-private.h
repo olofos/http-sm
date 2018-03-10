@@ -11,4 +11,6 @@ int http_begin_request(struct http_request *request);
 
 int http_open_request_socket(struct http_request *request);
 
+int http_open_listen_socket(int port);
+
 #endif

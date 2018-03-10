@@ -70,3 +70,35 @@ int http_close(struct http_request *request)
     close(request->fd);
     return 0;
 }
+
+int http_open_listen_socket(int port)
+{
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if(fd < 0) {
+        perror("socket");
+        return -1;
+    }
+
+    const struct sockaddr_in addr = {
+        .sin_family = AF_INET,
+        .sin_addr = {
+            .s_addr = INADDR_ANY,
+        },
+        .sin_port = htons(port),
+    };
+
+    if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        perror("bind");
+        close(fd);
+        return -1;
+    }
+
+    if(listen(fd, HTTP_SERVER_MAX_CONNECTIONS) < 0) {
+        perror("listen");
+        close(fd);
+        return -1;
+    }
+
+    return fd;
+}

@@ -68,6 +68,23 @@ int close(int fd)
     return mock();
 }
 
+int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
+{
+    check_expected(sockfd);
+    check_expected(addr);
+    check_expected(addrlen);
+
+    return mock();
+}
+
+int listen(int sockfd, int backlog)
+{
+    check_expected(sockfd);
+    check_expected(backlog);
+    return mock();
+}
+
+
 // Tests ///////////////////////////////////////////////////////////////////////
 
 
@@ -385,6 +402,89 @@ static void test__http_close__closes_the_socket(void **states)
     assert_int_equal(0, ret);
 }
 
+
+static void test__http_open_listen_socket__opens_and_binds_and_listens(void **states)
+{
+    expect_value(socket, domain, AF_INET);
+    expect_value(socket, type, SOCK_STREAM);
+    expect_value(socket, protocol, 0);
+    will_return(socket, 3);
+
+    const struct sockaddr_in expected_addr = {
+        .sin_family = AF_INET,
+        .sin_addr = {
+            .s_addr = INADDR_ANY,
+        },
+        .sin_port = htons(8080),
+    };
+
+    expect_value(bind, sockfd, 3);
+    expect_memory(bind, addr, &expected_addr, sizeof(expected_addr));
+    expect_value(bind, addrlen, sizeof(expected_addr));
+    will_return(bind, 0);
+
+    expect_value(listen, sockfd, 3);
+    expect_value(listen, backlog, HTTP_SERVER_MAX_CONNECTIONS);
+    will_return(listen, 0);
+
+    int fd = http_open_listen_socket(8080);
+    assert_int_equal(3, fd);
+}
+
+static void test__http_open_listen_socket__fails_if_socket_fails(void **states)
+{
+    expect_any(socket, domain);
+    expect_any(socket, type);
+    expect_any(socket, protocol);
+    will_return(socket, -1);
+
+    int fd = http_open_listen_socket(80);
+    assert_int_equal(-1, fd);
+}
+
+static void test__http_open_listen_socket__fails_if_bind_fails(void **states)
+{
+    expect_any(socket, domain);
+    expect_any(socket, type);
+    expect_any(socket, protocol);
+    will_return(socket, 3);
+
+    expect_any(bind, sockfd);
+    expect_any(bind, addr);
+    expect_any(bind, addrlen);
+    will_return(bind, -1);
+
+    expect_value(close, fd, 3);
+    will_return(close, 0);
+
+    int fd = http_open_listen_socket(80);
+    assert_int_equal(-1, fd);
+}
+
+static void test__http_open_listen_socket__fails_if_listen_fails(void **states)
+{
+    expect_any(socket, domain);
+    expect_any(socket, type);
+    expect_any(socket, protocol);
+    will_return(socket, 3);
+
+    expect_any(bind, sockfd);
+    expect_any(bind, addr);
+    expect_any(bind, addrlen);
+    will_return(bind, 0);
+
+    expect_any(listen, sockfd);
+    expect_any(listen, backlog);
+    will_return(listen, -1);
+
+    expect_value(close, fd, 3);
+    will_return(close, 0);
+
+    int fd = http_open_listen_socket(80);
+    assert_int_equal(-1, fd);
+}
+
+
 // Main ////////////////////////////////////////////////////////////////////////
 
 const struct CMUnitTest tests_for_http_open_request_socket[] = {
@@ -397,6 +497,12 @@ const struct CMUnitTest tests_for_http_open_request_socket[] = {
     cmocka_unit_test(test__http_open_request_socket__returns_minus_one_if_connect_fails),
 
     cmocka_unit_test(test__http_close__closes_the_socket),
+
+    cmocka_unit_test(test__http_open_listen_socket__opens_and_binds_and_listens),
+
+    cmocka_unit_test(test__http_open_listen_socket__fails_if_socket_fails),
+    cmocka_unit_test(test__http_open_listen_socket__fails_if_bind_fails),
+    cmocka_unit_test(test__http_open_listen_socket__fails_if_listen_fails),
 };
 
 int main(void)
