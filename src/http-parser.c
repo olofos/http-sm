@@ -136,14 +136,18 @@ void http_parse_header(struct http_request *request, char c)
 
                 char *val;
 
-                if((val = cmp_str_prefix(request->line, "Host: ")) != 0) {
-                    request->host = malloc(strlen(val) + 1);
-                    strcpy(request->host, val);
-                } else if((val = cmp_str_prefix(request->line, "Accept-Encoding: ")) != 0) {
-                    if(strstr(val, "gzip") != 0) {
-                        request->flags |= HTTP_FLAG_ACCEPT_GZIP;
+                if(request->flags & HTTP_FLAG_REQUEST) {
+                    if((val = cmp_str_prefix(request->line, "Host: ")) != 0) {
+                        request->host = malloc(strlen(val) + 1);
+                        strcpy(request->host, val);
+                    } else if((val = cmp_str_prefix(request->line, "Accept-Encoding: ")) != 0) {
+                        if(strstr(val, "gzip") != 0) {
+                            request->flags |= HTTP_FLAG_ACCEPT_GZIP;
+                        }
                     }
-                } else if((val = cmp_str_prefix(request->line, "Transfer-Encoding: ")) != 0) {
+                }
+
+                if((val = cmp_str_prefix(request->line, "Transfer-Encoding: ")) != 0) {
                     if(strstr(val, "chunked") != 0) {
                         request->flags |= HTTP_FLAG_CHUNKED;
                     }
