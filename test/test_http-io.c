@@ -521,6 +521,27 @@ void test__http_begin_request__sends_user_agent_header(void **states)
     close(fd);
 }
 
+
+static void test__http_end_headers__sends_double_new_line(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request = {
+        .fd = fd,
+        .method = HTTP_METHOD_GET,
+        .host = "www.example.com",
+        .path = "/",
+        .query = "a=1",
+        .port = 80,
+    };
+
+    http_end_header(&request);
+    assert_string_contains_substring("\r\n\r\n", get_file_content(fd));
+
+    close(fd);
+}
+
 // Main ////////////////////////////////////////////////////////////////////////
 
 const struct CMUnitTest tests_for_http_io[] = {
@@ -552,6 +573,8 @@ const struct CMUnitTest tests_for_http_io[] = {
     cmocka_unit_test(test__http_begin_request__has_GET_as_default_method),
     cmocka_unit_test(test__http_begin_request__writes_the_POST_request_line),
     cmocka_unit_test(test__http_begin_request__sends_user_agent_header),
+
+    cmocka_unit_test(test__http_end_headers__sends_double_new_line),
 };
 
 int main(void)
