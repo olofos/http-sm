@@ -194,5 +194,5 @@ int http_begin_request(struct http_request *request)
 
 void http_end_header(struct http_request *request)
 {
-    write(request->fd, "\r\n", 4);
+    write(request->fd, "\r\n", 2);
 }
