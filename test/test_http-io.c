@@ -522,7 +522,7 @@ void test__http_begin_request__sends_user_agent_header(void **states)
 }
 
 
-static void test__http_end_headers__sends_double_new_line(void **states)
+static void test__http_end_headers__sends_new_line(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -537,7 +537,7 @@ static void test__http_end_headers__sends_double_new_line(void **states)
     };
 
     http_end_header(&request);
-    assert_string_contains_substring("\r\n\r\n", get_file_content(fd));
+    assert_string_equal("\r\n", get_file_content(fd));
 
     close(fd);
 }
@@ -574,7 +574,7 @@ const struct CMUnitTest tests_for_http_io[] = {
     cmocka_unit_test(test__http_begin_request__writes_the_POST_request_line),
     cmocka_unit_test(test__http_begin_request__sends_user_agent_header),
 
-    cmocka_unit_test(test__http_end_headers__sends_double_new_line),
+    cmocka_unit_test(test__http_end_headers__sends_new_line),
 };
 
 int main(void)
