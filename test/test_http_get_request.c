@@ -48,17 +48,8 @@ static void test__http_get_request__parses_http_headers(void **states)
 {
     const char *reply =
         "HTTP/1.1 200 OK\r\n"
-        "Content-Encoding: gzip\r\n"
         "Accept-Ranges: bytes\r\n"
-        "Cache-Control: max-age=604800\r\n"
         "Content-Type: text/html\r\n"
-        "Date: Sat, 10 Mar 2018 07:15:30 GMT\r\n"
-        "Etag: \"1541025663+gzip\"\r\n"
-        "Expires: Sat, 17 Mar 2018 07:15:30 GMT\r\n"
-        "Last-Modified: Fri, 09 Aug 2013 23:54:35 GMT\r\n"
-        "Server: ECS (dca/532B)\r\n"
-        "Vary: Accept-Encoding\r\n"
-        "X-Cache: HIT\r\n"
         "Content-Length: 606\r\n"
         "\r\n";
 
