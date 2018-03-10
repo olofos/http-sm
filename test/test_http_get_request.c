@@ -13,8 +13,6 @@
 
 static int open_tmp_file(void);
 static int write_tmp_file(const char *s);
-static int write_tmp_file_n(const char *s[]);
-
 
 void LOG(const char *fmt, ...)
 {
@@ -132,27 +130,6 @@ static int write_tmp_file(const char *s)
 
     if(write_string(fd, s) < 0) {
         return -1;
-    }
-
-    if(lseek(fd, SEEK_SET, 0) != 0) {
-        return -1;
-    }
-
-    return fd;
-}
-
-static int write_tmp_file_n(const char *s[])
-{
-    int fd = open_tmp_file();
-    if(fd < 0) {
-        return fd;
-    }
-
-    while(*s) {
-        if(write_string(fd, *s++) < 0)
-        {
-            return -1;
-        }
     }
 
     if(lseek(fd, SEEK_SET, 0) != 0) {
