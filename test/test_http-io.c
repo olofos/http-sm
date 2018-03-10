@@ -14,6 +14,8 @@
 #include <cmocka.h>
 
 #include "http.h"
+#include "http-private.h"
+
 
 static pid_t child_pid;
 

@@ -85,16 +85,11 @@ struct http_request
     uint16_t port;
 };
 
-void http_parse_header(struct http_request *request, char c);
-
 int http_getc(struct http_request *request);
 int http_peek(struct http_request *request);
 
-int http_urldecode(char *dest, const char* src, int max_len);
-
 const char *http_get_query_arg(struct http_request *request, const char *name);
 
-int http_begin_request(struct http_request *request);
 void http_write_header(struct http_request *request, const char *name, const char *value);
 void http_end_header(struct http_request *request);
 
