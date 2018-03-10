@@ -128,8 +128,6 @@ void http_parse_header(struct http_request *request, char c)
         if(c == '\r') {
             request->line[request->line_index] = 0;
 
-            LOG("line = \"%s\"", escaped_string(request->line));
-
             if(request->line_index == 0) {
                 http_parse_header_next_state(request, HTTP_STATE_DONE | HTTP_STATE_READ_NL);
             } else {

@@ -16,20 +16,13 @@ int http_get_request(struct http_request *request)
         return err;
     }
 
-    LOG("http_open");
-
     err = http_begin_request(request);
     if(err < 0) {
         LOG("http_begin_request failed");
         return err;
     }
 
-    LOG("http_begin_request");
-
     http_end_header(request);
-
-    LOG("http_end_header");
-
 
     request->poke = -1;
     request->content_length = -1;
