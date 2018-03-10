@@ -20,6 +20,6 @@ int http_open_request_socket(struct http_request *request);
 
 int http_open_listen_socket(int port);
 
-void http_create_select_sets(struct http_server *server, fd_set *set_read, fd_set *set_write, int *maxfd);
+int http_create_select_sets(struct http_server *server, fd_set *set_read, fd_set *set_write, int *maxfd);
 
 #endif

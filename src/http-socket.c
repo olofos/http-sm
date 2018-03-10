@@ -105,7 +105,7 @@ int http_open_listen_socket(int port)
     return fd;
 }
 
-void http_create_select_sets(struct http_server *server, fd_set *set_read,
+int http_create_select_sets(struct http_server *server, fd_set *set_read,
                             fd_set *set_write, int *maxfd)
 {
     *maxfd = 0;
@@ -118,19 +118,18 @@ void http_create_select_sets(struct http_server *server, fd_set *set_read,
     for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
         int fd = server->request[i].fd;
         if(fd >= 0) {
+            num++;
             if(server->request[i].state & HTTP_STATE_READ) {
                 FD_SET(fd, set_read);
 
                 if(fd > *maxfd) {
                     *maxfd = fd;
-                    num++;
                 }
             } else if(server->request[i].state & HTTP_STATE_WRITE) {
                 FD_SET(fd, set_write);
 
                 if(fd > *maxfd) {
                     *maxfd = fd;
-                    num++;
                 }
             } else {
                 LOG("Request %d (fd %d) is neither reading nor writing", i, fd);
@@ -163,4 +162,6 @@ void http_create_select_sets(struct http_server *server, fd_set *set_read,
     }
     s += sprintf(s, ")");
     LOG(buf);
+
+    return num;
 }

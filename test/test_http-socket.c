@@ -522,9 +522,10 @@ static void test__http_create_select_sets__can_add_request_fd_less_than_listen_f
     server.request[0].fd = 2;
     server.request[0].state = HTTP_STATE_READ_REQ_METHOD;
 
-    http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+    int n = http_create_select_sets(&server, &set_read, &set_write, &maxfd);
 
     assert_int_equal(3, maxfd);
+    assert_int_equal(1, n);
 
     FD_ZERO(&set_test);
     FD_SET(2, &set_test);
@@ -550,9 +551,10 @@ static void test__http_create_select_sets__can_add_request_fd_greater_than_liste
     server.request[2].fd = 2;
     server.request[2].state = HTTP_STATE_READ_REQ_QUERY;
 
-    http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+    int n = http_create_select_sets(&server, &set_read, &set_write, &maxfd);
 
     assert_int_equal(5, maxfd);
+    assert_int_equal(2, n);
 
     FD_ZERO(&set_test);
     FD_SET(2, &set_test);
@@ -577,9 +579,10 @@ static void test__http_create_select_sets__does_not_add_listen_fd_if_full(void *
         server.request[i].state = HTTP_STATE_READ_HEADER;
     }
 
-    http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+    int n = http_create_select_sets(&server, &set_read, &set_write, &maxfd);
 
     assert_int_equal(3 + HTTP_SERVER_MAX_CONNECTIONS, maxfd);
+    assert_int_equal(HTTP_SERVER_MAX_CONNECTIONS, n);
 
     assert_false(FD_ISSET(3, &set_read));
     assert_false(FD_ISSET(3, &set_write));
@@ -600,9 +603,10 @@ static void test__http_create_select_sets__can_add_request_fd_to_read_and_write_
     server.request[1].fd = 4;
     server.request[1].state = HTTP_STATE_READ_RESP_STATUS_DESC;
 
-    http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+    int n = http_create_select_sets(&server, &set_read, &set_write, &maxfd);
 
     assert_int_equal(4, maxfd);
+    assert_int_equal(2, n);
 
     FD_ZERO(&set_test);
     FD_SET(3, &set_test);
@@ -629,9 +633,10 @@ void test__http_create_select_sets__does_not_add_nonready_socket_to_sets(void **
     server.request[1].fd = 4;
     server.request[1].state = HTTP_STATE_ERROR;
 
-    http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+    int n = http_create_select_sets(&server, &set_read, &set_write, &maxfd);
 
     assert_int_equal(3, maxfd);
+    assert_int_equal(2, n);
 
     FD_ZERO(&set_test);
     FD_SET(3, &set_test);
