@@ -100,4 +100,6 @@ void http_end_header(struct http_request *request);
 int http_open(struct http_request *request);
 int http_close(struct http_request *request);
 
+int http_get_request(struct http_request *request);
+
 #endif
