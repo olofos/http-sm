@@ -744,6 +744,47 @@ static void test__http_accept_new_connection__fails_if_accept_fails(void **state
 
     assert_int_equal(-1, fd);
 }
+
+static void test__http_accept_new_connection__initialises_the_new_request(void **states)
+{
+    struct http_server server;
+
+    memset(&server, 0x55, sizeof(server));
+
+    server.fd = 3;
+
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        server.request[i].fd = -1;
+    }
+
+    socklen_t expected_len = sizeof(struct sockaddr_in);
+
+    expect_value(accept, sockfd, 3);
+    expect_any(accept, addr);
+    expect_memory(accept, addrlen, &expected_len, sizeof(socklen_t));
+    will_return(accept, 4);
+
+    int fd = http_accept_new_connection(&server);
+
+    assert_int_equal(4, fd);
+
+    assert_int_equal(server.request[0].fd, 4);
+    assert_int_equal(server.request[0].state, HTTP_STATE_READ_REQ_METHOD);
+    assert_int_equal(server.request[0].flags, HTTP_FLAG_REQUEST);
+    assert_null(server.request[0].path);
+    assert_null(server.request[0].query);
+    assert_null(server.request[0].host);
+    assert_null(server.request[0].line);
+    assert_int_equal(server.request[0].line_len, 0);
+    assert_null(server.request[0].query_list);
+    assert_int_equal(server.request[0].content_length, -1);
+    assert_int_equal(server.request[0].poke, -1);
+    assert_int_equal(server.request[0].chunk_length, 0);
+    assert_int_equal(server.request[0].method, HTTP_METHOD_UNKNOWN);
+    assert_int_equal(server.request[0].status, 0);
+    assert_int_equal(server.request[0].error, 0);
+}
+
 // Main ////////////////////////////////////////////////////////////////////////
 
 const struct CMUnitTest tests_for_http_socket[] = {
@@ -774,6 +815,7 @@ const struct CMUnitTest tests_for_http_socket[] = {
     cmocka_unit_test(test__http_accept_new_connection__accepts_new_connection_when_all_slots_are_empty),
     cmocka_unit_test(test__http_accept_new_connection__accepts_new_connection_when_not_all_slots_are_empty),
     cmocka_unit_test(test__http_accept_new_connection__fails_if_accept_fails),
+    cmocka_unit_test(test__http_accept_new_connection__initialises_the_new_request),
 };
 
 int main(void)

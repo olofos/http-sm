@@ -198,7 +198,23 @@ int http_accept_new_connection(struct http_server *server)
     uint32_t remote_ip = ntohl(addr.sin_addr.s_addr);
     LOG("Connection %d from %d.%d.%d.%d:%d", fd, IP2STR(remote_ip), addr.sin_port);
 
-    server->request[i].fd = fd;
+    struct http_request *request = &server->request[i];
+
+    request->fd = fd;
+    request->state = HTTP_STATE_READ_REQ_METHOD;
+    request->flags = HTTP_FLAG_REQUEST;
+    request->path = 0;
+    request->query = 0;
+    request->host = 0;
+    request->line = 0;
+    request->line_len = 0;
+    request->query_list = 0;
+    request->content_length = -1;
+    request->poke = -1;
+    request->method = HTTP_METHOD_UNKNOWN;
+    request->status = 0;
+    request->error = 0;
+    request->chunk_length = 0;
 
     return fd;
 }
