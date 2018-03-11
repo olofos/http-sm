@@ -84,6 +84,20 @@ int listen(int sockfd, int backlog)
     return mock();
 }
 
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+    check_expected(sockfd);
+    check_expected(addr);
+    check_expected(addrlen);
+
+    struct sockaddr_in * addr_in = (struct sockaddr_in *)addr;
+    addr_in->sin_family = AF_INET;
+    addr_in->sin_port = 1234;
+    addr_in->sin_addr.s_addr = (4 << 24) | (1 << 16) | (168 << 8) | (192 << 0);
+
+    return mock();
+}
+
 
 // Tests ///////////////////////////////////////////////////////////////////////
 
@@ -644,9 +658,92 @@ void test__http_create_select_sets__does_not_add_nonready_socket_to_sets(void **
 
     FD_ZERO(&set_test);
     assert_memory_equal(&set_test, &set_write, sizeof(set_test));
-
 }
 
+
+static void test__http_accept_new_connection__accepts_new_connection_when_all_slots_are_empty(void **states)
+{
+    struct http_server server = {
+        .fd = 3
+    };
+
+    server.request[0].fd = 1;
+    for(int i = 1; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        server.request[i].fd = -1;
+    }
+
+    socklen_t expected_len = sizeof(struct sockaddr_in);
+
+    expect_value(accept, sockfd, 3);
+    expect_any(accept, addr);
+    expect_memory(accept, addrlen, &expected_len, sizeof(socklen_t));
+    will_return(accept, 4);
+
+    int fd = http_accept_new_connection(&server);
+
+    assert_int_equal(4, fd);
+    assert_int_equal(4, server.request[1].fd);
+}
+
+static void test__http_accept_new_connection__accepts_new_connection_when_not_all_slots_are_empty(void **states)
+{
+    struct http_server server = {
+        .fd = 3
+    };
+
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        server.request[i].fd = -1;
+    }
+
+    socklen_t expected_len = sizeof(struct sockaddr_in);
+
+    expect_value(accept, sockfd, 3);
+    expect_any(accept, addr);
+    expect_memory(accept, addrlen, &expected_len, sizeof(socklen_t));
+    will_return(accept, 4);
+
+    int fd = http_accept_new_connection(&server);
+
+    assert_int_equal(4, fd);
+    assert_int_equal(4, server.request[0].fd);
+}
+
+static void test__http_accept_new_connection__fails_if_there_are_no_empty_slot(void **states)
+{
+    struct http_server server = {
+        .fd = 3
+    };
+
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        server.request[i].fd = 3 + 1 + i;
+    }
+
+    int fd = http_accept_new_connection(&server);
+
+    assert_int_equal(-1, fd);
+}
+static void test__http_accept_new_connection__fails_if_accept_fails(void **states)
+{
+    struct http_server server = {
+        .fd = 3
+    };
+
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        server.request[i].fd = -1;
+    }
+    expect_any(accept, sockfd);
+    expect_any(accept, addr);
+    expect_any(accept, addrlen);
+    will_return(accept, -1);
+
+    int fd = http_accept_new_connection(&server);
+
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        assert_int_equal(-1, server.request[i].fd);
+    }
+
+    assert_int_equal(-1, fd);
+}
 // Main ////////////////////////////////////////////////////////////////////////
 
 const struct CMUnitTest tests_for_http_socket[] = {
@@ -673,6 +770,10 @@ const struct CMUnitTest tests_for_http_socket[] = {
     cmocka_unit_test(test__http_create_select_sets__can_add_request_fd_to_read_and_write_set),
     cmocka_unit_test(test__http_create_select_sets__does_not_add_nonready_socket_to_sets),
 
+    cmocka_unit_test(test__http_accept_new_connection__fails_if_there_are_no_empty_slot),
+    cmocka_unit_test(test__http_accept_new_connection__accepts_new_connection_when_all_slots_are_empty),
+    cmocka_unit_test(test__http_accept_new_connection__accepts_new_connection_when_not_all_slots_are_empty),
+    cmocka_unit_test(test__http_accept_new_connection__fails_if_accept_fails),
 };
 
 int main(void)

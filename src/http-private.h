@@ -22,4 +22,6 @@ int http_open_listen_socket(int port);
 
 int http_create_select_sets(struct http_server *server, fd_set *set_read, fd_set *set_write, int *maxfd);
 
+int http_accept_new_connection(struct http_server *server);
+
 #endif

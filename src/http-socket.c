@@ -12,6 +12,11 @@
 #include "http-private.h"
 #include "log.h"
 
+#ifndef IP2STR
+#define IP2STR(ip) (((ip) >> 24) & 0xFF), (((ip) >> 16) & 0xFF), (((ip) >> 8) & 0xFF), ((ip) & 0xFF)
+#endif
+
+
 int http_open_request_socket(struct http_request *request)
 {
     const struct addrinfo hints = {
@@ -164,4 +169,36 @@ int http_create_select_sets(struct http_server *server, fd_set *set_read,
     LOG(buf);
 
     return num;
+}
+
+int http_accept_new_connection(struct http_server *server)
+{
+    int i;
+    for(i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        if(server->request[i].fd < 0) {
+            break;
+        }
+    }
+
+    if(i == HTTP_SERVER_MAX_CONNECTIONS) {
+        LOG("No empty slots!");
+        return -1;
+    }
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+
+    int fd = accept(server->fd, (struct sockaddr *)&addr, &len);
+
+    if(fd < 0) {
+        perror("accept");
+        return -1;
+    }
+
+    uint32_t remote_ip = ntohl(addr.sin_addr.s_addr);
+    LOG("Connection %d from %d.%d.%d.%d:%d", fd, IP2STR(remote_ip), addr.sin_port);
+
+    server->request[i].fd = fd;
+
+    return fd;
 }
