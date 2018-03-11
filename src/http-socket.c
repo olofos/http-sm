@@ -124,7 +124,7 @@ int http_create_select_sets(struct http_server *server, fd_set *set_read,
         int fd = server->request[i].fd;
         if(fd >= 0) {
             num++;
-            if(server->request[i].state & HTTP_STATE_READ) {
+            if(server->request[i].state & (HTTP_STATE_READ | HTTP_STATE_READ_NL)) {
                 FD_SET(fd, set_read);
 
                 if(fd > *maxfd) {
