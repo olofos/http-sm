@@ -414,6 +414,7 @@ static void test__http_close__closes_the_socket(void **states)
 
     int ret = http_close(&request);
     assert_int_equal(0, ret);
+    assert_int_equal(-1, request.fd);
 }
 
 

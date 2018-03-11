@@ -75,6 +75,7 @@ int http_open_request_socket(struct http_request *request)
 int http_close(struct http_request *request)
 {
     close(request->fd);
+    request->fd = -1;
     return 0;
 }
 
