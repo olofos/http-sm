@@ -15,24 +15,29 @@ enum http_state
     HTTP_STATE_DONE                  = 0x00,
     HTTP_STATE_ERROR                 = 0x01,
     //
-    HTTP_STATE_READ                  = 0x10,
+    HTTP_STATE_READ                  = 0x10 | 0x80,
     //
-    HTTP_STATE_READ_REQ_METHOD       = 0x11,
-    HTTP_STATE_READ_REQ_PATH         = 0x12,
-    HTTP_STATE_READ_REQ_QUERY        = 0x13,
-    HTTP_STATE_READ_REQ_VERSION      = 0x14,
+    HTTP_STATE_READ_REQ_BEGIN        = 0x11,
+    HTTP_STATE_READ_RESP_BEGIN       = 0x12,
     //
-    HTTP_STATE_READ_RESP_VERSION     = 0x15,
-    HTTP_STATE_READ_RESP_STATUS      = 0x16,
-    HTTP_STATE_READ_RESP_STATUS_DESC = 0x17,
+    HTTP_STATE_READ_REQ_METHOD       = 0x13,
+    HTTP_STATE_READ_REQ_PATH         = 0x14,
+    HTTP_STATE_READ_REQ_QUERY        = 0x15,
+    HTTP_STATE_READ_REQ_VERSION      = 0x16,
     //
-    HTTP_STATE_READ_HEADER           = 0x18,
+    HTTP_STATE_READ_RESP_VERSION     = 0x17,
+    HTTP_STATE_READ_RESP_STATUS      = 0x18,
+    HTTP_STATE_READ_RESP_STATUS_DESC = 0x19,
     //
-    HTTP_STATE_READ_BODY             = 0x19,
+    HTTP_STATE_READ_HEADER           = 0x1A,
     //
-    HTTP_STATE_WRITE                 = 0x20,
+    HTTP_STATE_READ_BODY             = 0x1B,
+    //
+    HTTP_STATE_READ_EXPECT_EOF       = 0x1F,
     //
     HTTP_STATE_READ_NL               = 0x80,
+    //
+    HTTP_STATE_WRITE                 = 0x20,
 };
 
 enum http_method
