@@ -202,6 +202,12 @@ int http_accept_new_connection(struct http_server *server)
     struct http_request *request = &server->request[i];
 
     request->fd = fd;
+
+    return fd;
+}
+
+void http_request_init(struct http_request *request)
+{
     request->state = HTTP_STATE_READ_REQ_METHOD;
     request->flags = HTTP_FLAG_REQUEST;
     request->path = 0;
@@ -216,6 +222,4 @@ int http_accept_new_connection(struct http_server *server)
     request->status = 0;
     request->error = 0;
     request->chunk_length = 0;
-
-    return fd;
 }
