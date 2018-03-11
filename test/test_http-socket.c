@@ -796,8 +796,8 @@ static void test__http_accept_new_connection__initialises_the_new_request(void *
     int fd = http_accept_new_connection(&server);
 
     assert_int_equal(4, fd);
-
     assert_int_equal(server.request[0].fd, 4);
+    assert_int_equal(server.request[0].state, HTTP_STATE_READ_REQ_BEGIN);
 }
 
 static void test__http_request_init__initialises_the_request(void **states)
