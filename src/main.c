@@ -35,7 +35,7 @@ int http_server_read(struct http_request *request)
         }
     } else {
         if(request->state == HTTP_STATE_READ_REQ_BEGIN) {
-            http_request_init(request);
+            http_response_init(request);
 
             const int line_len = HTTP_LINE_LEN;
             request->line = malloc(line_len);

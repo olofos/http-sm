@@ -800,12 +800,12 @@ static void test__http_accept_new_connection__initialises_the_new_request(void *
     assert_int_equal(server.request[0].state, HTTP_STATE_READ_REQ_BEGIN);
 }
 
-static void test__http_request_init__initialises_the_request(void **states)
+static void test__http_response_init__initialises_the_request(void **states)
 {
     struct http_request request;
     memset(&request, 0x55, sizeof(request));
 
-    http_request_init(&request);
+    http_response_init(&request);
 
     assert_int_equal(request.state, HTTP_STATE_READ_REQ_METHOD);
     assert_int_equal(request.flags, HTTP_FLAG_REQUEST);
@@ -856,7 +856,7 @@ const struct CMUnitTest tests_for_http_socket[] = {
     cmocka_unit_test(test__http_accept_new_connection__fails_if_accept_fails),
     cmocka_unit_test(test__http_accept_new_connection__initialises_the_new_request),
 
-    cmocka_unit_test(test__http_request_init__initialises_the_request),
+    cmocka_unit_test(test__http_response_init__initialises_the_request),
 };
 
 int main(void)
