@@ -793,9 +793,9 @@ static void test__http_accept_new_connection__initialises_the_new_request(void *
     expect_memory(accept, addrlen, &expected_len, sizeof(socklen_t));
     will_return(accept, 4);
 
-    int fd = http_accept_new_connection(&server);
+    int index = http_accept_new_connection(&server);
 
-    assert_int_equal(4, fd);
+    assert_int_equal(0, index);
     assert_int_equal(server.request[0].fd, 4);
     assert_int_equal(server.request[0].state, HTTP_STATE_READ_REQ_BEGIN);
 }
