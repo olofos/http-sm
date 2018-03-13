@@ -708,9 +708,9 @@ static void test__http_accept_new_connection__accepts_new_connection_when_all_sl
     expect_memory(accept, addrlen, &expected_len, sizeof(socklen_t));
     will_return(accept, 4);
 
-    int fd = http_accept_new_connection(&server);
+    int index = http_accept_new_connection(&server);
 
-    assert_int_equal(4, fd);
+    assert_int_equal(1, index);
     assert_int_equal(4, server.request[1].fd);
 }
 
@@ -731,9 +731,9 @@ static void test__http_accept_new_connection__accepts_new_connection_when_not_al
     expect_memory(accept, addrlen, &expected_len, sizeof(socklen_t));
     will_return(accept, 4);
 
-    int fd = http_accept_new_connection(&server);
+    int index = http_accept_new_connection(&server);
 
-    assert_int_equal(4, fd);
+    assert_int_equal(0, index);
     assert_int_equal(4, server.request[0].fd);
 }
 
@@ -747,9 +747,9 @@ static void test__http_accept_new_connection__fails_if_there_are_no_empty_slot(v
         server.request[i].fd = 3 + 1 + i;
     }
 
-    int fd = http_accept_new_connection(&server);
+    int index = http_accept_new_connection(&server);
 
-    assert_int_equal(-1, fd);
+    assert_int_equal(-1, index);
 }
 static void test__http_accept_new_connection__fails_if_accept_fails(void **states)
 {
@@ -765,13 +765,13 @@ static void test__http_accept_new_connection__fails_if_accept_fails(void **state
     expect_any(accept, addrlen);
     will_return(accept, -1);
 
-    int fd = http_accept_new_connection(&server);
+    int index = http_accept_new_connection(&server);
 
     for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
         assert_int_equal(-1, server.request[i].fd);
     }
 
-    assert_int_equal(-1, fd);
+    assert_int_equal(-1, index);
 }
 
 static void test__http_accept_new_connection__initialises_the_new_request(void **states)

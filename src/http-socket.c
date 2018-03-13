@@ -207,7 +207,7 @@ int http_accept_new_connection(struct http_server *server)
     request->fd = fd;
     request->state = HTTP_STATE_READ_REQ_BEGIN;
 
-    return fd;
+    return i;
 }
 
 void http_request_init(struct http_request *request)
