@@ -194,6 +194,12 @@ int http_begin_request(struct http_request *request)
 
 void http_end_header(struct http_request *request)
 {
+    if(!(request->flags & HTTP_FLAG_REQUEST)) {
+        if(request->content_length < 0) {
+            request->flags |= HTTP_FLAG_CHUNKED;
+        }
+    }
+
     write_string(request->fd, "\r\n");
 }
 

@@ -524,7 +524,7 @@ void test__http_begin_request__sends_user_agent_header(void **states)
 }
 
 
-static void test__http_end_headers__sends_new_line(void **states)
+static void test__http_end_headers__sends_new_line_in_request(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -536,10 +536,80 @@ static void test__http_end_headers__sends_new_line(void **states)
         .path = "/",
         .query = "a=1",
         .port = 80,
+        .flags = HTTP_FLAG_REQUEST,
     };
 
     http_end_header(&request);
     assert_string_equal("\r\n", get_file_content(fd));
+    assert_false(request.flags & HTTP_FLAG_CHUNKED);
+
+    close(fd);
+}
+
+static void test__http_end_headers__does_not_change_chunked_flag_in_request(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request = {
+        .fd = fd,
+        .method = HTTP_METHOD_GET,
+        .host = "www.example.com",
+        .path = "/",
+        .query = "a=1",
+        .port = 80,
+        .flags = HTTP_FLAG_REQUEST | HTTP_FLAG_CHUNKED,
+    };
+
+    http_end_header(&request);
+    assert_string_equal("\r\n", get_file_content(fd));
+    assert_true(request.flags & HTTP_FLAG_CHUNKED);
+
+    close(fd);
+}
+
+static void test__http_end_headers__sets_chunked_flag_in_response_if_no_content_length(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request = {
+        .fd = fd,
+        .method = HTTP_METHOD_GET,
+        .host = "www.example.com",
+        .path = "/",
+        .query = "a=1",
+        .port = 80,
+        .flags = 0,
+        .content_length = -1,
+    };
+
+    http_end_header(&request);
+    assert_string_equal("\r\n", get_file_content(fd));
+    assert_true(request.flags & HTTP_FLAG_CHUNKED);
+
+    close(fd);
+}
+
+static void test__http_end_headers__does_not_set_chunked_flag_in_response_if_content_length_is_nonzero(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request = {
+        .fd = fd,
+        .method = HTTP_METHOD_GET,
+        .host = "www.example.com",
+        .path = "/",
+        .query = "a=1",
+        .port = 80,
+        .flags = 0,
+        .content_length = 1,
+    };
+
+    http_end_header(&request);
+    assert_string_equal("\r\n", get_file_content(fd));
+    assert_false(request.flags & HTTP_FLAG_CHUNKED);
 
     close(fd);
 }
@@ -591,7 +661,10 @@ const struct CMUnitTest tests_for_http_io[] = {
     cmocka_unit_test(test__http_begin_request__writes_the_POST_request_line),
     cmocka_unit_test(test__http_begin_request__sends_user_agent_header),
 
-    cmocka_unit_test(test__http_end_headers__sends_new_line),
+    cmocka_unit_test(test__http_end_headers__sends_new_line_in_request),
+    cmocka_unit_test(test__http_end_headers__does_not_change_chunked_flag_in_request),
+    cmocka_unit_test(test__http_end_headers__sets_chunked_flag_in_response_if_no_content_length),
+    cmocka_unit_test(test__http_end_headers__does_not_set_chunked_flag_in_response_if_content_length_is_nonzero),
 
     cmocka_unit_test(test__http_set_content_length__sets_variable_and_sends_header),
 };
