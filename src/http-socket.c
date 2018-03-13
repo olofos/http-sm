@@ -108,6 +108,8 @@ int http_open_listen_socket(int port)
         return -1;
     }
 
+    LOG("Listening on port %d", port);
+
     return fd;
 }
 
@@ -151,10 +153,11 @@ int http_create_select_sets(struct http_server *server, fd_set *set_read,
         }
     };
 
+#ifdef LOG_VERBOSE
     char buf[64];
     char *s = buf;
 
-    s += sprintf(s, "Selecting on ( ");
+    s += sprintf(s, "Selecting on %d: ( ", num);
     for(int i = 0; i <= *maxfd; i++) {
         if(FD_ISSET(i, set_read)) {
             s += sprintf(s, "%d ", i);
@@ -168,6 +171,7 @@ int http_create_select_sets(struct http_server *server, fd_set *set_read,
     }
     s += sprintf(s, ")");
     LOG(buf);
+#endif
 
     return num;
 }
@@ -182,7 +186,6 @@ int http_accept_new_connection(struct http_server *server)
     }
 
     if(i == HTTP_SERVER_MAX_CONNECTIONS) {
-        LOG("No empty slots!");
         return -1;
     }
 
