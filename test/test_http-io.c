@@ -585,8 +585,12 @@ static void test__http_end_headers__sets_chunked_flag_in_response_if_no_content_
     };
 
     http_end_header(&request);
-    assert_string_equal("\r\n", get_file_content(fd));
     assert_true(request.flags & HTTP_FLAG_CHUNKED);
+
+    const char *s = get_file_content(fd);
+    assert_true(strlen(s) > 2);
+    assert_string_equal("\r\n", &s[strlen(s)-2]);
+    assert_non_null(strstr(s, "Transfer-Encoding: chunked\r\n"));
 
     close(fd);
 }
