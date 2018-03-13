@@ -35,7 +35,7 @@ int http_get_request(struct http_request *request)
 
     request->state = HTTP_STATE_READ_RESP_VERSION;
 
-    while(request->state != HTTP_STATE_ERROR && request->state != HTTP_STATE_DONE) {
+    while(request->state & HTTP_STATE_READ) {
         int c;
         int ret = read(request->fd, &c, 1);
 
