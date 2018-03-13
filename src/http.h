@@ -9,6 +9,7 @@
 #endif
 
 #define HTTP_SERVER_MAX_CONNECTIONS 3
+#define HTTP_LINE_LEN 64
 
 enum http_state
 {
