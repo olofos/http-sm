@@ -332,6 +332,60 @@ static void test__http_urldecode__copies_up_to_given_number_of_characters(void *
 }
 
 
+static void test__http_get_query_arg__can_find_args(void **states)
+{
+    char buf[] = "a=1&bcd=123";
+    struct http_request request = {
+        .query = buf,
+    };
+
+    const char *a1 = http_get_query_arg(&request, "a");
+    const char *a2 = http_get_query_arg(&request, "bcd");
+
+    assert_string_equal("1", a1);
+    assert_string_equal("123", a2);
+
+    free(request.query_list);
+}
+
+static void test__http_get_query_arg__returns_null_when_there_are_no_query(void **states)
+{
+    struct http_request request = {
+        .query = 0,
+    };
+
+    const char *a = http_get_query_arg(&request, "a");
+
+    assert_null(a);
+}
+
+static void test__http_get_query_arg__returns_null_when_arg_not_found(void **states)
+{
+    char buf[] = "a=1&b=2";
+    struct http_request request = {
+        .query = buf,
+    };
+
+    const char *a = http_get_query_arg(&request, "c");
+
+    assert_null(a);
+
+    free(request.query_list);
+}
+
+static void test__http_get_query_arg__url_decode_arg(void **states)
+{
+    char buf[] = "a=1&bcd=1%203";
+    struct http_request request = {
+        .query = buf,
+    };
+
+    const char *a = http_get_query_arg(&request, "bcd");
+
+    assert_string_equal("1 3", a);
+
+    free(request.query_list);
+}
 
 
 const struct CMUnitTest tests_for_http_parse_header[] = {
@@ -358,11 +412,18 @@ const struct CMUnitTest tests_for_http_urldecode[] = {
     cmocka_unit_test(test__http_urldecode__copies_up_to_given_number_of_characters),
 };
 
+const struct CMUnitTest tests_for_http_get_query_arg[] = {
+    cmocka_unit_test(test__http_get_query_arg__can_find_args),
+    cmocka_unit_test(test__http_get_query_arg__returns_null_when_there_are_no_query),
+    cmocka_unit_test(test__http_get_query_arg__returns_null_when_arg_not_found),
+    cmocka_unit_test(test__http_get_query_arg__url_decode_arg),
+};
 
 int main(void)
 {
     int fails = 0;
     fails += cmocka_run_group_tests(tests_for_http_parse_header, NULL, NULL);
     fails += cmocka_run_group_tests(tests_for_http_urldecode, NULL, NULL);
+    fails += cmocka_run_group_tests(tests_for_http_get_query_arg, NULL, NULL);
     return fails;
 }
