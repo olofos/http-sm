@@ -25,4 +25,7 @@ int http_create_select_sets(struct http_server *server, fd_set *set_read, fd_set
 int http_accept_new_connection(struct http_server *server);
 
 void http_response_init(struct http_request *request);
+
+int http_server_match_url(const char *server_url, const char *request_url);
+
 #endif
