@@ -17,7 +17,7 @@ void LOG(const char *fmt, ...)
     // printf("\n");
 }
 
-void create_request(struct http_request *request, int state)
+static void create_request(struct http_request *request, int state)
 {
     const int line_len = 32;
 
@@ -35,7 +35,7 @@ void create_request(struct http_request *request, int state)
     request->content_length = -1;
 }
 
-void free_request(struct http_request *request)
+static void free_request(struct http_request *request)
 {
     free(request->line);
     free(request->path);
@@ -44,7 +44,7 @@ void free_request(struct http_request *request)
 }
 
 
-void parse_header_helper(struct http_request *request, const char *s)
+static void parse_header_helper(struct http_request *request, const char *s)
 {
     for(int i = 0; i < strlen(s); i++) {
         http_parse_header(request, s[i]);
@@ -52,7 +52,7 @@ void parse_header_helper(struct http_request *request, const char *s)
 }
 
 
-void test__http_parse_header__can_parse_get_request_without_query(void **state)
+static void test__http_parse_header__can_parse_get_request_without_query(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_REQ_METHOD);
@@ -68,7 +68,7 @@ void test__http_parse_header__can_parse_get_request_without_query(void **state)
     free_request(&request);
 }
 
-void test__http_parse_header__can_parse_get_request_with_query(void **state)
+static void test__http_parse_header__can_parse_get_request_with_query(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_REQ_METHOD);
@@ -89,7 +89,7 @@ void test__http_parse_header__can_parse_get_request_with_query(void **state)
 
 
 
-void test__http_parse_header__can_parse_post_request(void **state)
+static void test__http_parse_header__can_parse_post_request(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_REQ_METHOD);
@@ -106,7 +106,7 @@ void test__http_parse_header__can_parse_post_request(void **state)
     free_request(&request);
 }
 
-void test__http_parse_header__unsupported_method_gives_error(void **state)
+static void test__http_parse_header__unsupported_method_gives_error(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_REQ_METHOD);
@@ -120,7 +120,7 @@ void test__http_parse_header__unsupported_method_gives_error(void **state)
     free_request(&request);
 }
 
-void test__http_parse_header__http_version_10_gives_error(void **state)
+static void test__http_parse_header__http_version_10_gives_error(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_REQ_METHOD);
@@ -132,7 +132,7 @@ void test__http_parse_header__http_version_10_gives_error(void **state)
     free_request(&request);
 }
 
-void test__http_parse_header__unknown_http_version_gives_error(void **state)
+static void test__http_parse_header__unknown_http_version_gives_error(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_REQ_METHOD);
@@ -144,7 +144,7 @@ void test__http_parse_header__unknown_http_version_gives_error(void **state)
     free_request(&request);
 }
 
-void test__http_parse_header__missing_newline_gives_error(void **state)
+static void test__http_parse_header__missing_newline_gives_error(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_REQ_METHOD);
@@ -156,7 +156,7 @@ void test__http_parse_header__missing_newline_gives_error(void **state)
     free_request(&request);
 }
 
-void test__http_parse_header__can_parse_host_header_if_request(void **state)
+static void test__http_parse_header__can_parse_host_header_if_request(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
@@ -170,7 +170,7 @@ void test__http_parse_header__can_parse_host_header_if_request(void **state)
     free_request(&request);
 }
 
-void test__http_parse_header__does_not_set_host_if_response(void **state)
+static void test__http_parse_header__does_not_set_host_if_response(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
@@ -182,7 +182,7 @@ void test__http_parse_header__does_not_set_host_if_response(void **state)
     free_request(&request);
 }
 
-void test__http_parse_header__can_parse_accept_encoding_gzip(void **state)
+static void test__http_parse_header__can_parse_accept_encoding_gzip(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
@@ -194,7 +194,7 @@ void test__http_parse_header__can_parse_accept_encoding_gzip(void **state)
     free_request(&request);
 }
 
-void test__http_parse_header__can_parse_accept_encoding_no_gzip(void **state)
+static void test__http_parse_header__can_parse_accept_encoding_no_gzip(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
@@ -206,7 +206,7 @@ void test__http_parse_header__can_parse_accept_encoding_no_gzip(void **state)
     free_request(&request);
 }
 
-void test__http_parse_header__does_not_set_accept_encoding_if_response(void **state)
+static void test__http_parse_header__does_not_set_accept_encoding_if_response(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
@@ -218,7 +218,7 @@ void test__http_parse_header__does_not_set_accept_encoding_if_response(void **st
     free_request(&request);
 }
 
-void test__http_parse_header__can_parse_transfer_encoding_chunked(void **state)
+static void test__http_parse_header__can_parse_transfer_encoding_chunked(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
@@ -231,7 +231,7 @@ void test__http_parse_header__can_parse_transfer_encoding_chunked(void **state)
 }
 
 
-void test__http_parse_header__can_parse_content_length(void **state)
+static void test__http_parse_header__can_parse_content_length(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
@@ -244,7 +244,7 @@ void test__http_parse_header__can_parse_content_length(void **state)
 }
 
 
-void test__http_parse_header__missing_newline_in_header_gives_error(void **state)
+static void test__http_parse_header__missing_newline_in_header_gives_error(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
@@ -257,7 +257,7 @@ void test__http_parse_header__missing_newline_in_header_gives_error(void **state
 }
 
 
-void test__http_parse_header__can_read_response(void **state)
+static void test__http_parse_header__can_read_response(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_RESP_VERSION);
@@ -272,7 +272,7 @@ void test__http_parse_header__can_read_response(void **state)
 
 
 
-void test__http_urldecode__returns_the_length_of_the_decoded_string(void **state)
+static void test__http_urldecode__returns_the_length_of_the_decoded_string(void **state)
 {
     assert_int_equal(0, http_urldecode(0, "", 0));
     assert_int_equal(4, http_urldecode(0, "ABCD", 0));
@@ -285,7 +285,7 @@ void test__http_urldecode__returns_the_length_of_the_decoded_string(void **state
 }
 
 
-void test__http_urldecode__copies_up_to_given_number_of_characters(void **state)
+static void test__http_urldecode__copies_up_to_given_number_of_characters(void **state)
 {
     char buf[4];
     int ret;

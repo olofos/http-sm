@@ -203,7 +203,7 @@ static void test__http_getc__returns_zero_when_reading_eof_with_te_chunked(void 
     close_socket(request.fd);
 }
 
-void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te_identity(void **states)
+static void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te_identity(void **states)
 {
     char *str = "0123";
 
@@ -235,7 +235,7 @@ void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te_identi
     close(fd);
 }
 
-void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te_chunked(void **states)
+static void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te_chunked(void **states)
 {
     char *str =
         "4\r\n"
@@ -270,7 +270,7 @@ void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te_chunke
     close(fd);
 }
 
-void test__http_peek__returns_the_next_character_with_te_identity(void **states)
+static void test__http_peek__returns_the_next_character_with_te_identity(void **states)
 {
     char *str = "0123";
 
@@ -292,7 +292,7 @@ void test__http_peek__returns_the_next_character_with_te_identity(void **states)
     close(fd);
 }
 
-void test__http_peek__returns_the_next_character_with_te_chunked(void **states)
+static void test__http_peek__returns_the_next_character_with_te_chunked(void **states)
 {
     char *str = "0123";
 
@@ -322,7 +322,7 @@ void test__http_peek__returns_the_next_character_with_te_chunked(void **states)
 }
 
 
-void test__http_write_header__writes_the_header(void **states)
+static void test__http_write_header__writes_the_header(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -336,7 +336,7 @@ void test__http_write_header__writes_the_header(void **states)
     close(fd);
 }
 
-void test__http_write_header__writes_nothing_when_name_is_null(void **states)
+static void test__http_write_header__writes_nothing_when_name_is_null(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -350,7 +350,7 @@ void test__http_write_header__writes_nothing_when_name_is_null(void **states)
     close(fd);
 }
 
-void test__http_write_header__writes_nothing_when_value_is_null(void **states)
+static void test__http_write_header__writes_nothing_when_value_is_null(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -364,7 +364,7 @@ void test__http_write_header__writes_nothing_when_value_is_null(void **states)
     close(fd);
 }
 
-void test__http_begin_request__writes_the_request_line_without_query(void **states)
+static void test__http_begin_request__writes_the_request_line_without_query(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -384,7 +384,7 @@ void test__http_begin_request__writes_the_request_line_without_query(void **stat
     close(fd);
 }
 
-void test__http_begin_request__writes_the_request_line_with_query(void **states)
+static void test__http_begin_request__writes_the_request_line_with_query(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -404,7 +404,7 @@ void test__http_begin_request__writes_the_request_line_with_query(void **states)
     close(fd);
 }
 
-void test__http_begin_request__writes_the_request_line_with_empty_query(void **states)
+static void test__http_begin_request__writes_the_request_line_with_empty_query(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -424,7 +424,7 @@ void test__http_begin_request__writes_the_request_line_with_empty_query(void **s
     close(fd);
 }
 
-void test__http_begin_request__sends_host_header(void **states)
+static void test__http_begin_request__sends_host_header(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -444,7 +444,7 @@ void test__http_begin_request__sends_host_header(void **states)
     close(fd);
 }
 
-void test__http_begin_request__sends_host_header_with_port_if_port_is_not_80(void **states)
+static void test__http_begin_request__sends_host_header_with_port_if_port_is_not_80(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -464,7 +464,7 @@ void test__http_begin_request__sends_host_header_with_port_if_port_is_not_80(voi
     close(fd);
 }
 
-void test__http_begin_request__has_GET_as_default_method(void **states)
+static void test__http_begin_request__has_GET_as_default_method(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -483,7 +483,7 @@ void test__http_begin_request__has_GET_as_default_method(void **states)
     close(fd);
 }
 
-void test__http_begin_request__writes_the_POST_request_line(void **states)
+static void test__http_begin_request__writes_the_POST_request_line(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -503,7 +503,7 @@ void test__http_begin_request__writes_the_POST_request_line(void **states)
     close(fd);
 }
 
-void test__http_begin_request__sends_user_agent_header(void **states)
+static void test__http_begin_request__sends_user_agent_header(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
