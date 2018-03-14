@@ -631,6 +631,8 @@ static void test__http_set_content_length__sets_variable_and_sends_header(void *
     http_set_content_length(&request, 10);
     assert_int_equal(request.content_length, 10);
     assert_string_equal("Content-Length: 10\r\n", get_file_content(fd));
+
+    close(fd);
 }
 
 // Main ////////////////////////////////////////////////////////////////////////
