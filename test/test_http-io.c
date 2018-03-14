@@ -635,6 +635,25 @@ static void test__http_set_content_length__sets_variable_and_sends_header(void *
     close(fd);
 }
 
+static void test__http_write_string__writes_the_string_and_returns_its_length(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request = {
+        .fd = fd,
+    };
+
+    const char *s = "test";
+
+    int ret = http_write_string(&request, s);
+    assert_int_equal(strlen(s), ret);
+    assert_string_equal(s, get_file_content(fd));
+
+    close(fd);
+}
+
+
 // Main ////////////////////////////////////////////////////////////////////////
 
 const struct CMUnitTest tests_for_http_io[] = {
@@ -673,6 +692,8 @@ const struct CMUnitTest tests_for_http_io[] = {
     cmocka_unit_test(test__http_end_headers__does_not_set_chunked_flag_in_response_if_content_length_is_nonzero),
 
     cmocka_unit_test(test__http_set_content_length__sets_variable_and_sends_header),
+
+    cmocka_unit_test(test__http_write_string__writes_the_string_and_returns_its_length),
 };
 
 int main(void)

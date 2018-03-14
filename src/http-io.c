@@ -133,43 +133,45 @@ int http_peek(struct http_request *request)
     return request->poke;
 }
 
-static void write_string(int fd, const char *str)
+int http_write_string(struct http_request *request, const char *str)
 {
+    int num = 0;
     int len = strlen(str);
-    while(len > 0) {
-        int n = write(fd, str, len);
+    while(num < len) {
+        int n = write(request->fd, str, len);
         if(n < 0) {
             perror("write");
-            return;
+            return -1;
         }
         str += n;
-        len -= n;
+        num += n;
     }
+    return num;
 }
 
 void http_write_header(struct http_request *request, const char *name, const char *value)
 {
     if(name && value) {
-        write_string(request->fd, name);
-        write_string(request->fd, ": ");
-        write_string(request->fd, value);
-        write_string(request->fd, "\r\n");
+        http_write_string(request, name);
+        http_write_string(request, ": ");
+        http_write_string(request, value);
+        http_write_string(request, "\r\n");
     }
 }
 
 int http_begin_request(struct http_request *request)
 {
     if(request->method == HTTP_METHOD_POST) {
-        write_string(request->fd, "POST ");
+        http_write_string(request, "POST ");
     } else {
-        write_string(request->fd, "GET ");
+        http_write_string(request, "GET ");
     }
-    write_string(request->fd, request->path);
+    http_write_string(request, request->path);
     if(request->query && request->query[0]) {
-        write_string(request->fd, "?");
-        write_string(request->fd, request->query);
+        http_write_string(request, "?");
+        http_write_string(request, request->query);
     }
-    write_string(request->fd, " HTTP/1.1\r\n");
+    http_write_string(request, " HTTP/1.1\r\n");
 
     if(request->port == 80) {
         http_write_header(request, "Host", request->host);
@@ -201,7 +203,7 @@ void http_end_header(struct http_request *request)
         }
     }
 
-    write_string(request->fd, "\r\n");
+    http_write_string(request, "\r\n");
 }
 
 void http_set_content_length(struct http_request *request, int length)
