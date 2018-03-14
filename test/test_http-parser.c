@@ -387,6 +387,23 @@ static void test__http_get_query_arg__url_decode_arg(void **states)
     free(request.query_list);
 }
 
+static void test__http_get_query_arg__can_handle_missing_value(void **states)
+{
+    char buf[] = "a&bcd";
+    struct http_request request = {
+        .query = buf,
+    };
+
+    const char *a1 = http_get_query_arg(&request, "a");
+    const char *a2 = http_get_query_arg(&request, "bcd");
+
+    assert_null(a1);
+    assert_null(a2);
+
+    free(request.query_list);
+}
+
+
 
 const struct CMUnitTest tests_for_http_parse_header[] = {
     cmocka_unit_test(test__http_parse_header__can_parse_get_request_without_query),
@@ -417,6 +434,7 @@ const struct CMUnitTest tests_for_http_get_query_arg[] = {
     cmocka_unit_test(test__http_get_query_arg__returns_null_when_there_are_no_query),
     cmocka_unit_test(test__http_get_query_arg__returns_null_when_arg_not_found),
     cmocka_unit_test(test__http_get_query_arg__url_decode_arg),
+    cmocka_unit_test(test__http_get_query_arg__can_handle_missing_value),
 };
 
 int main(void)
