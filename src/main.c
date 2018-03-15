@@ -80,28 +80,6 @@ int http_server_read(struct http_request *request)
     return 0;
 }
 
-const char *http_status_string(enum http_status status)
-{
-    switch(status) {
-    case HTTP_STATUS_OK:
-        return "OK";
-
-    case HTTP_STATUS_BAD_REQUEST:
-        return "Bad Request";
-
-    case HTTP_STATUS_NOT_FOUND:
-        return "Not Found";
-
-    case HTTP_STATUS_METHOD_NOT_ALLOWED:
-        return "Method Not Allowed";
-
-    case HTTP_STATUS_VERSION_NOT_SUPPORTED:
-        return "HTTP Version Not Supported";
-    }
-
-    return "Status Unkown";
-}
-
 int http_begin_response(struct http_request *request, int status, const char *content_type)
 {
     char buf[64];
