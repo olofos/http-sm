@@ -8,6 +8,8 @@
 
 int http_get_request(struct http_request *request)
 {
+    request->flags |= HTTP_FLAG_REQUEST;
+
     int err;
 
     err = http_open_request_socket(request);
