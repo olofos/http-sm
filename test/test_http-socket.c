@@ -804,9 +804,11 @@ static void test__http_response_init__initialises_the_request(void **states)
 {
     struct http_request request;
     memset(&request, 0x55, sizeof(request));
+    request.fd = 3;
 
     http_response_init(&request);
 
+    assert_int_equal(request.fd, 3);
     assert_int_equal(request.state, HTTP_STATE_READ_REQ_METHOD);
     assert_int_equal(request.flags, 0);
     assert_null(request.path);
