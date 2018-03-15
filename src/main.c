@@ -308,11 +308,38 @@ enum http_cgi_state cgi_query(struct http_request* request)
     return HTTP_CGI_DONE;
 }
 
+enum http_cgi_state cgi_exit(struct http_request* request)
+{
+    LOG("Exiting");
+
+    const char *response = "Exiting\r\n";
+
+    http_begin_response(request, 200, "text/plain");
+    http_set_content_length(request, strlen(response));
+    http_end_header(request);
+
+    http_write_string(request, response);
+    http_end_body(request);
+
+    usleep(10 * 1000);
+
+    char c;
+    read(request->fd, &c, 1);
+
+    usleep(10 * 1000);
+
+    free(request->line);
+    http_close(request);
+
+    exit(0);
+}
+
 struct http_url_handler http_url_tab_[] = {
     {"/simple", cgi_simple, NULL},
     {"/stream", cgi_stream, NULL},
     {"/query", cgi_query, NULL},
     {"/wildcard/*", cgi_simple, NULL},
+    {"/exit", cgi_exit, NULL},
     {NULL, NULL, NULL}
 };
 
