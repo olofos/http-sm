@@ -12,6 +12,9 @@
 #include <time.h>
 #include <errno.h>
 
+#include <setjmp.h>
+#include <cmocka.h>
+
 #include "http.h"
 #include "http-private.h"
 #include "log.h"
@@ -335,6 +338,171 @@ void test_request(int port, char *path)
     }
 }
 
+static int http_port;
+
+static int read_all(struct http_request *request, char *buf)
+{
+    int i = 0;
+    int c;
+    while((c = http_getc(request)) > 0) {
+        putchar(c);
+        buf[i++] = c;
+    }
+    buf[i] = 0;
+    return c;
+}
+
+static void test_simple_request(void **states)
+{
+    struct http_request request = {
+        .host = "localhost",
+        .path = "/simple",
+        .port = http_port,
+    };
+
+    int ret;
+
+    ret = http_get_request(&request);
+    assert_true(ret > 0);
+    assert_int_equal(200, request.status);
+
+    char buf[256];
+    ret = read_all(&request, buf);
+    assert_int_equal(ret, 0);
+
+    assert_non_null(strstr(buf, "'cgi_simple'"));
+
+    http_close(&request);
+}
+
+static void test_stream_request(void **states)
+{
+    struct http_request request = {
+        .host = "localhost",
+        .path = "/stream",
+        .port = http_port,
+    };
+
+    int ret;
+
+    ret = http_get_request(&request);
+    assert_true(ret > 0);
+    assert_int_equal(200, request.status);
+
+    char buf[256];
+    ret = read_all(&request, buf);
+    assert_int_equal(ret, 0);
+
+    assert_non_null(strstr(buf, "'cgi_stream'"));
+
+    http_close(&request);
+}
+
+static void test_query_request_no_arg(void **states)
+{
+    struct http_request request = {
+        .host = "localhost",
+        .path = "/query",
+        .port = http_port,
+    };
+
+    int ret;
+
+    ret = http_get_request(&request);
+    assert_true(ret > 0);
+    assert_int_equal(200, request.status);
+
+    char buf[256];
+    ret = read_all(&request, buf);
+    assert_int_equal(ret, 0);
+
+    assert_non_null(strstr(buf, "'cgi_query'"));
+    assert_null(strstr(buf, "="));
+
+    http_close(&request);
+}
+
+static void test_query_request_with_arg(void **states)
+{
+    struct http_request request = {
+        .host = "localhost",
+        .path = "/query?a=1&b=2%203&c=4",
+        .port = http_port,
+    };
+
+    int ret;
+
+    ret = http_get_request(&request);
+    assert_true(ret > 0);
+    assert_int_equal(200, request.status);
+
+    char buf[256];
+    ret = read_all(&request, buf);
+    assert_int_equal(ret, 0);
+
+    assert_non_null(strstr(buf, "'cgi_query'"));
+    assert_non_null(strstr(buf, "a = 1"));
+    assert_non_null(strstr(buf, "b = 2 3"));
+    assert_null(strstr(buf, "c ="));
+
+    http_close(&request);
+}
+
+static void test_wildcard_request(void **states)
+{
+    struct http_request request = {
+        .host = "localhost",
+        .path = "/wildcard/xyz?abc=123",
+        .port = http_port,
+    };
+
+    int ret;
+
+    ret = http_get_request(&request);
+    assert_true(ret > 0);
+    assert_int_equal(200, request.status);
+
+    char buf[256];
+    ret = read_all(&request, buf);
+    assert_int_equal(ret, 0);
+
+    assert_non_null(strstr(buf, "'cgi_simple'"));
+
+    http_close(&request);
+}
+
+static void test_not_found_request(void **states)
+{
+    struct http_request request = {
+        .host = "localhost",
+        .path = "/not_found",
+        .port = http_port,
+    };
+
+    int ret;
+
+    ret = http_get_request(&request);
+    assert_true(ret > 0);
+    assert_int_equal(404, request.status);
+
+    char buf[256];
+    ret = read_all(&request, buf);
+    assert_int_equal(ret, 0);
+
+    assert_non_null(strstr(buf, "Not found"));
+
+    http_close(&request);
+}
+
+const struct CMUnitTest tests[] = {
+    cmocka_unit_test(test_simple_request),
+    cmocka_unit_test(test_stream_request),
+    cmocka_unit_test(test_query_request_no_arg),
+    cmocka_unit_test(test_query_request_with_arg),
+    cmocka_unit_test(test_wildcard_request),
+    cmocka_unit_test(test_not_found_request),
+};
+
 int main(int argc, char *argv[])
 {
     if(argc > 1) {
@@ -345,7 +513,7 @@ int main(int argc, char *argv[])
         pid_t child = fork();
 
         srand(time(0));
-        int port = 1024 + (rand() % 1024);
+        http_port = 1024 + (rand() % 1024);
 
         if(child < 0) {
             perror("fork");
@@ -353,7 +521,7 @@ int main(int argc, char *argv[])
         } else if(child == 0) {
             log_system = "server";
             LOG("Starting server");
-            server_main(port);
+            server_main(http_port);
 
             LOG("server_main returned!");
             for(;;) {
@@ -362,14 +530,7 @@ int main(int argc, char *argv[])
             log_system = "client";
             LOG("Server pid: %d", child);
 
-            test_request(port, "/simple");
-            test_request(port, "/stream");
-            test_request(port, "/stream");
-            test_request(port, "/query");
-            test_request(port, "/query?a=1");
-            test_request(port, "/query?a=1&b=2+3&c=4");
-            test_request(port, "/wildcard/xyz?a=1&b=2+3&c=4");
-            test_request(port, "/missing");
+            int fails = cmocka_run_group_tests(tests, NULL, NULL);
 
             usleep(1000);
             kill(child, SIGINT);
@@ -378,6 +539,8 @@ int main(int argc, char *argv[])
 
             int status;
             waitpid(child, &status, 0);
+
+            return fails;
         }
     }
 

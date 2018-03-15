@@ -49,7 +49,7 @@ $(TSTBINDIR)/test_http_get_request: $(TSTOBJDIR)/http.o $(TSTOBJDIR)/http-parser
 
 $(BINDIR)/$(TARGET): build_dirs $(OBJ)
 	@echo LD $@
-	@$(CC) $(CFLAGS) $(OBJ) -o $@
+	@$(CC) $(CFLAGS) $(OBJ) -o $@ -lcmocka
 
 $(OBJDIR)/%.o : $(SRCDIR)/%.c
 	@echo CC $<
