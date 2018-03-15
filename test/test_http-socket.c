@@ -661,7 +661,7 @@ static void test__http_create_select_sets__can_add_request_fd_to_read_and_write_
     assert_memory_equal(&set_test, &set_write, sizeof(set_test));
 }
 
-void test__http_create_select_sets__does_not_add_nonready_socket_to_sets(void **states)
+static void test__http_create_select_sets__does_not_add_nonready_socket_to_sets(void **states)
 {
     struct http_server server;
     int maxfd;
@@ -808,7 +808,7 @@ static void test__http_response_init__initialises_the_request(void **states)
     http_response_init(&request);
 
     assert_int_equal(request.state, HTTP_STATE_READ_REQ_METHOD);
-    assert_int_equal(request.flags, HTTP_FLAG_REQUEST);
+    assert_int_equal(request.flags, 0);
     assert_null(request.path);
     assert_null(request.query);
     assert_null(request.host);
