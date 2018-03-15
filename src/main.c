@@ -10,6 +10,7 @@
 #include <netdb.h>
 #include <signal.h>
 #include <time.h>
+#include <errno.h>
 
 #include "http.h"
 #include "http-private.h"
@@ -26,7 +27,7 @@ int http_server_read(struct http_request *request)
         if(n < 0) {
             perror("read");
         } else if(n == 0) {
-            LOG("Connection on fd %d done", request->fd);
+            LOG("Connection %d done", request->fd);
 
             request->state = HTTP_STATE_DONE;
             http_close(request);
@@ -66,12 +67,7 @@ int http_server_read(struct http_request *request)
             http_close(request);
             return -1;
         } else {
-            putchar(c);
             http_parse_header(request, c);
-            if(!(request->state & HTTP_STATE_READ)) {
-                LOG("state = 0x%02X", request->state);
-            }
-
             if(request->state == HTTP_STATE_DONE) {
                 if(request->method == HTTP_METHOD_POST) {
                     request->state = HTTP_STATE_READ_BODY;
@@ -84,7 +80,7 @@ int http_server_read(struct http_request *request)
     return 0;
 }
 
-const char *http_status_string(int status)
+const char *http_status_string(enum http_status status)
 {
     switch(status) {
     case HTTP_STATUS_OK:
@@ -101,50 +97,59 @@ const char *http_status_string(int status)
 
     case HTTP_STATUS_VERSION_NOT_SUPPORTED:
         return "HTTP Version Not Supported";
-
-    default:
-        return "Status Unkown";
     }
+
+    return "Status Unkown";
 }
 
-int http_begin_response(struct http_request *request)
+int http_begin_response(struct http_request *request, int status, const char *content_type)
 {
     char buf[64];
 
-    snprintf(buf, sizeof(buf), "HTTP/1.1 %d %s\r\n", request->status, http_status_string(request->status));
-    write(request->fd, buf, strlen(buf));
+    snprintf(buf, sizeof(buf), "HTTP/1.1 %d %s\r\n", status, http_status_string(status));
+    http_write_string(request, buf);
     http_write_header(request, "Connection", "close");
+    http_write_header(request, "Content-Type", content_type);
 
     return 0;
 }
 
 int http_end_body(struct http_request *request)
 {
-    request->state = HTTP_STATE_READ_EXPECT_EOF;
-
+    if(request->flags & HTTP_FLAG_CHUNKED) {
+        http_write_string(request, "");
+    }
     return 0;
 }
 
+enum http_cgi_state cgi_not_found(struct http_request* request);
+
 int http_server_write(struct http_request *request)
 {
-    LOG("Got request:");
-    LOG("Host: %s", request->host);
-    LOG("Path: %s", request->path);
+    int i = 0;
 
-    LOG("Now we should write a response!");
+    for(;;) {
 
-    char *body = "That worked\r\n";
+        if(request->handler) {
+            enum http_cgi_state state = request->handler(request);
 
-    request->status = HTTP_STATUS_OK;
+            if(state == HTTP_CGI_DONE) {
+                request->state = HTTP_STATE_READ_EXPECT_EOF;
+                break;
+            } else if(state == HTTP_CGI_MORE) {
+                break;
+            }
+        }
 
-    http_begin_response(request);
-    http_set_content_length(request, strlen(body));
-    http_write_header(request, "Content-Type", "text/plain");
-    http_end_header(request);
+        if(http_url_tab[i].url == NULL) {
+            request->handler = cgi_not_found;
+            continue;
+        } else if(http_server_match_url(http_url_tab[i].url, request->path)) {
+            request->handler = http_url_tab[i].handler;
+        }
 
-    write(request->fd, body, strlen(body));
-
-    http_end_body(request);
+        i++;
+    }
 
     return 0;
 }
@@ -159,7 +164,7 @@ int http_server_main_loop(struct http_server *server)
     int n;
     if(num_open != 0) {
         struct timeval t;
-        t.tv_sec = 2;
+        t.tv_sec = 20;
         t.tv_usec = 0;
 
         n = select(maxfd+1, &set_read, &set_write, 0, &t);
@@ -228,48 +233,175 @@ int server_main(int port)
     }
 }
 
-
-
-int main(void)
+enum http_cgi_state cgi_not_found(struct http_request* request)
 {
-    pid_t child = fork();
+    const char *response = "Not found\r\n";
 
-    srand(time(0));
-    int port = 1024 + (rand() % 1024);
+    http_begin_response(request, 404, "text/plain");
+    http_set_content_length(request, strlen(response));
+    http_end_header(request);
+    http_write_string(request, response);
+    http_end_body(request);
 
-    if(child < 0) {
-        perror("fork");
-        return 1;
-    } else if(child == 0) {
-        LOG("Starting server");
-        server_main(port);
+    return HTTP_CGI_DONE;
 
-        LOG("server_main returned!");
-        for(;;) {
+}
+
+enum http_cgi_state cgi_simple(struct http_request* request)
+{
+    if(request->method != HTTP_METHOD_GET) {
+        return HTTP_CGI_NOT_FOUND;
+    }
+
+    const char *response = "This is a response from \'cgi_simple\'\r\n";
+
+    http_begin_response(request, 200, "text/plain");
+    http_set_content_length(request, strlen(response));
+    http_end_header(request);
+
+    http_write_string(request, response);
+
+    http_end_body(request);
+
+    return HTTP_CGI_DONE;
+}
+
+enum http_cgi_state cgi_stream(struct http_request* request)
+{
+    if(request->method != HTTP_METHOD_GET) {
+        return HTTP_CGI_NOT_FOUND;
+    }
+
+    if(!request->cgi_data) {
+        http_begin_response(request, 200, "text/plain");
+        http_end_header(request);
+
+        request->cgi_data = malloc(1);
+
+        return HTTP_CGI_MORE;
+    } else {
+        const char response[] = "This is a response from \'cgi_stream\'\r\n";
+
+        http_write_string(request, response);
+        http_end_body(request);
+
+        free(request->cgi_data);
+
+        return HTTP_CGI_DONE;
+    }
+}
+
+enum http_cgi_state cgi_query(struct http_request* request)
+{
+    if(request->method != HTTP_METHOD_GET) {
+        return HTTP_CGI_NOT_FOUND;
+    }
+
+    http_begin_response(request, 200, "text/plain");
+    http_end_header(request);
+
+    http_write_string(request, "This is a response from \'cgi_query\'\r\n");
+    http_write_string(request, "The parameters were:\r\n");
+
+    const char *sa = http_get_query_arg(request, "a");
+    const char *sb = http_get_query_arg(request, "b");
+
+    if(sa) {
+        http_write_string(request, "a = ");
+        http_write_string(request, sa);
+        http_write_string(request, "\r\n");
+    }
+
+    if(sb) {
+        http_write_string(request, "b = ");
+        http_write_string(request, sb);
+        http_write_string(request, "\r\n");
+    }
+
+    http_end_body(request);
+
+    return HTTP_CGI_DONE;
+}
+
+struct http_url_handler http_url_tab_[] = {
+    {"/simple", cgi_simple, NULL},
+    {"/stream", cgi_stream, NULL},
+    {"/query", cgi_query, NULL},
+    {"/wildcard/*", cgi_simple, NULL},
+    {NULL, NULL, NULL}
+};
+
+struct http_url_handler *http_url_tab = http_url_tab_;
+
+extern const char *log_system;
+
+void test_request(int port, char *path)
+{
+    struct http_request request = {
+        .host = "localhost",
+        .path = path,
+        .port = port,
+    };
+
+    if(http_get_request(&request) > 0) {
+        putchar('\n');
+        printf("Status: %d\n\n", request.status);
+        int c;
+        while((c = http_getc(&request)) > 0) {
+            putchar(c);
+        }
+
+        putchar('\n');
+
+        http_close(&request);
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    if(argc > 1) {
+        if(strcmp(argv[1], "-s") == 0) {
+            server_main(8080);
         }
     } else {
-        LOG("Server running as process %d", child);
+        pid_t child = fork();
 
-        struct http_request request = {
-            .host = "localhost",
-            .path = "/test",
-            .port = port,
-        };
+        srand(time(0));
+        int port = 1024 + (rand() % 1024);
 
-        if(http_get_request(&request) > 0) {
-            int c;
-            while((c = http_getc(&request)) > 0) {
-                putchar(c);
+        if(child < 0) {
+            perror("fork");
+            return 1;
+        } else if(child == 0) {
+            log_system = "server";
+            LOG("Starting server");
+            server_main(port);
+
+            LOG("server_main returned!");
+            for(;;) {
             }
+        } else {
+            log_system = "client";
+            LOG("Server pid: %d", child);
 
-            http_close(&request);
+            test_request(port, "/simple");
+            test_request(port, "/stream");
+            test_request(port, "/stream");
+            test_request(port, "/query");
+            test_request(port, "/query?a=1");
+            test_request(port, "/query?a=1&b=2+3&c=4");
+            test_request(port, "/wildcard/xyz?a=1&b=2+3&c=4");
+            test_request(port, "/missing");
+
+            usleep(1000);
+            kill(child, SIGINT);
+
+            LOG("Waiting for child to teminate");
+
+            int status;
+            waitpid(child, &status, 0);
         }
-
-        kill(child, SIGINT);
-
-        LOG("Waiting for child to teminate");
-
-        int status;
-        waitpid(child, &status, 0);
     }
+
+    return 0;
 }
