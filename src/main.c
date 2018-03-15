@@ -72,6 +72,10 @@ int http_server_read(struct http_request *request)
         } else {
             http_parse_header(request, c);
             if(request->state == HTTP_STATE_DONE) {
+                free(request->line);
+                request->line = 0;
+                request->line_len = 0;
+
                 if(request->method == HTTP_METHOD_POST) {
                     request->state = HTTP_STATE_READ_BODY;
                 } else {
