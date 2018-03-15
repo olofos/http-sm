@@ -1,4 +1,4 @@
-SOURCES := main.c http-parser.c http-io.c http-socket.c http-util.c http.c log.c
+SOURCES := main.c http-parser.c http-io.c http-socket.c http-util.c http-server.c http.c log.c
 
 TARGET=http-test
 
@@ -39,6 +39,7 @@ $(TSTBINDIR)/test_http-io: $(TSTOBJDIR)/http-io.o $(TSTOBJDIR)/http-util.o
 $(TSTBINDIR)/test_http-parser: $(TSTOBJDIR)/http-parser.o $(TSTOBJDIR)/http-util.o
 $(TSTBINDIR)/test_http-util: $(TSTOBJDIR)/http-util.o
 $(TSTBINDIR)/test_http-socket: $(TSTOBJDIR)/http-socket.o
+$(TSTBINDIR)/test_http-server: $(TSTOBJDIR)/http-server.o
 $(TSTBINDIR)/test_http_get_request: $(TSTOBJDIR)/http.o $(TSTOBJDIR)/http-parser.o $(TSTOBJDIR)/http-util.o
 
 
