@@ -134,12 +134,11 @@ int http_peek(struct http_request *request)
     return request->poke;
 }
 
-int http_write_string(struct http_request *request, const char *str)
+static int write_all(int fd, const char *str, int len)
 {
     int num = 0;
-    int len = strlen(str);
     while(num < len) {
-        int n = write(request->fd, str, len);
+        int n = write(fd, str, len);
         if(n < 0) {
             perror("write");
             return -1;
@@ -147,6 +146,25 @@ int http_write_string(struct http_request *request, const char *str)
         str += n;
         num += n;
     }
+    return num;
+}
+
+int http_write_string(struct http_request *request, const char *str)
+{
+    int len = strlen(str);
+
+    if(request->flags & HTTP_FLAG_CHUNKED) {
+        char buf[16];
+        int n = snprintf(buf, sizeof(buf), "%X\r\n", len);
+        write_all(request->fd, buf, n);
+    }
+
+    int num = write_all(request->fd, str, len);
+
+    if(request->flags & HTTP_FLAG_CHUNKED) {
+        write_all(request->fd, "\r\n", 2);
+    }
+
     return num;
 }
 
@@ -204,7 +222,7 @@ void http_end_header(struct http_request *request)
         }
     }
 
-    http_write_string(request, "\r\n");
+    write_all(request->fd, "\r\n", 2);
 }
 
 void http_set_content_length(struct http_request *request, int length)

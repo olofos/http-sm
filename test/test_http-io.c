@@ -669,7 +669,7 @@ static void test__http_set_content_length__sets_variable_and_sends_header(void *
     close(fd);
 }
 
-static void test__http_write_string__writes_the_string_and_returns_its_length(void **states)
+static void test__http_write_string__writes_the_string_and_returns_its_length_with_te_identity(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -683,6 +683,29 @@ static void test__http_write_string__writes_the_string_and_returns_its_length(vo
     int ret = http_write_string(&request, s);
     assert_int_equal(strlen(s), ret);
     assert_string_equal(s, get_file_content(fd));
+
+    close(fd);
+}
+
+static void test__http_write_string__writes_the_string_and_returns_its_length_with_te_chunked(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request = {
+        .fd = fd,
+        .flags = HTTP_FLAG_CHUNKED,
+    };
+
+    const char *s = "test";
+
+    int ret = http_write_string(&request, s);
+    assert_int_equal(strlen(s), ret);
+
+
+    char expected[64];
+    snprintf(expected, sizeof(expected), "%lX\r\n%s\r\n", strlen(s), s);
+    assert_string_equal(expected, get_file_content(fd));
 
     close(fd);
 }
@@ -729,7 +752,8 @@ const struct CMUnitTest tests_for_http_io[] = {
 
     cmocka_unit_test(test__http_set_content_length__sets_variable_and_sends_header),
 
-    cmocka_unit_test(test__http_write_string__writes_the_string_and_returns_its_length),
+    cmocka_unit_test(test__http_write_string__writes_the_string_and_returns_its_length_with_te_identity),
+    cmocka_unit_test(test__http_write_string__writes_the_string_and_returns_its_length_with_te_chunked),
 };
 
 int main(void)
