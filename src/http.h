@@ -65,7 +65,7 @@ enum http_flags
     HTTP_FLAG_REQUEST     = 0x04,
 };
 
-enum http_cgi_status
+enum http_cgi_state
 {
     HTTP_CGI_DONE,
     HTTP_CGI_MORE,
@@ -74,7 +74,7 @@ enum http_cgi_status
 
 struct http_request;
 
-typedef enum http_cgi_status (*http_cgi_func)(struct http_request*);
+typedef enum http_cgi_state (*http_url_handler_func)(struct http_request*);
 
 struct http_request
 {
@@ -103,8 +103,18 @@ struct http_request
     int fd;
     uint16_t port;
 
-    http_cgi_func write_func;
+    http_url_handler_func handler;
+    void *cgi_arg;
+    void *cgi_data;
 };
+
+struct http_url_handler {
+    const char *url;
+    http_url_handler_func handler;
+    const void *cgi_arg;
+};
+
+extern struct http_url_handler *http_url_tab;
 
 int http_getc(struct http_request *request);
 int http_peek(struct http_request *request);

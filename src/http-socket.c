@@ -226,5 +226,7 @@ void http_response_init(struct http_request *request)
     request->status = 0;
     request->error = 0;
     request->chunk_length = 0;
-    request->write_func = 0;
+    request->handler = 0;
+    request->cgi_arg = 0;
+    request->cgi_data = 0;
 }

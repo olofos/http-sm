@@ -823,7 +823,9 @@ static void test__http_response_init__initialises_the_request(void **states)
     assert_int_equal(request.method, HTTP_METHOD_UNKNOWN);
     assert_int_equal(request.status, 0);
     assert_int_equal(request.error, 0);
-    assert_null(request.write_func);
+    assert_null(request.handler);
+    assert_null(request.cgi_data);
+    assert_null(request.cgi_arg);
 }
 
 // Main ////////////////////////////////////////////////////////////////////////
