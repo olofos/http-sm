@@ -198,7 +198,6 @@ void http_parse_header(struct http_request *request, char c)
     case HTTP_STATE_READ_RESP_STATUS_DESC:
         if(c == '\r') {
             request->line[request->line_index] = 0;
-            LOG("Status %d %s", request->status, request->line);
             http_parse_header_next_state(request, HTTP_STATE_READ_HEADER | HTTP_STATE_READ_NL);
 
             return;
@@ -290,14 +289,12 @@ static void parse_query_string(struct http_request *request)
     }
 
     request->query_list = malloc(sizeof(char*) * (n+1));
-    LOG("Found %d arguments", n);
 
     char *name = request->query;
 
     int i = 0;
     for(;;) {
         if(name) {
-            LOG("Arg %d at %p", i, name);
             request->query_list[i++] = name;
         }
 
@@ -310,14 +307,12 @@ static void parse_query_string(struct http_request *request)
         char *value = strchr(name, '=');
         if(value) {
             value++;
-            LOG("Decoding '%s'", value);
             http_urldecode(value, value, strlen(value));
         } else {
             LOG("Query parameter '%s' has no value", name);
         }
 
         if(!delim) {
-            LOG("End of args");
             request->query_list[i] = 0;
             break;
         }
