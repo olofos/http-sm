@@ -79,11 +79,7 @@ typedef enum http_cgi_state (*http_url_handler_func)(struct http_request*);
 struct http_request
 {
     uint8_t state;
-    uint8_t method;
     uint8_t flags;
-
-    int status;
-    int error;
 
     char *line;
     int line_index;
@@ -95,13 +91,21 @@ struct http_request
     int poke;
 
     char *path;
-    char *query;
     char *host;
 
-    char **query_list;
-
     int fd;
+
+    // This is only used by the client for outgoing requests
     uint16_t port;
+
+
+    // Theses are only used by the server for incoming requests
+    uint8_t method;
+    int status;
+    int error;
+
+    char *query;
+    char **query_list;
 
     http_url_handler_func handler;
     void *cgi_arg;
