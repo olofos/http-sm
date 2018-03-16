@@ -84,7 +84,7 @@ int http_getc(struct http_request *request)
 
             if(request->chunk_length == 0) {
                 read_chunk_footer(request);
-                request->state = HTTP_STATE_DONE;
+                request->state = HTTP_STATE_IDLE;
                 return 0;
             }
         }

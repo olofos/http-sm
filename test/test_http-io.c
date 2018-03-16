@@ -215,7 +215,7 @@ static void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te
     request.content_length = strlen(str);
 
     enum http_state all_other_states[] = {
-        HTTP_STATE_DONE,
+        HTTP_STATE_IDLE,
         HTTP_STATE_ERROR,
         HTTP_STATE_READ_REQ_METHOD,
         HTTP_STATE_READ_REQ_PATH,
@@ -250,7 +250,7 @@ static void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te
     request.flags |= HTTP_FLAG_CHUNKED;
 
     enum http_state all_other_states[] = {
-        HTTP_STATE_DONE,
+        HTTP_STATE_IDLE,
         HTTP_STATE_ERROR,
         HTTP_STATE_READ_REQ_METHOD,
         HTTP_STATE_READ_REQ_PATH,

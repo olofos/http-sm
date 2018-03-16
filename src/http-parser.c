@@ -129,7 +129,7 @@ void http_parse_header(struct http_request *request, char c)
             request->line[request->line_index] = 0;
 
             if(request->line_index == 0) {
-                http_parse_header_next_state(request, HTTP_STATE_DONE | HTTP_STATE_READ_NL);
+                http_parse_header_next_state(request, HTTP_STATE_IDLE | HTTP_STATE_READ_NL);
             } else {
 
                 char *val;

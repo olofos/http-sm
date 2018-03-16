@@ -13,7 +13,7 @@
 
 enum http_state
 {
-    HTTP_STATE_DONE                  = 0x00,
+    HTTP_STATE_IDLE                  = 0x00,
     HTTP_STATE_ERROR                 = 0x01,
     //
     HTTP_STATE_READ                  = 0x10 | 0x80,

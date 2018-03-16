@@ -32,7 +32,7 @@ int http_server_read(struct http_request *request)
         } else if(n == 0) {
             LOG("Connection %d done", request->fd);
 
-            request->state = HTTP_STATE_DONE;
+            request->state = HTTP_STATE_IDLE;
             http_close(request);
         } else {
             LOG("Expected EOF but got %c", c);
@@ -71,7 +71,7 @@ int http_server_read(struct http_request *request)
             return -1;
         } else {
             http_parse_header(request, c);
-            if(request->state == HTTP_STATE_DONE) {
+            if(request->state == HTTP_STATE_IDLE) {
                 free(request->line);
                 request->line = 0;
                 request->line_len = 0;
@@ -197,7 +197,7 @@ int http_server_start(struct http_server *server, int port)
 
     for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
         server->request[i].fd = -1;
-        server->request[i].state = HTTP_STATE_DONE;
+        server->request[i].state = HTTP_STATE_IDLE;
     }
 
     return 0;
