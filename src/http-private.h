@@ -29,8 +29,7 @@ void http_response_init(struct http_request *request);
 int http_server_match_url(const char *server_url, const char *request_url);
 const char *http_status_string(enum http_status status);
 
-#define http_is_response(request) (!((request)->flags & HTTP_FLAG_REQUEST))
-#define http_is_request(request)    ((request)->flags & HTTP_FLAG_REQUEST)
-
+#define http_is_response(request) (!((request)->flags & HTTP_FLAG_CLIENT))
+#define http_is_request(request)    ((request)->flags & HTTP_FLAG_CLIENT)
 
 #endif

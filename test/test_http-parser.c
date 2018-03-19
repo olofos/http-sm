@@ -160,7 +160,7 @@ static void test__http_parse_header__can_parse_host_header_if_request(void **sta
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
-    request.flags |= HTTP_FLAG_REQUEST;
+    request.flags |= HTTP_FLAG_CLIENT;
 
     parse_header_helper(&request, "Host: www.example.com\r\n");
 
@@ -174,7 +174,7 @@ static void test__http_parse_header__does_not_set_host_if_response(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
-    request.flags &= ~HTTP_FLAG_REQUEST;
+    request.flags &= ~HTTP_FLAG_CLIENT;
 
     parse_header_helper(&request, "Host: www.example.com\r\n");
 
@@ -186,7 +186,7 @@ static void test__http_parse_header__can_parse_accept_encoding_gzip(void **state
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
-    request.flags |= HTTP_FLAG_REQUEST;
+    request.flags |= HTTP_FLAG_CLIENT;
 
     parse_header_helper(&request, "Accept-Encoding: gzip, deflate\r\n");
 
@@ -198,7 +198,7 @@ static void test__http_parse_header__can_parse_accept_encoding_no_gzip(void **st
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
-    request.flags |= HTTP_FLAG_REQUEST;
+    request.flags |= HTTP_FLAG_CLIENT;
 
     parse_header_helper(&request, "Accept-Encoding: deflate\r\n");
 
@@ -210,7 +210,7 @@ static void test__http_parse_header__does_not_set_accept_encoding_if_response(vo
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
-    request.flags &= ~HTTP_FLAG_REQUEST;
+    request.flags &= ~HTTP_FLAG_CLIENT;
 
     parse_header_helper(&request, "Accept-Encoding: gzip, deflate\r\n");
 

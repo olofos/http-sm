@@ -62,7 +62,7 @@ enum http_flags
 {
     HTTP_FLAG_ACCEPT_GZIP = 0x01,
     HTTP_FLAG_CHUNKED     = 0x02,
-    HTTP_FLAG_REQUEST     = 0x04,
+    HTTP_FLAG_CLIENT      = 0x04,
 };
 
 enum http_cgi_state

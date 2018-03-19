@@ -8,7 +8,7 @@
 
 int http_get_request(struct http_request *request)
 {
-    request->flags |= HTTP_FLAG_REQUEST;
+    request->flags |= HTTP_FLAG_CLIENT;
 
     int err;
 

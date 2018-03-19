@@ -570,7 +570,7 @@ static void test__http_end_headers__sends_new_line_in_request(void **states)
         .path = "/",
         .query = "a=1",
         .port = 80,
-        .flags = HTTP_FLAG_REQUEST,
+        .flags = HTTP_FLAG_CLIENT,
     };
 
     http_end_header(&request);
@@ -592,7 +592,7 @@ static void test__http_end_headers__does_not_change_chunked_flag_in_request(void
         .path = "/",
         .query = "a=1",
         .port = 80,
-        .flags = HTTP_FLAG_REQUEST | HTTP_FLAG_CHUNKED,
+        .flags = HTTP_FLAG_CLIENT | HTTP_FLAG_CHUNKED,
     };
 
     http_end_header(&request);
