@@ -558,7 +558,7 @@ static void test__http_begin_request__sends_user_agent_header(void **states)
 }
 
 
-static void test__http_end_headers__sends_new_line_in_request(void **states)
+static void test__http_end_headers__sends_new_line_if_client(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -580,7 +580,7 @@ static void test__http_end_headers__sends_new_line_in_request(void **states)
     close(fd);
 }
 
-static void test__http_end_headers__does_not_change_chunked_flag_in_request(void **states)
+static void test__http_end_headers__does_not_change_chunked_flag_if_client(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -602,7 +602,7 @@ static void test__http_end_headers__does_not_change_chunked_flag_in_request(void
     close(fd);
 }
 
-static void test__http_end_headers__sets_chunked_flag_in_response_if_no_content_length(void **states)
+static void test__http_end_headers__server_sets_chunked_flag_if_no_content_length(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -629,7 +629,7 @@ static void test__http_end_headers__sets_chunked_flag_in_response_if_no_content_
     close(fd);
 }
 
-static void test__http_end_headers__does_not_set_chunked_flag_in_response_if_content_length_is_nonzero(void **states)
+static void test__http_end_headers__server_does_not_set_chunked_flag_if_content_length_is_nonzero(void **states)
 {
     int fd = open_tmp_file();
     assert_true(0 <= fd);
@@ -745,10 +745,10 @@ const struct CMUnitTest tests_for_http_io[] = {
     cmocka_unit_test(test__http_begin_request__writes_the_POST_request_line),
     cmocka_unit_test(test__http_begin_request__sends_user_agent_header),
 
-    cmocka_unit_test(test__http_end_headers__sends_new_line_in_request),
-    cmocka_unit_test(test__http_end_headers__does_not_change_chunked_flag_in_request),
-    cmocka_unit_test(test__http_end_headers__sets_chunked_flag_in_response_if_no_content_length),
-    cmocka_unit_test(test__http_end_headers__does_not_set_chunked_flag_in_response_if_content_length_is_nonzero),
+    cmocka_unit_test(test__http_end_headers__sends_new_line_if_client),
+    cmocka_unit_test(test__http_end_headers__does_not_change_chunked_flag_if_client),
+    cmocka_unit_test(test__http_end_headers__server_sets_chunked_flag_if_no_content_length),
+    cmocka_unit_test(test__http_end_headers__server_does_not_set_chunked_flag_if_content_length_is_nonzero),
 
     cmocka_unit_test(test__http_set_content_length__sets_variable_and_sends_header),
 

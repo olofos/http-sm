@@ -156,7 +156,7 @@ static void test__http_parse_header__missing_newline_gives_error(void **state)
     free_request(&request);
 }
 
-static void test__http_parse_header__can_parse_host_header_if_request(void **state)
+static void test__http_parse_header__can_parse_host_header_if_server(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
@@ -170,7 +170,7 @@ static void test__http_parse_header__can_parse_host_header_if_request(void **sta
     free_request(&request);
 }
 
-static void test__http_parse_header__does_not_set_host_if_response(void **state)
+static void test__http_parse_header__does_not_set_host_if_client(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_HEADER);
@@ -257,7 +257,7 @@ static void test__http_parse_header__missing_newline_in_header_gives_error(void 
 }
 
 
-static void test__http_parse_header__can_read_response(void **state)
+static void test__http_parse_header__client_can_read_response(void **state)
 {
     struct http_request request;
     create_request(&request, HTTP_STATE_READ_CLIENT_VERSION);
@@ -413,15 +413,15 @@ const struct CMUnitTest tests_for_http_parse_header[] = {
     cmocka_unit_test(test__http_parse_header__http_version_10_gives_error),
     cmocka_unit_test(test__http_parse_header__unknown_http_version_gives_error),
     cmocka_unit_test(test__http_parse_header__missing_newline_gives_error),
-    cmocka_unit_test(test__http_parse_header__can_parse_host_header_if_request),
-    cmocka_unit_test(test__http_parse_header__does_not_set_host_if_response),
+    cmocka_unit_test(test__http_parse_header__can_parse_host_header_if_server),
+    cmocka_unit_test(test__http_parse_header__does_not_set_host_if_client),
     cmocka_unit_test(test__http_parse_header__can_parse_accept_encoding_gzip),
     cmocka_unit_test(test__http_parse_header__can_parse_accept_encoding_no_gzip),
-    cmocka_unit_test(test__http_parse_header__does_not_set_accept_encoding_if_response),
+    cmocka_unit_test(test__http_parse_header__does_not_set_accept_encoding_if_client),
     cmocka_unit_test(test__http_parse_header__can_parse_transfer_encoding_chunked),
     cmocka_unit_test(test__http_parse_header__can_parse_content_length),
     cmocka_unit_test(test__http_parse_header__missing_newline_in_header_gives_error),
-    cmocka_unit_test(test__http_parse_header__can_read_response),
+    cmocka_unit_test(test__http_parse_header__client_can_read_response),
 };
 
 const struct CMUnitTest tests_for_http_urldecode[] = {
