@@ -63,7 +63,6 @@ static void test__http_parse_header__can_parse_get_request_without_query(void **
     assert_non_null(request.path);
     assert_null(request.query);
     assert_string_equal("/", request.path);
-    assert_int_equal(HTTP_STATE_READ_HEADER, request.state);
 
     free_request(&request);
 }
@@ -80,8 +79,6 @@ static void test__http_parse_header__can_parse_get_request_with_query(void **sta
     assert_non_null(request.query);
     assert_string_equal("/test", request.path);
     assert_string_equal("a=1&b=2", request.query);
-
-    assert_int_equal(HTTP_STATE_READ_HEADER, request.state);
 
     free_request(&request);
 }
@@ -101,8 +98,6 @@ static void test__http_parse_header__can_parse_post_request(void **state)
     assert_null(request.query);
     assert_string_equal("/", request.path);
 
-    assert_int_equal(HTTP_STATE_READ_HEADER, request.state);
-
     free_request(&request);
 }
 
@@ -114,7 +109,6 @@ static void test__http_parse_header__unsupported_method_gives_error(void **state
     parse_header_helper(&request, "DELETE / HTTP/1.1\r\n");
 
     assert_int_equal(HTTP_METHOD_UNSUPPORTED, request.method);
-    assert_int_equal(HTTP_STATE_ERROR, request.state);
     assert_int_equal(HTTP_STATUS_METHOD_NOT_ALLOWED, request.error);
 
     free_request(&request);
@@ -127,7 +121,6 @@ static void test__http_parse_header__http_version_10_gives_error(void **state)
 
     parse_header_helper(&request, "GET / HTTP/1.0\r\n");
 
-    assert_int_equal(HTTP_STATE_ERROR, request.state);
     assert_int_equal(HTTP_STATUS_VERSION_NOT_SUPPORTED, request.error);
     free_request(&request);
 }
@@ -139,7 +132,6 @@ static void test__http_parse_header__unknown_http_version_gives_error(void **sta
 
     parse_header_helper(&request, "GET / XX\r\n");
 
-    assert_int_equal(HTTP_STATE_ERROR, request.state);
     assert_int_equal(HTTP_STATUS_BAD_REQUEST, request.error);
     free_request(&request);
 }
@@ -151,7 +143,6 @@ static void test__http_parse_header__missing_newline_gives_error(void **state)
 
     parse_header_helper(&request, "GET / HTTP/1.1\rX");
 
-    assert_int_equal(HTTP_STATE_ERROR, request.state);
     assert_int_equal(HTTP_STATUS_BAD_REQUEST, request.error);
     free_request(&request);
 }
@@ -251,7 +242,6 @@ static void test__http_parse_header__missing_newline_in_header_gives_error(void 
 
     parse_header_helper(&request, "Host: www.example.com\rX");
 
-    assert_int_equal(HTTP_STATE_ERROR, request.state);
     assert_int_equal(HTTP_STATUS_BAD_REQUEST, request.error);
     free_request(&request);
 }
@@ -264,7 +254,6 @@ static void test__http_parse_header__client_can_read_response(void **state)
 
     parse_header_helper(&request, "HTTP/1.1 200 OK\r\n");
 
-    assert_int_equal(HTTP_STATE_READ_HEADER, request.state);
     assert_int_equal(200, request.status);
 
     free_request(&request);
