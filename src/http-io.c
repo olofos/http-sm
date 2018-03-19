@@ -215,7 +215,7 @@ int http_begin_request(struct http_request *request)
 
 void http_end_header(struct http_request *request)
 {
-    if(http_is_response(request)) {
+    if(http_is_server(request)) {
         if(request->content_length < 0) {
             http_write_header(request, "Transfer-Encoding", "chunked");
             request->flags |= HTTP_FLAG_CHUNKED;

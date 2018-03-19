@@ -74,7 +74,7 @@ int http_open_request_socket(struct http_request *request)
 
 int http_close(struct http_request *request)
 {
-    if(http_is_response(request)) {
+    if(http_is_server(request)) {
         free(request->host);
         free(request->path);
         free(request->query);

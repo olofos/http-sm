@@ -134,7 +134,7 @@ void http_parse_header(struct http_request *request, char c)
 
                 char *val;
 
-                if(http_is_request(request)) {
+                if(http_is_client(request)) {
                     if((val = cmp_str_prefix(request->line, "Host: ")) != 0) {
                         request->host = malloc(strlen(val) + 1);
                         strcpy(request->host, val);
