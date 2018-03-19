@@ -55,7 +55,7 @@ static void parse_header_helper(struct http_request *request, const char *s)
 static void test__http_parse_header__can_parse_get_request_without_query(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_REQ_METHOD);
+    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
 
     parse_header_helper(&request, "GET / HTTP/1.1\r\n");
 
@@ -71,7 +71,7 @@ static void test__http_parse_header__can_parse_get_request_without_query(void **
 static void test__http_parse_header__can_parse_get_request_with_query(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_REQ_METHOD);
+    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
 
     parse_header_helper(&request, "GET /test?a=1&b=2 HTTP/1.1\r\n");
 
@@ -92,7 +92,7 @@ static void test__http_parse_header__can_parse_get_request_with_query(void **sta
 static void test__http_parse_header__can_parse_post_request(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_REQ_METHOD);
+    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
 
     parse_header_helper(&request, "POST / HTTP/1.1\r\n");
 
@@ -109,7 +109,7 @@ static void test__http_parse_header__can_parse_post_request(void **state)
 static void test__http_parse_header__unsupported_method_gives_error(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_REQ_METHOD);
+    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
 
     parse_header_helper(&request, "DELETE / HTTP/1.1\r\n");
 
@@ -123,7 +123,7 @@ static void test__http_parse_header__unsupported_method_gives_error(void **state
 static void test__http_parse_header__http_version_10_gives_error(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_REQ_METHOD);
+    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
 
     parse_header_helper(&request, "GET / HTTP/1.0\r\n");
 
@@ -135,7 +135,7 @@ static void test__http_parse_header__http_version_10_gives_error(void **state)
 static void test__http_parse_header__unknown_http_version_gives_error(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_REQ_METHOD);
+    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
 
     parse_header_helper(&request, "GET / XX\r\n");
 
@@ -147,7 +147,7 @@ static void test__http_parse_header__unknown_http_version_gives_error(void **sta
 static void test__http_parse_header__missing_newline_gives_error(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_REQ_METHOD);
+    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
 
     parse_header_helper(&request, "GET / HTTP/1.1\rX");
 
@@ -260,7 +260,7 @@ static void test__http_parse_header__missing_newline_in_header_gives_error(void 
 static void test__http_parse_header__can_read_response(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_RESP_VERSION);
+    create_request(&request, HTTP_STATE_READ_CLIENT_VERSION);
 
     parse_header_helper(&request, "HTTP/1.1 200 OK\r\n");
 

@@ -58,16 +58,16 @@ void http_parse_header(struct http_request *request, char c)
     }
 
     switch(request->state) {
-    case HTTP_STATE_READ_REQ_METHOD:
+    case HTTP_STATE_READ_SERVER_METHOD:
         if(c == ' ') {
             request->line[request->line_index] = 0;
 
             if(strcmp(request->line, "GET") == 0) {
                 request->method = HTTP_METHOD_GET;
-                http_parse_header_next_state(request, HTTP_STATE_READ_REQ_PATH);
+                http_parse_header_next_state(request, HTTP_STATE_READ_SERVER_PATH);
             } else if(strcmp(request->line, "POST") == 0) {
                 request->method = HTTP_METHOD_POST;
-                http_parse_header_next_state(request, HTTP_STATE_READ_REQ_PATH);
+                http_parse_header_next_state(request, HTTP_STATE_READ_SERVER_PATH);
             } else {
                 LOG("Unsupported HTTP method \"%s\"", request->line);
                 request->method = HTTP_METHOD_UNSUPPORTED;
@@ -78,34 +78,34 @@ void http_parse_header(struct http_request *request, char c)
         }
         break;
 
-    case HTTP_STATE_READ_REQ_PATH:
+    case HTTP_STATE_READ_SERVER_PATH:
         if(c == ' ' || c == '?') {
             request->line[request->line_index] = 0;
             request->path = malloc(strlen(request->line)+1);
             strcpy(request->path, request->line);
 
             if(c == '?') {
-                http_parse_header_next_state(request, HTTP_STATE_READ_REQ_QUERY);
+                http_parse_header_next_state(request, HTTP_STATE_READ_SERVER_QUERY);
             } else {
-                http_parse_header_next_state(request, HTTP_STATE_READ_REQ_VERSION);
+                http_parse_header_next_state(request, HTTP_STATE_READ_SERVER_VERSION);
             }
             return;
         }
         break;
 
-    case HTTP_STATE_READ_REQ_QUERY:
+    case HTTP_STATE_READ_SERVER_QUERY:
         if(c == ' ') {
             request->line[request->line_index] = 0;
             request->query = malloc(strlen(request->line)+1);
             strcpy(request->query, request->line);
 
-            http_parse_header_next_state(request, HTTP_STATE_READ_REQ_VERSION);
+            http_parse_header_next_state(request, HTTP_STATE_READ_SERVER_VERSION);
 
             return;
         }
         break;
 
-    case HTTP_STATE_READ_REQ_VERSION:
+    case HTTP_STATE_READ_SERVER_VERSION:
         if(c == '\r') {
             request->line[request->line_index] = 0;
             if(strcmp(request->line, "HTTP/1.1") == 0) {
@@ -167,20 +167,20 @@ void http_parse_header(struct http_request *request, char c)
         }
         break;
 
-    case HTTP_STATE_READ_RESP_VERSION:
+    case HTTP_STATE_READ_CLIENT_VERSION:
         if(c == ' ') {
             request->line[request->line_index] = 0;
             if(strcmp(request->line, "HTTP/1.1") != 0) {
                 LOG("Unexpected HTTP version \"%s\"", request->line);
             }
 
-            http_parse_header_next_state(request, HTTP_STATE_READ_RESP_STATUS);
+            http_parse_header_next_state(request, HTTP_STATE_READ_CLIENT_STATUS);
 
             return;
         }
         break;
 
-    case HTTP_STATE_READ_RESP_STATUS:
+    case HTTP_STATE_READ_CLIENT_STATUS:
         if(c == ' ') {
             char *p;
             request->line[request->line_index] = 0;
@@ -189,13 +189,13 @@ void http_parse_header(struct http_request *request, char c)
                 LOG("Error reading response code \"%s\" (%s)", request->line, p);
             }
 
-            http_parse_header_next_state(request, HTTP_STATE_READ_RESP_STATUS_DESC);
+            http_parse_header_next_state(request, HTTP_STATE_READ_CLIENT_STATUS_DESC);
 
             return;
         }
         break;
 
-    case HTTP_STATE_READ_RESP_STATUS_DESC:
+    case HTTP_STATE_READ_CLIENT_STATUS_DESC:
         if(c == '\r') {
             request->line[request->line_index] = 0;
             http_parse_header_next_state(request, HTTP_STATE_READ_HEADER | HTTP_STATE_READ_NL);

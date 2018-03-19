@@ -217,13 +217,13 @@ static void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te
     enum http_state all_other_states[] = {
         HTTP_STATE_IDLE,
         HTTP_STATE_ERROR,
-        HTTP_STATE_READ_REQ_METHOD,
-        HTTP_STATE_READ_REQ_PATH,
-        HTTP_STATE_READ_REQ_QUERY,
-        HTTP_STATE_READ_REQ_VERSION,
-        HTTP_STATE_READ_RESP_VERSION,
-        HTTP_STATE_READ_RESP_STATUS,
-        HTTP_STATE_READ_RESP_STATUS_DESC,
+        HTTP_STATE_READ_SERVER_METHOD,
+        HTTP_STATE_READ_SERVER_PATH,
+        HTTP_STATE_READ_SERVER_QUERY,
+        HTTP_STATE_READ_SERVER_VERSION,
+        HTTP_STATE_READ_CLIENT_VERSION,
+        HTTP_STATE_READ_CLIENT_STATUS,
+        HTTP_STATE_READ_CLIENT_STATUS_DESC,
         HTTP_STATE_READ_HEADER,
     };
 
@@ -252,13 +252,13 @@ static void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te
     enum http_state all_other_states[] = {
         HTTP_STATE_IDLE,
         HTTP_STATE_ERROR,
-        HTTP_STATE_READ_REQ_METHOD,
-        HTTP_STATE_READ_REQ_PATH,
-        HTTP_STATE_READ_REQ_QUERY,
-        HTTP_STATE_READ_REQ_VERSION,
-        HTTP_STATE_READ_RESP_VERSION,
-        HTTP_STATE_READ_RESP_STATUS,
-        HTTP_STATE_READ_RESP_STATUS_DESC,
+        HTTP_STATE_READ_SERVER_METHOD,
+        HTTP_STATE_READ_SERVER_PATH,
+        HTTP_STATE_READ_SERVER_QUERY,
+        HTTP_STATE_READ_SERVER_VERSION,
+        HTTP_STATE_READ_CLIENT_VERSION,
+        HTTP_STATE_READ_CLIENT_STATUS,
+        HTTP_STATE_READ_CLIENT_STATUS_DESC,
         HTTP_STATE_READ_HEADER,
     };
 

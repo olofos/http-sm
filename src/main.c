@@ -38,7 +38,7 @@ int http_server_read(struct http_request *request)
             LOG("Expected EOF but got %c", c);
         }
     } else {
-        if(request->state == HTTP_STATE_READ_REQ_BEGIN) {
+        if(request->state == HTTP_STATE_READ_SERVER_BEGIN) {
             http_response_init(request);
 
             const int line_len = HTTP_LINE_LEN;
