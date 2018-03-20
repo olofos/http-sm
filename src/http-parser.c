@@ -188,7 +188,9 @@ void http_parse_header(struct http_request *request, char c)
 
     default:
         LOG("Unhandled state 0x%02X", request->state);
-        break;
+        request->error = HTTP_STATUS_BAD_REQUEST;
+        request->state = HTTP_STATE_ERROR;
+        return;
     }
 
     if(request->line_index < request->line_len - 1) {
