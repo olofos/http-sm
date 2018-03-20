@@ -1,3 +1,6 @@
+# For a verbose build set V to an empty string when calling make: "V= make ..."
+V?=@
+
 SOURCES := main.c http-parser.c http-io.c http-socket.c http-util.c http-server.c http-client.c log.c
 
 TARGET=http-test
@@ -43,19 +46,17 @@ $(TSTBINDIR)test_http-socket: $(TSTOBJDIR)http-socket.o
 $(TSTBINDIR)test_http-server: $(TSTOBJDIR)http-server.o
 $(TSTBINDIR)test_http-client: $(TSTOBJDIR)http-client.o $(TSTOBJDIR)http-parser.o $(TSTOBJDIR)http-util.o
 
-
-
 -include $(DEPS)
 -include $(TST_DEPS)
 
 $(BINDIR)$(TARGET): build_dirs $(OBJ)
 	@echo LD $@
-	@$(CC) $(CFLAGS) $(OBJ) -o $@ -lcmocka
+	$(V)$(CC) $(CFLAGS) $(OBJ) -o $@ -lcmocka
 
 $(OBJDIR)%.o : $(SRCDIR)%.c
 	@echo CC $<
-	@$(CC) $(CFLAGS) -c $< -o $@
-	@$(CC) -MM -MT $@ $(CFLAGS) $< > $(DEPDIR)$*.d
+	$(V)$(CC) $(CFLAGS) -c $< -o $@
+	$(V)$(CC) -MM -MT $@ $(CFLAGS) $< > $(DEPDIR)$*.d
 
 test: build_dirs $(TST_RESULTS)
 	@echo "-----------------------"
@@ -73,40 +74,41 @@ test: build_dirs $(TST_RESULTS)
 	@! grep -s '\[  FAILED  \]' $(RESULTDIR)*.txt 2>&1 1>/dev/null
 
 build_dirs:
-	@mkdir -p $(BUILD_DIRS)
+	$(V)mkdir -p $(BUILD_DIRS)
 
 
 $(RESULTDIR)%.txt: $(TSTBINDIR)%
 	@echo Running $<
 	@echo
-	@./$< > $@ 2>&1 || true
+	$(V)./$< > $@ 2>&1 || true
 
 $(TSTOBJDIR)%.o : $(TSTDIR)%.c
 	@echo CC $@
-	@$(TST_CC) $(TST_CFLAGS) -c $< -o $@
-	@$(TST_CC) -MM -MT $@ $(TST_CFLAGS) $< > $(TSTDEPDIR)$*.d
+	$(V)$(TST_CC) $(TST_CFLAGS) -c $< -o $@
+	$(V)$(TST_CC) -MM -MT $@ $(TST_CFLAGS) $< > $(TSTDEPDIR)$*.d
 
 $(TSTOBJDIR)%.o : $(SRCDIR)%.c
 	@echo CC $@
-	@$(TST_CC) $(TST_CFLAGS) -c $< -o $@
-	@$(TST_CC) -MM -MT $@ $(TST_CFLAGS) $< > $(TSTDEPDIR)$*.d
+	$(V)$(TST_CC) $(TST_CFLAGS) -c $< -o $@
+	$(V)$(TST_CC) -MM -MT $@ $(TST_CFLAGS) $< > $(TSTDEPDIR)$*.d
 
 $(TSTBINDIR)test_%: $(TSTOBJDIR)test_%.o
 	@echo CC $@
-	@$(TST_CC) -o $@ $(TST_CFLAGS) $^ -lcmocka
+	$(V)$(TST_CC) -o $@ $(TST_CFLAGS) $^ -lcmocka
 
 coverage: test
 	@echo Collecting coverage data
-	@mkdir -p $(GCOVDIR)html
-	@gcov src/http-*.c -o $(TSTOBJDIR) > /dev/null
-	@mv *.gcov $(GCOVDIR)
-	@lcov --quiet --capture --directory $(TSTOBJDIR) --output-file $(GCOVDIR)coverge.info
-	@genhtml --quiet gcov/coverge.info --output-directory $(GCOVDIR)html/
-	@xdg-open $(GCOVDIR)html/index.html
+	$(V)mkdir -p $(GCOVDIR)html
+	$(V)gcov src/http-*.c -o $(TSTOBJDIR) > /dev/null
+	$(V)mv *.gcov $(GCOVDIR)
+	$(V)lcov --quiet --capture --directory $(TSTOBJDIR) --output-file $(GCOVDIR)coverge.info
+	$(V)genhtml --quiet gcov/coverge.info --output-directory $(GCOVDIR)html/
+	$(V)xdg-open $(GCOVDIR)html/index.html
 
 clean:
-	-rm -f $(OBJ) $(DEPS) $(TST_DEPS) $(TSTOBJDIR)*.o $(TSTBINDIR)test_* $(RESULTDIR)*.txt $(BINDIR/$(TARGET)
-	-rm -rf $(GCOVDIR)
+	@echo Cleaning
+	$(V)-rm -f $(OBJ) $(DEPS) $(TST_DEPS) $(TSTOBJDIR)*.o $(TSTBINDIR)test_* $(RESULTDIR)*.txt $(BINDIR/$(TARGET)
+	$(V)-rm -rf $(GCOVDIR)
 
 .PRECIOUS: $(TSTBINDIR)test_%
 .PRECIOUS: $(DEPDIR)%.d
