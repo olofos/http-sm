@@ -11,6 +11,7 @@ TSTOBJDIR := test/obj
 TSTBINDIR := test/bin
 TSTDEPDIR := test/.deps
 RESULTDIR := test/results
+GCOVDIR := gcov
 
 BUILD_DIRS = $(BINDIR) $(OBJDIR) $(DEPDIR) $(RESULTDIR) $(TSTOBJDIR) $(TSTBINDIR) $(TSTDEPDIR)
 
@@ -96,16 +97,16 @@ $(TSTBINDIR)/test_%: $(TSTOBJDIR)/test_%.o
 
 coverage: test
 	@echo Collecting coverage data
-	@mkdir -p gcov/html
-	@gcov src/http-*.c -o test/obj/ > /dev/null
-	@mv *.gcov gcov/
-	@lcov --quiet --capture --directory test/obj/ --output-file gcov/coverge.info
-	@genhtml --quiet gcov/coverge.info --output-directory gcov/html/
-	@xdg-open gcov/html/index.html
+	@mkdir -p $(GCOVDIR)/html
+	@gcov src/http-*.c -o $(TSTOBJDIR) > /dev/null
+	@mv *.gcov $(GCOVDIR)/
+	@lcov --quiet --capture --directory $(TSTOBJDIR) --output-file $(GCOVDIR)/coverge.info
+	@genhtml --quiet gcov/coverge.info --output-directory $(GCOVDIR)/html/
+	@xdg-open $(GCOVDIR)/html/index.html
 
 clean:
 	-rm -f $(OBJ) $(DEPS) $(TST_DEPS) $(TSTOBJDIR)/*.o $(TSTBINDIR)/test_* $(RESULTDIR)/*.txt $(BINDIR/$(TARGET)
-	-rm -r gcov/
+	-rm -r $(GCOVDIR)
 
 .PRECIOUS: $(TSTBINDIR)/test_%
 .PRECIOUS: $(DEPDIR)/%.d
