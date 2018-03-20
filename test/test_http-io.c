@@ -36,11 +36,6 @@ static const char *get_file_content(int fd);
 
 void LOG(const char *fmt, ...)
 {
-    // va_list va;
-    // va_start(va, fmt);
-    // vprintf(fmt, va);
-    // va_end(va);
-    // printf("\n");
 }
 
 
@@ -296,8 +291,6 @@ static void test__http_getc__read_to_end_of_file_with_te_chunked(void **states)
 
     off_t pos = lseek(request.fd, 0, SEEK_CUR);
     off_t end = lseek(request.fd, 0, SEEK_END);
-
-    printf("seek: %ld %ld\n", pos, end);
 
     assert_int_equal(end, pos);
 
