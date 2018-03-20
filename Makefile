@@ -25,13 +25,13 @@ CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer
 
 
 TST_CC = gcc
-TST_CFLAGS = -Wall -I$(SRCDIR) -g -fsanitize=address -fno-omit-frame-pointer
+TST_CFLAGS = -Wall -I$(SRCDIR) -g -fsanitize=address -fno-omit-frame-pointer --coverage
 
 TST_RESULTS = $(patsubst $(TSTDIR)/test_%.c,$(RESULTDIR)/test_%.txt,$(SOURCES_TST))
 TST_DEPS = $(TSTDEPDIR)/*.d
 
 
-.PHONY: all bin clean erase test build_dirs
+.PHONY: all bin clean erase test build_dirs coverage
 
 all: $(BINDIR)/$(TARGET)
 
@@ -94,8 +94,18 @@ $(TSTBINDIR)/test_%: $(TSTOBJDIR)/test_%.o
 	@echo CC $@
 	@$(TST_CC) -o $@ $(TST_CFLAGS) $^ -lcmocka
 
+coverage: test
+	@echo Collecting coverage data
+	@mkdir -p gcov/html
+	@gcov src/http-*.c -o test/obj/ > /dev/null
+	@mv *.gcov gcov/
+	@lcov --quiet --capture --directory test/obj/ --output-file gcov/coverge.info
+	@genhtml --quiet gcov/coverge.info --output-directory gcov/html/
+	@xdg-open gcov/html/index.html
+
 clean:
 	-rm -f $(OBJ) $(DEPS) $(TST_DEPS) $(TSTOBJDIR)/*.o $(TSTBINDIR)/test_* $(RESULTDIR)/*.txt $(BINDIR/$(TARGET)
+	-rm -r gcov/
 
 .PRECIOUS: $(TSTBINDIR)/test_%
 .PRECIOUS: $(DEPDIR)/%.d
