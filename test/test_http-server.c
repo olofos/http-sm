@@ -37,6 +37,20 @@ static void test__http_server_match_url__returns_false_if_wildcard_does_not_matc
     assert_false(http_server_match_url("a*", "bcd"));
 }
 
+static void test__http_status_string__returns_non_null_strings_for_all_known_status(void **states)
+{
+    assert_non_null(http_status_string(HTTP_STATUS_OK));
+    assert_non_null(http_status_string(HTTP_STATUS_BAD_REQUEST));
+    assert_non_null(http_status_string(HTTP_STATUS_NOT_FOUND));
+    assert_non_null(http_status_string(HTTP_STATUS_METHOD_NOT_ALLOWED));
+    assert_non_null(http_status_string(HTTP_STATUS_VERSION_NOT_SUPPORTED));
+}
+
+static void test__http_status_string__returns_a_non_null_string_for_an_unkown_known_status(void **states)
+{
+    assert_non_null(http_status_string(0));
+}
+
 
 // Main ////////////////////////////////////////////////////////////////////////
 
@@ -48,7 +62,14 @@ const struct CMUnitTest tests_for_http_server[] = {
     cmocka_unit_test(test__http_server_match_url__returns_false_if_wildcard_does_not_matches),
 };
 
+const struct CMUnitTest tests_for_http_status_string[] = {
+    cmocka_unit_test(test__http_status_string__returns_non_null_strings_for_all_known_status),
+    cmocka_unit_test(test__http_status_string__returns_a_non_null_string_for_an_unkown_known_status),
+};
+
 int main(void)
 {
-    return cmocka_run_group_tests(tests_for_http_server, NULL, NULL);
+    int fails = 0;
+    fails += cmocka_run_group_tests(tests_for_http_server, NULL, NULL);
+    fails += cmocka_run_group_tests(tests_for_http_status_string, NULL, NULL);
 }
