@@ -23,6 +23,7 @@ int http_get_request(struct http_request *request)
     if(err < 0) {
         LOG("http_begin_request failed");
         request->state = HTTP_STATE_ERROR;
+        http_close(request);
         return err;
     }
 
@@ -46,6 +47,7 @@ int http_get_request(struct http_request *request)
             request->line = 0;
             request->line_len = 0;
             request->state = HTTP_STATE_ERROR;
+            http_close(request);
 
             return -1;
         } else {
@@ -57,7 +59,11 @@ int http_get_request(struct http_request *request)
     request->line = 0;
     request->line_len = 0;
 
-    request->state = HTTP_STATE_READ_BODY;
+    if(request->state == HTTP_STATE_ERROR) {
+        http_close(request);
+        return -1;
+    }
 
+    request->state = HTTP_STATE_READ_BODY;
     return 1;
 }

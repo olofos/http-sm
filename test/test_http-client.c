@@ -41,6 +41,12 @@ void http_end_header(struct http_request *request)
     check_expected(request);
 }
 
+int http_close(struct http_request *request)
+{
+    check_expected(request);
+    return mock();
+}
+
 
 static void test__http_get_request__parses_http_headers(void **states)
 {
@@ -135,6 +141,9 @@ static void test__http_get_request__returns_minus_one_if_http_begin_request_fail
     expect_any(http_begin_request, request);
     will_return(http_begin_request, -1);
 
+    expect_any(http_close, request);
+    will_return(http_close, 0);
+
     int ret = http_get_request(&request);
 
     assert_int_equal(-1, ret);
@@ -169,6 +178,46 @@ static void test__http_get_request__returns_minus_one_if_header_is_incomplete(vo
 
     expect_any(http_end_header, request);
 
+    expect_any(http_close, request);
+    will_return(http_close, 0);
+
+    int ret = http_get_request(&request);
+
+    assert_int_equal(-1, ret);
+    assert_int_equal(HTTP_STATE_ERROR, request.state);
+    assert_int_equal(0, request.line);
+    assert_int_equal(0, request.line_len);
+
+    close(fd);
+}
+
+static void test__http_get_request__returns_minus_one_if_header_does_not_parse_correctly(void **states)
+{
+    const char *reply =
+        "HTTP/1.1 200 OK\r\n"
+        "Accept-Ranges: bytes\rX\n"
+        "Content-Type: text/html\r\n";
+
+    int fd = write_tmp_file(reply);
+
+    struct http_request request = {
+        .host = "www.example.com",
+        .path = "/",
+
+        .fd = fd,
+    };
+
+    expect_any(http_open_request_socket, request);
+    will_return(http_open_request_socket, 1);
+
+    expect_any(http_begin_request, request);
+    will_return(http_begin_request, 1);
+
+    expect_any(http_end_header, request);
+
+    expect_any(http_close, request);
+    will_return(http_close, 0);
+
     int ret = http_get_request(&request);
 
     assert_int_equal(-1, ret);
@@ -184,6 +233,7 @@ const struct CMUnitTest tests_for_http_get_request[] = {
     cmocka_unit_test(test__http_get_request__returns_minus_one_if_http_open_request_socket_fails),
     cmocka_unit_test(test__http_get_request__returns_minus_one_if_http_begin_request_fails),
     cmocka_unit_test(test__http_get_request__returns_minus_one_if_header_is_incomplete),
+    cmocka_unit_test(test__http_get_request__returns_minus_one_if_header_does_not_parse_correctly),
 };
 
 int main(void)
