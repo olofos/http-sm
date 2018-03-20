@@ -22,27 +22,6 @@ static void http_parse_header_next_state(struct http_request *request, int state
     request->line_index = 0;
 }
 
-const char *escaped_string(const char *in)
-{
-    static char out[256];
-    int j = 0;
-
-    for(int i = 0; i < strlen(in) && j < sizeof(out) - 2; i++) {
-        if(in[i] == '\r') {
-            out[j++] = '\\';
-            out[j++] = 'r';
-        } else if(in[i] == '\n') {
-            out[j++] = '\\';
-            out[j++] = 'n';
-        } else {
-            out[j++] = in[i];
-        }
-    }
-    out[j] = 0;
-
-    return out;
-}
-
 void http_parse_header(struct http_request *request, char c)
 {
     if(request->state & HTTP_STATE_READ_NL) {
