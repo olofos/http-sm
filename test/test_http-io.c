@@ -297,6 +297,112 @@ static void test__http_getc__read_to_end_of_file_with_te_chunked(void **states)
     close(fd);
 }
 
+static void test__http_getc__returns_zero_if_eof_is_found_when_content_length_is_not_zero(void **states)
+{
+    const char *s = "012";
+
+    int fd = write_tmp_file(s);
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+    request.content_length = strlen(s) + 1;
+
+    int c;
+    while((c = http_getc(&request)) > 0) {
+    }
+    assert_int_equal(0, c);
+
+    off_t pos = lseek(request.fd, 0, SEEK_CUR);
+    off_t end = lseek(request.fd, 0, SEEK_END);
+
+    assert_int_equal(end, pos);
+
+    close(fd);
+}
+
+static void test__http_getc__returns_zero_if_eof_is_found_in_chunk_header(void **states)
+{
+    const char *s =
+        "4\r\n"
+        "0123"
+        "\r\n"
+        "4";
+
+    int fd = write_tmp_file(s);
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+    request.flags |= HTTP_FLAG_CHUNKED;
+
+    int c;
+    while((c = http_getc(&request)) > 0) {
+    }
+    assert_int_equal(0, c);
+
+    off_t pos = lseek(request.fd, 0, SEEK_CUR);
+    off_t end = lseek(request.fd, 0, SEEK_END);
+
+    assert_int_equal(end, pos);
+
+    close(fd);
+}
+
+static void test__http_getc__returns_zero_if_eof_is_found_after_chunk_header(void **states)
+{
+    const char *s =
+        "4\r\n"
+        "0123"
+        "\r\n"
+        "4\r";
+
+    int fd = write_tmp_file(s);
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+    request.flags |= HTTP_FLAG_CHUNKED;
+
+    int c;
+    while((c = http_getc(&request)) > 0) {
+    }
+    assert_int_equal(0, c);
+
+    off_t pos = lseek(request.fd, 0, SEEK_CUR);
+    off_t end = lseek(request.fd, 0, SEEK_END);
+
+    assert_int_equal(end, pos);
+
+    close(fd);
+}
+
+static void test__http_getc__returns_zero_if_eof_is_found_in_chunk_footer(void **states)
+{
+    const char *s =
+        "4\r\n"
+        "0123";
+
+    int fd = write_tmp_file(s);
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+    request.flags |= HTTP_FLAG_CHUNKED;
+
+    int c;
+    while((c = http_getc(&request)) > 0) {
+    }
+    assert_int_equal(0, c);
+
+    off_t pos = lseek(request.fd, 0, SEEK_CUR);
+    off_t end = lseek(request.fd, 0, SEEK_END);
+
+    assert_int_equal(end, pos);
+
+    close(fd);
+}
+
 static void test__http_peek__returns_the_next_character_with_te_identity(void **states)
 {
     char *str = "0123";
@@ -721,6 +827,10 @@ const struct CMUnitTest tests_for_http_io[] = {
     cmocka_unit_test(test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te_chunked),
 
     cmocka_unit_test(test__http_getc__read_to_end_of_file_with_te_chunked),
+    cmocka_unit_test(test__http_getc__returns_zero_if_eof_is_found_when_content_length_is_not_zero),
+    cmocka_unit_test(test__http_getc__returns_zero_if_eof_is_found_in_chunk_header),
+    cmocka_unit_test(test__http_getc__returns_zero_if_eof_is_found_after_chunk_header),
+    cmocka_unit_test(test__http_getc__returns_zero_if_eof_is_found_in_chunk_footer),
 
     cmocka_unit_test(test__http_peek__returns_the_next_character_with_te_identity),
     cmocka_unit_test(test__http_peek__returns_the_next_character_with_te_chunked),
