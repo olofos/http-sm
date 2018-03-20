@@ -851,6 +851,7 @@ const struct CMUnitTest tests_for_http_socket[] = {
     cmocka_unit_test(test__http_open_request_socket__returns_minus_one_if_connect_fails),
 
     cmocka_unit_test(test__http_close__closes_the_socket),
+    cmocka_unit_test(test__http_close__does_not_close_a_closed_socket),
 
     cmocka_unit_test(test__http_open_listen_socket__opens_and_binds_and_listens),
 
