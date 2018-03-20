@@ -289,6 +289,18 @@ static void test__http_parse_header__client_can_read_response(void **state)
     free_request(&request);
 }
 
+static void test__http_parse_header__client_can_read_response_with_unknown_http_method(void **state)
+{
+    struct http_request request;
+    create_client_request(&request);
+
+    parse_header_helper(&request, "HTTP/X.X 200 OK\r\n");
+
+    assert_int_equal(200, request.status);
+
+    free_request(&request);
+}
+
 
 
 static void test__http_urldecode__returns_the_length_of_the_decoded_string(void **state)
@@ -442,6 +454,7 @@ const struct CMUnitTest tests_for_http_parse_header[] = {
     cmocka_unit_test(test__http_parse_header__unparseable_content_length_gives_error),
     cmocka_unit_test(test__http_parse_header__missing_newline_in_header_gives_error),
     cmocka_unit_test(test__http_parse_header__client_can_read_response),
+    cmocka_unit_test(test__http_parse_header__client_can_read_response_with_unknown_http_method),
 };
 
 const struct CMUnitTest tests_for_http_urldecode[] = {
