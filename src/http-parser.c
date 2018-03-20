@@ -252,10 +252,6 @@ int http_urldecode(char *dest, const char* src, int max_len)
 
 static void parse_query_string(struct http_request *request)
 {
-    if(!request->query) {
-        request->query_list = 0;
-    }
-
     int n = 0;
     if(request->query && *request->query) {
         n++;
