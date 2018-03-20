@@ -17,11 +17,29 @@ void LOG(const char *fmt, ...)
     // printf("\n");
 }
 
-static void create_request(struct http_request *request, int state)
+static void create_server_request(struct http_request *request)
 {
     const int line_len = 32;
 
-    request->state  = state;
+    request->state  = HTTP_STATE_READ_SERVER_METHOD;
+    request->method = HTTP_METHOD_UNKNOWN;
+    request->line = malloc(line_len);
+    request->line_len = line_len;
+    request->line_index = 0;
+    request->path = 0;
+    request->query = 0;
+    request->host = 0;
+    request->flags = 0;
+    request->status = 0;
+    request->error = 0;
+    request->content_length = -1;
+}
+
+static void create_client_request(struct http_request *request)
+{
+    const int line_len = 32;
+
+    request->state  = HTTP_STATE_READ_CLIENT_VERSION;
     request->method = HTTP_METHOD_UNKNOWN;
     request->line = malloc(line_len);
     request->line_len = line_len;
@@ -55,7 +73,7 @@ static void parse_header_helper(struct http_request *request, const char *s)
 static void test__http_parse_header__can_parse_get_request_without_query(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
+    create_server_request(&request);
 
     parse_header_helper(&request, "GET / HTTP/1.1\r\n");
 
@@ -70,7 +88,7 @@ static void test__http_parse_header__can_parse_get_request_without_query(void **
 static void test__http_parse_header__can_parse_get_request_with_query(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
+    create_server_request(&request);
 
     parse_header_helper(&request, "GET /test?a=1&b=2 HTTP/1.1\r\n");
 
@@ -89,7 +107,7 @@ static void test__http_parse_header__can_parse_get_request_with_query(void **sta
 static void test__http_parse_header__can_parse_post_request(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
+    create_server_request(&request);
 
     parse_header_helper(&request, "POST / HTTP/1.1\r\n");
 
@@ -104,7 +122,7 @@ static void test__http_parse_header__can_parse_post_request(void **state)
 static void test__http_parse_header__unsupported_method_gives_error(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
+    create_server_request(&request);
 
     parse_header_helper(&request, "DELETE / HTTP/1.1\r\n");
 
@@ -117,7 +135,7 @@ static void test__http_parse_header__unsupported_method_gives_error(void **state
 static void test__http_parse_header__http_version_10_gives_error(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
+    create_server_request(&request);
 
     parse_header_helper(&request, "GET / HTTP/1.0\r\n");
 
@@ -128,7 +146,7 @@ static void test__http_parse_header__http_version_10_gives_error(void **state)
 static void test__http_parse_header__unknown_http_version_gives_error(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
+    create_server_request(&request);
 
     parse_header_helper(&request, "GET / XX\r\n");
 
@@ -139,7 +157,7 @@ static void test__http_parse_header__unknown_http_version_gives_error(void **sta
 static void test__http_parse_header__missing_newline_gives_error(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_SERVER_METHOD);
+    create_server_request(&request);
 
     parse_header_helper(&request, "GET / HTTP/1.1\rX");
 
@@ -150,10 +168,10 @@ static void test__http_parse_header__missing_newline_gives_error(void **state)
 static void test__http_parse_header__can_parse_host_header_if_server(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_HEADER);
+    create_server_request(&request);
     request.flags &= ~HTTP_FLAG_CLIENT;
 
-    parse_header_helper(&request, "Host: www.example.com\r\n");
+    parse_header_helper(&request, "GET / HTTP/1.1\r\nHost: www.example.com\r\n");
 
     assert_non_null(request.host);
     assert_string_equal("www.example.com", request.host);
@@ -164,10 +182,10 @@ static void test__http_parse_header__can_parse_host_header_if_server(void **stat
 static void test__http_parse_header__does_not_set_host_if_client(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_HEADER);
+    create_server_request(&request);
     request.flags |= HTTP_FLAG_CLIENT;
 
-    parse_header_helper(&request, "Host: www.example.com\r\n");
+    parse_header_helper(&request, "GET / HTTP/1.1\r\nHost: www.example.com\r\n");
 
     assert_null(request.host);
     free_request(&request);
@@ -176,10 +194,10 @@ static void test__http_parse_header__does_not_set_host_if_client(void **state)
 static void test__http_parse_header__can_parse_accept_encoding_gzip(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_HEADER);
+    create_server_request(&request);
     request.flags &= ~HTTP_FLAG_CLIENT;
 
-    parse_header_helper(&request, "Accept-Encoding: gzip, deflate\r\n");
+    parse_header_helper(&request, "GET / HTTP/1.1\r\nAccept-Encoding: gzip, deflate\r\n");
 
     assert_int_equal(HTTP_FLAG_ACCEPT_GZIP, request.flags & HTTP_FLAG_ACCEPT_GZIP);
     free_request(&request);
@@ -188,10 +206,10 @@ static void test__http_parse_header__can_parse_accept_encoding_gzip(void **state
 static void test__http_parse_header__can_parse_accept_encoding_no_gzip(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_HEADER);
+    create_server_request(&request);
     request.flags &= ~HTTP_FLAG_CLIENT;
 
-    parse_header_helper(&request, "Accept-Encoding: deflate\r\n");
+    parse_header_helper(&request, "GET / HTTP/1.1\r\nAccept-Encoding: deflate\r\n");
 
     assert_int_equal(0, request.flags & HTTP_FLAG_ACCEPT_GZIP);
     free_request(&request);
@@ -200,10 +218,10 @@ static void test__http_parse_header__can_parse_accept_encoding_no_gzip(void **st
 static void test__http_parse_header__does_not_set_accept_encoding_if_client(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_HEADER);
+    create_server_request(&request);
     request.flags |= HTTP_FLAG_CLIENT;
 
-    parse_header_helper(&request, "Accept-Encoding: gzip, deflate\r\n");
+    parse_header_helper(&request, "GET / HTTP/1.1\r\nAccept-Encoding: gzip, deflate\r\n");
 
     assert_int_equal(0, request.flags & HTTP_FLAG_ACCEPT_GZIP);
     free_request(&request);
@@ -212,9 +230,9 @@ static void test__http_parse_header__does_not_set_accept_encoding_if_client(void
 static void test__http_parse_header__can_parse_transfer_encoding_chunked(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_HEADER);
+    create_server_request(&request);
 
-    parse_header_helper(&request, "Transfer-Encoding: chunked\r\n");
+    parse_header_helper(&request, "GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n");
 
     assert_int_equal(HTTP_FLAG_CHUNKED, request.flags & HTTP_FLAG_CHUNKED);
 
@@ -225,9 +243,9 @@ static void test__http_parse_header__can_parse_transfer_encoding_chunked(void **
 static void test__http_parse_header__can_parse_content_length(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_HEADER);
+    create_server_request(&request);
 
-    parse_header_helper(&request, "Content-Length: 10\r\n");
+    parse_header_helper(&request, "GET / HTTP/1.1\r\nContent-Length: 10\r\n");
 
     assert_int_equal(10, request.content_length);
 
@@ -238,9 +256,9 @@ static void test__http_parse_header__can_parse_content_length(void **state)
 static void test__http_parse_header__missing_newline_in_header_gives_error(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_HEADER);
+    create_server_request(&request);
 
-    parse_header_helper(&request, "Host: www.example.com\rX");
+    parse_header_helper(&request, "GET / HTTP/1.1\r\nHost: www.example.com\rX");
 
     assert_int_equal(HTTP_STATUS_BAD_REQUEST, request.error);
     free_request(&request);
@@ -250,7 +268,7 @@ static void test__http_parse_header__missing_newline_in_header_gives_error(void 
 static void test__http_parse_header__client_can_read_response(void **state)
 {
     struct http_request request;
-    create_request(&request, HTTP_STATE_READ_CLIENT_VERSION);
+    create_client_request(&request);
 
     parse_header_helper(&request, "HTTP/1.1 200 OK\r\n");
 
