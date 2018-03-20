@@ -310,8 +310,6 @@ enum http_cgi_state cgi_query(struct http_request* request)
 
 enum http_cgi_state cgi_exit(struct http_request* request)
 {
-    LOG("Exiting");
-
     const char *response = "Exiting\r\n";
 
     http_begin_response(request, 200, "text/plain");
@@ -326,10 +324,10 @@ enum http_cgi_state cgi_exit(struct http_request* request)
     char c;
     read(request->fd, &c, 1);
 
-    usleep(10 * 1000);
-
     free(request->line);
     http_close(request);
+
+    LOG("Exiting");
 
     exit(0);
 }
@@ -549,7 +547,7 @@ int main(int argc, char *argv[])
         if(child < 0) {
             perror("fork");
             return 1;
-        } else if(child == 0) {
+        } else if(child > 0) {
             log_system = "server";
             LOG("Starting server");
             server_main(http_port);
@@ -563,8 +561,17 @@ int main(int argc, char *argv[])
 
             int fails = cmocka_run_group_tests(tests, NULL, NULL);
 
-            usleep(1000);
-            kill(child, SIGINT);
+            struct http_request request = {
+                .host = "localhost",
+                .path = "/exit",
+                .port = http_port,
+            };
+
+            http_get_request(&request);
+            char buf[256];
+            read_all(&request, buf);
+
+            http_close(&request);
 
             LOG("Waiting for child to teminate");
 
