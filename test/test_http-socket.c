@@ -417,6 +417,17 @@ static void test__http_close__closes_the_socket(void **states)
     assert_int_equal(-1, request.fd);
 }
 
+static void test__http_close__does_not_close_a_closed_socket(void **states)
+{
+    struct http_request request = {
+        .fd = -1,
+    };
+
+    int ret = http_close(&request);
+    assert_int_equal(-1, ret);
+    assert_int_equal(-1, request.fd);
+}
+
 
 static void test__http_open_listen_socket__opens_and_binds_and_listens(void **states)
 {
