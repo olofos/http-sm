@@ -17,15 +17,6 @@
 
 // Mocks ///////////////////////////////////////////////////////////////////////
 
-void LOG(const char *fmt, ...)
-{
-    va_list va;
-    va_start(va, fmt);
-    vprintf(fmt, va);
-    va_end(va);
-    printf("\n");
-}
-
 struct addrinfo *getaddrinfo_res;
 
 int getaddrinfo(const char *node, const char *service,

@@ -8,14 +8,9 @@
 #include "http.h"
 #include "http-private.h"
 
-void LOG(const char *fmt, ...)
-{
-    // va_list va;
-    // va_start(va, fmt);
-    // vprintf(fmt, va);
-    // va_end(va);
-    // printf("\n");
-}
+#include "test-util.h"
+
+// Tests ///////////////////////////////////////////////////////////////////////
 
 static void create_server_request(struct http_request *request)
 {
@@ -457,7 +452,7 @@ static void test__http_get_query_arg__can_handle_missing_value(void **states)
     free(request.query_list);
 }
 
-
+// Main ////////////////////////////////////////////////////////////////////////
 
 const struct CMUnitTest tests_for_http_parse_header[] = {
     cmocka_unit_test(test__http_parse_header__can_parse_get_request_without_query),

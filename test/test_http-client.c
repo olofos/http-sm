@@ -11,18 +11,9 @@
 
 #include "http.h"
 
-static int open_tmp_file(void);
-static int write_tmp_file(const char *s);
+#include "test-util.h"
 
-void LOG(const char *fmt, ...)
-{
-    va_list va;
-    va_start(va, fmt);
-    vprintf(fmt, va);
-    va_end(va);
-    printf("\n");
-}
-
+// Mocks ///////////////////////////////////////////////////////////////////////
 
 int http_open_request_socket(struct http_request *request)
 {
@@ -47,6 +38,7 @@ int http_close(struct http_request *request)
     return mock();
 }
 
+// Tests ///////////////////////////////////////////////////////////////////////
 
 static void test__http_get_request__parses_http_headers(void **states)
 {
@@ -228,6 +220,8 @@ static void test__http_get_request__returns_minus_one_if_header_does_not_parse_c
     close(fd);
 }
 
+// Main ////////////////////////////////////////////////////////////////////////
+
 const struct CMUnitTest tests_for_http_get_request[] = {
     cmocka_unit_test(test__http_get_request__parses_http_headers),
     cmocka_unit_test(test__http_get_request__returns_minus_one_if_http_open_request_socket_fails),
@@ -239,54 +233,4 @@ const struct CMUnitTest tests_for_http_get_request[] = {
 int main(void)
 {
     return cmocka_run_group_tests(tests_for_http_get_request, NULL, NULL);
-}
-
-// Support functions for testing reads /////////////////////////////////////////
-
-static int open_tmp_file(void)
-{
-    char filename[] = "/tmp/http-test-XXXXXX";
-    int fd = mkstemp(filename);
-
-    if(fd < 0) {
-        perror("mkstemp");
-    } else {
-        unlink(filename);
-    }
-    return fd;
-}
-
-static int write_string(int fd, const char *s)
-{
-    int num = 0;
-    int len = strlen(s);
-
-    while(num < len) {
-        int n = write(fd, s, len);
-        if(n < 0) {
-            perror("write");
-            break;
-        }
-        num += n;
-        s += n;
-    }
-    return num;
-}
-
-static int write_tmp_file(const char *s)
-{
-    int fd = open_tmp_file();
-    if(fd < 0) {
-        return fd;
-    }
-
-    if(write_string(fd, s) < 0) {
-        return -1;
-    }
-
-    if(lseek(fd, SEEK_SET, 0) != 0) {
-        return -1;
-    }
-
-    return fd;
 }
