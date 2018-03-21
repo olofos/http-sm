@@ -362,7 +362,10 @@ static void test__http_getc__returns_zero_if_eof_is_found_in_chunk_footer(void *
 {
     const char *s =
         "4\r\n"
-        "0123";
+        "0123"
+        "\r\n"
+        "0";
+
 
     int fd = write_tmp_file(s);
     assert_true(0 <= fd);
