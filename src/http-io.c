@@ -156,7 +156,9 @@ int http_write_string(struct http_request *request, const char *str)
     if(request->flags & HTTP_FLAG_CHUNKED) {
         char buf[16];
         int n = snprintf(buf, sizeof(buf), "%X\r\n", len);
-        write_all(request->fd, buf, n);
+        if(write_all(request->fd, buf, n) < 0) {
+            return -1;
+        }
     }
 
     int num = write_all(request->fd, str, len);

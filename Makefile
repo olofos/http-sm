@@ -40,6 +40,7 @@ TST_DEPS = $(TSTDEPDIR)*.d
 all: $(BINDIR)$(TARGET)
 
 $(TSTBINDIR)test_http-io: $(TSTOBJDIR)http-io.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
+$(TSTBINDIR)test_http-io_wrap: $(TSTOBJDIR)http-io.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-parser: $(TSTOBJDIR)http-parser.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-util: $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-socket: $(TSTOBJDIR)http-socket.o $(TSTOBJDIR)test-util.o
