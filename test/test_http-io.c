@@ -393,7 +393,7 @@ static void test__http_getc__returns_zero_if_extra_characters_are_found_in_chunk
         "4\r\n"
         "0123"
         "\r\n"
-        "0"//\r\n"
+        "0\r\n"
         "XX";
 
 
