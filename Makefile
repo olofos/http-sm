@@ -101,13 +101,17 @@ coverage: test
 	$(V)mkdir -p $(GCOVDIR)html
 	$(V)gcov src/http-*.c -o $(TSTOBJDIR) > /dev/null
 	$(V)mv *.gcov $(GCOVDIR)
-	$(V)lcov --quiet --capture --directory $(TSTOBJDIR) --output-file $(GCOVDIR)coverge.info
-	$(V)genhtml --quiet gcov/coverge.info --output-directory $(GCOVDIR)html/
+	$(V)lcov --quiet --capture --directory $(TSTOBJDIR) --output-file $(GCOVDIR)coverage.info
+	$(V)genhtml --quiet gcov/coverage.info --output-directory $(GCOVDIR)html/
+	@echo
+	$(V)lcov --summary gcov/coverage.info 2>&1 | grep -v 'Reading\|branches'
+
+coverage-open: coverage
 	$(V)xdg-open $(GCOVDIR)html/index.html
 
 clean:
 	@echo Cleaning
-	$(V)-rm -f $(OBJ) $(DEPS) $(TST_DEPS) $(TSTOBJDIR)*.o $(TSTBINDIR)test_* $(RESULTDIR)*.txt $(BINDIR/$(TARGET)
+	$(V)-rm -f $(OBJ) $(DEPS) $(TST_DEPS) $(TSTOBJDIR)*.o $(TSTOBJDIR)*.gcda $(TSTOBJDIR)*.gcno $(TSTBINDIR)test_* $(RESULTDIR)*.txt $(BINDIR/$(TARGET)
 	$(V)-rm -rf $(GCOVDIR)
 
 .PRECIOUS: $(TSTBINDIR)test_%
