@@ -842,7 +842,10 @@ const struct CMUnitTest tests_for_http_io[] = {
 
 int main(void)
 {
-    return cmocka_run_group_tests(tests_for_http_io, NULL, NULL);
+    int fails = 0;
+    fails += cmocka_run_group_tests(tests_for_http_io, NULL, NULL);
+
+    return fails;
 }
 
 // Support functions for test setup ////////////////////////////////////////////

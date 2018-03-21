@@ -232,5 +232,8 @@ const struct CMUnitTest tests_for_http_get_request[] = {
 
 int main(void)
 {
-    return cmocka_run_group_tests(tests_for_http_get_request, NULL, NULL);
+    int fails = 0;
+    fails += cmocka_run_group_tests(tests_for_http_get_request, NULL, NULL);
+
+    return fails;
 }
