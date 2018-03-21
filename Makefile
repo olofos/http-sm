@@ -112,7 +112,7 @@ coverage-open: coverage
 
 clean:
 	@echo Cleaning
-	$(V)-rm -f $(OBJ) $(DEPS) $(TST_DEPS) $(TSTOBJDIR)*.o $(TSTOBJDIR)*.gcda $(TSTOBJDIR)*.gcno $(TSTBINDIR)test_* $(RESULTDIR)*.txt $(BINDIR/$(TARGET)
+	$(V)-rm -f $(OBJ) $(DEPS) $(TST_DEPS) $(TSTOBJDIR)*.o $(TSTOBJDIR)*.gcda $(TSTOBJDIR)*.gcno $(TSTBINDIR)test_* $(RESULTDIR)*.txt $(BINDIR)$(TARGET)
 	$(V)-rm -rf $(GCOVDIR)
 
 .PRECIOUS: $(TSTBINDIR)test_%
