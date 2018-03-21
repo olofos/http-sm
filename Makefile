@@ -103,8 +103,9 @@ coverage: test
 	$(V)mv *.gcov $(GCOVDIR)
 	$(V)lcov --quiet --capture --directory $(TSTOBJDIR) --output-file $(GCOVDIR)coverage.info
 	$(V)genhtml --quiet gcov/coverage.info --output-directory $(GCOVDIR)html/
+	$(V)lcov --quiet --remove $(GCOVDIR)coverage.info 'test/*' '/usr/*' --output-file $(GCOVDIR)coverage-src.info
 	@echo
-	$(V)lcov --summary gcov/coverage.info 2>&1 | grep -v 'Reading\|branches'
+	$(V)lcov --summary $(GCOVDIR)coverage-src.info 2>&1 | grep -v 'Reading\|branches'
 
 coverage-open: coverage
 	$(V)xdg-open $(GCOVDIR)html/index.html
