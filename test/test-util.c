@@ -196,3 +196,35 @@ const char *get_file_content(int fd)
     return buf;
 }
 
+// Trivial implementations of wrapped functions ////////////////////////////////
+
+void *__real_malloc(size_t size);
+void __real_free(void *ptr);
+ssize_t __real_read(int fd, void *buf, size_t count);
+ssize_t __real_write(int fd, const void *buf, size_t count);
+
+
+void *__wrap_malloc(size_t size) __attribute__((weak));
+void __wrap_free(void *ptr) __attribute__((weak));
+ssize_t __wrap_read(int fd, void *buf, size_t count) __attribute__((weak));
+ssize_t __wrap_write(int fd, const void *buf, size_t count) __attribute__((weak));
+
+void *__wrap_malloc(size_t size)
+{
+    return __real_malloc(size);
+}
+
+void __wrap_free(void *ptr)
+{
+    __real_free(ptr);
+}
+
+ssize_t __wrap_read(int fd, void *buf, size_t count)
+{
+    return __real_read(fd, buf, count);
+}
+
+ssize_t __wrap_write(int fd, const void *buf, size_t count)
+{
+    return __real_write(fd, buf, count);
+}

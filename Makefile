@@ -27,9 +27,9 @@ SOURCES_TST = $(wildcard $(TSTDIR)*.c)
 CC = gcc
 CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer
 
-
 TST_CC = gcc
-TST_CFLAGS = -Wall -I$(SRCDIR) -g -fsanitize=address -fno-omit-frame-pointer --coverage
+TST_WRAP = -Wl,--wrap=malloc,--wrap=free,--wrap=read,--wrap=write
+TST_CFLAGS = -Wall -I$(SRCDIR) -g -fsanitize=address -fno-omit-frame-pointer --coverage $(TST_WRAP)
 
 TST_RESULTS = $(patsubst $(TSTDIR)test_%.c,$(RESULTDIR)test_%.txt,$(SOURCES_TST))
 TST_DEPS = $(TSTDEPDIR)*.d
@@ -41,7 +41,7 @@ all: $(BINDIR)$(TARGET)
 
 $(TSTBINDIR)test_http-io: $(TSTOBJDIR)http-io.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-parser: $(TSTOBJDIR)http-parser.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
-$(TSTBINDIR)test_http-util: $(TSTOBJDIR)http-util.o
+$(TSTBINDIR)test_http-util: $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-socket: $(TSTOBJDIR)http-socket.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-server: $(TSTOBJDIR)http-server.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-client: $(TSTOBJDIR)http-client.o $(TSTOBJDIR)http-parser.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
