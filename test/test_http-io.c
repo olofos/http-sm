@@ -93,6 +93,33 @@ static void test__http_getc__can_read_correctly_with_te_chunked(void **states)
     close(fd);
 }
 
+static void test__http_getc__can_read_correctly_te_chunked_and_chunk_extension(void **states)
+{
+    char *str = "1234";
+
+    const char *s[] = {
+        "4;a=b\r\n",
+        str,
+        "\r\n0;x=y\r\n",
+        0
+    };
+
+    int fd = write_tmp_file_n(s);
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_request(&request, fd);
+    request.flags |= HTTP_FLAG_CHUNKED;
+
+    for(int i = 0; i < strlen(str); i++) {
+        int c = http_getc(&request);
+        assert_int_equal(str[i], c);
+    }
+
+    close(fd);
+}
+
+
 static void test__http_getc__can_read_non_ascii_characters_with_te_identity(void **states)
 {
     char *str = "\xBA\xAD\xF0\x0D";
@@ -829,6 +856,7 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
 const struct CMUnitTest tests_for_http_io[] = {
     cmocka_unit_test(test__http_getc__can_read_correctly_with_te_identity),
     cmocka_unit_test(test__http_getc__can_read_correctly_with_te_chunked),
+    cmocka_unit_test(test__http_getc__can_read_correctly_te_chunked_and_chunk_extension),
     cmocka_unit_test(test__http_getc__doesnt_read_more_than_content_length_with_te_identity),
 
     cmocka_unit_test(test__http_getc__can_read_non_ascii_characters_with_te_identity),
