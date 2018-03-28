@@ -16,7 +16,7 @@ enum http_state
     HTTP_STATE_IDLE                  = 0x00,
     HTTP_STATE_ERROR                 = 0x01,
     //
-    HTTP_STATE_READ                  = 0x10 | 0x80,
+    HTTP_STATE_READ                  = 0x10,
     //
     HTTP_STATE_READ_SERVER_BEGIN        = 0x11,
     HTTP_STATE_READ_CLIENT_BEGIN       = 0x12,
