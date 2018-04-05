@@ -21,9 +21,9 @@
 
 int http_server_read(struct http_request *request)
 {
-    if(request->state == HTTP_STATE_READ_BODY) {
+    if(request->state == HTTP_STATE_SERVER_READ_BODY) {
         return 0;
-    } else if(request->state == HTTP_STATE_READ_EXPECT_EOF) {
+    } else if(request->state == HTTP_STATE_SERVER_READ_DONE) {
         char c;
         int n = read(request->fd, &c, 1);
 
@@ -38,7 +38,7 @@ int http_server_read(struct http_request *request)
             LOG("Expected EOF but got %c", c);
         }
     } else {
-        if(request->state == HTTP_STATE_READ_SERVER_BEGIN) {
+        if(request->state == HTTP_STATE_SERVER_READ_BEGIN) {
             http_response_init(request);
 
             const int line_len = HTTP_LINE_LEN;
@@ -77,9 +77,9 @@ int http_server_read(struct http_request *request)
                 request->line_len = 0;
 
                 if(request->method == HTTP_METHOD_POST) {
-                    request->state = HTTP_STATE_READ_BODY;
+                    request->state = HTTP_STATE_SERVER_READ_BODY;
                 } else {
-                    request->state = HTTP_STATE_WRITE;
+                    request->state = HTTP_STATE_SERVER_WRITE_BEGIN;
                 }
             }
         }
@@ -119,7 +119,7 @@ int http_server_write(struct http_request *request)
             enum http_cgi_state state = request->handler(request);
 
             if(state == HTTP_CGI_DONE) {
-                request->state = HTTP_STATE_READ_EXPECT_EOF;
+                request->state = HTTP_STATE_SERVER_READ_DONE;
                 break;
             } else if(state == HTTP_CGI_MORE) {
                 break;

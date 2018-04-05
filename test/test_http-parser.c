@@ -16,7 +16,7 @@ static void create_server_request(struct http_request *request)
 {
     const int line_len = 32;
 
-    request->state  = HTTP_STATE_READ_SERVER_METHOD;
+    request->state  = HTTP_STATE_SERVER_READ_METHOD;
     request->method = HTTP_METHOD_UNKNOWN;
     request->line = malloc(line_len);
     request->line_len = line_len;
@@ -34,7 +34,7 @@ static void create_client_request(struct http_request *request)
 {
     const int line_len = 32;
 
-    request->state  = HTTP_STATE_READ_CLIENT_VERSION;
+    request->state  = HTTP_STATE_CLIENT_READ_VERSION;
     request->method = HTTP_METHOD_UNKNOWN;
     request->line = malloc(line_len);
     request->line_len = line_len;
@@ -164,7 +164,6 @@ static void test__http_parse_header__can_parse_host_header_if_server(void **stat
 {
     struct http_request request;
     create_server_request(&request);
-    request.flags &= ~HTTP_FLAG_CLIENT;
 
     parse_header_helper(&request, "GET / HTTP/1.1\r\nHost: www.example.com\r\n");
 
@@ -177,8 +176,7 @@ static void test__http_parse_header__can_parse_host_header_if_server(void **stat
 static void test__http_parse_header__does_not_set_host_if_client(void **state)
 {
     struct http_request request;
-    create_server_request(&request);
-    request.flags |= HTTP_FLAG_CLIENT;
+    create_client_request(&request);
 
     parse_header_helper(&request, "GET / HTTP/1.1\r\nHost: www.example.com\r\n");
 
@@ -190,7 +188,6 @@ static void test__http_parse_header__can_parse_accept_encoding_gzip(void **state
 {
     struct http_request request;
     create_server_request(&request);
-    request.flags &= ~HTTP_FLAG_CLIENT;
 
     parse_header_helper(&request, "GET / HTTP/1.1\r\nAccept-Encoding: gzip, deflate\r\n");
 
@@ -202,7 +199,6 @@ static void test__http_parse_header__can_parse_accept_encoding_no_gzip(void **st
 {
     struct http_request request;
     create_server_request(&request);
-    request.flags &= ~HTTP_FLAG_CLIENT;
 
     parse_header_helper(&request, "GET / HTTP/1.1\r\nAccept-Encoding: deflate\r\n");
 
@@ -213,8 +209,7 @@ static void test__http_parse_header__can_parse_accept_encoding_no_gzip(void **st
 static void test__http_parse_header__does_not_set_accept_encoding_if_client(void **state)
 {
     struct http_request request;
-    create_server_request(&request);
-    request.flags |= HTTP_FLAG_CLIENT;
+    create_client_request(&request);
 
     parse_header_helper(&request, "GET / HTTP/1.1\r\nAccept-Encoding: gzip, deflate\r\n");
 

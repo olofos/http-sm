@@ -537,7 +537,7 @@ static void test__http_create_select_sets__can_add_request_fd_less_than_listen_f
     }
     server.fd = 3;
     server.request[0].fd = 2;
-    server.request[0].state = HTTP_STATE_READ_SERVER_METHOD;
+    server.request[0].state = HTTP_STATE_SERVER_READ_METHOD;
 
     int n = http_create_select_sets(&server, &set_read, &set_write, &maxfd);
 
@@ -564,9 +564,9 @@ static void test__http_create_select_sets__can_add_request_fd_greater_than_liste
     }
     server.fd = 3;
     server.request[0].fd = 5;
-    server.request[0].state = HTTP_STATE_READ_SERVER_PATH;
+    server.request[0].state = HTTP_STATE_SERVER_READ_PATH;
     server.request[2].fd = 2;
-    server.request[2].state = HTTP_STATE_READ_SERVER_QUERY;
+    server.request[2].state = HTTP_STATE_SERVER_READ_QUERY;
 
     int n = http_create_select_sets(&server, &set_read, &set_write, &maxfd);
 
@@ -621,7 +621,7 @@ static void test__http_create_select_sets__does_not_add_listen_fd_if_full(void *
 
     for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
         server.request[i].fd = 3 + 1 + i;
-        server.request[i].state = HTTP_STATE_READ_HEADER;
+        server.request[i].state = HTTP_STATE_SERVER_READ_HEADER;
     }
 
     int n = http_create_select_sets(&server, &set_read, &set_write, &maxfd);
@@ -644,9 +644,9 @@ static void test__http_create_select_sets__can_add_request_fd_to_read_and_write_
     }
     server.fd = 3;
     server.request[0].fd = 2;
-    server.request[0].state = HTTP_STATE_WRITE;
+    server.request[0].state = HTTP_STATE_SERVER_WRITE_HEADER;
     server.request[1].fd = 4;
-    server.request[1].state = HTTP_STATE_READ_CLIENT_STATUS_DESC;
+    server.request[1].state = HTTP_STATE_SERVER_READ_QUERY;
 
     int n = http_create_select_sets(&server, &set_read, &set_write, &maxfd);
 
@@ -799,7 +799,7 @@ static void test__http_accept_new_connection__initialises_the_new_request(void *
 
     assert_int_equal(0, index);
     assert_int_equal(server.request[0].fd, 4);
-    assert_int_equal(server.request[0].state, HTTP_STATE_READ_SERVER_BEGIN);
+    assert_int_equal(server.request[0].state, HTTP_STATE_SERVER_READ_BEGIN);
 }
 
 static void test__http_response_init__initialises_the_request(void **states)
@@ -811,7 +811,7 @@ static void test__http_response_init__initialises_the_request(void **states)
     http_response_init(&request);
 
     assert_int_equal(request.fd, 3);
-    assert_int_equal(request.state, HTTP_STATE_READ_SERVER_METHOD);
+    assert_int_equal(request.state, HTTP_STATE_SERVER_READ_METHOD);
     assert_int_equal(request.flags, 0);
     assert_null(request.path);
     assert_null(request.query);

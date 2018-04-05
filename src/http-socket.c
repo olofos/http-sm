@@ -217,14 +217,14 @@ int http_accept_new_connection(struct http_server *server)
     struct http_request *request = &server->request[i];
 
     request->fd = fd;
-    request->state = HTTP_STATE_READ_SERVER_BEGIN;
+    request->state = HTTP_STATE_SERVER_READ_BEGIN;
 
     return i;
 }
 
 void http_response_init(struct http_request *request)
 {
-    request->state = HTTP_STATE_READ_SERVER_METHOD;
+    request->state = HTTP_STATE_SERVER_READ_METHOD;
     request->flags = 0;
     request->path = 0;
     request->query = 0;

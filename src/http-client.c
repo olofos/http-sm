@@ -36,7 +36,7 @@ int http_get_request(struct http_request *request)
     request->line = malloc(line_len);
     request->line_len = line_len;
 
-    request->state = HTTP_STATE_READ_CLIENT_VERSION;
+    request->state = HTTP_STATE_CLIENT_READ_VERSION;
 
     while(request->state & HTTP_STATE_READ) {
         int c;
@@ -64,6 +64,6 @@ int http_get_request(struct http_request *request)
         return -1;
     }
 
-    request->state = HTTP_STATE_READ_BODY;
+    request->state = HTTP_STATE_CLIENT_READ_BODY;
     return 1;
 }

@@ -18,7 +18,8 @@
 
 #include "test-util.h"
 
-static void init_request(struct http_request *request, int fd);
+static void init_server_request(struct http_request *request, int fd);
+static void init_client_request(struct http_request *request, int fd);
 
 // Tests ///////////////////////////////////////////////////////////////////////
 
@@ -30,7 +31,7 @@ static void test__http_getc__can_read_correctly_with_te_identity(void **states)
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.content_length = strlen(str);
 
     for(int i = 0; i < strlen(str); i++) {
@@ -48,7 +49,7 @@ static void test__http_getc__doesnt_read_more_than_content_length_with_te_identi
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.content_length = 1;
 
     assert_int_equal('0', http_getc(&request));
@@ -75,7 +76,7 @@ static void test__http_getc__can_read_correctly_with_te_chunked(void **states)
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
     request.content_length = strlen(str);
@@ -108,7 +109,7 @@ static void test__http_getc__can_read_correctly_te_chunked_and_chunk_extension(v
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
     for(int i = 0; i < strlen(str); i++) {
@@ -128,7 +129,7 @@ static void test__http_getc__can_read_non_ascii_characters_with_te_identity(void
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.content_length = strlen(str);
 
     assert_int_equal(0xBA, http_getc(&request));
@@ -154,7 +155,7 @@ static void test__http_getc__can_read_non_ascii_characters_with_te_chunked(void 
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
     assert_int_equal(0xBA, http_getc(&request));
@@ -172,7 +173,7 @@ static void test__http_getc__returns_zero_when_reading_eof_with_te_identity(void
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.content_length = strlen(str);
 
     assert_int_equal('X', http_getc(&request));
@@ -196,7 +197,7 @@ static void test__http_getc__returns_zero_when_reading_eof_with_te_chunked(void 
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
     assert_int_equal('X', http_getc(&request));
@@ -214,20 +215,21 @@ static void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.content_length = strlen(str);
 
     enum http_state all_other_states[] = {
         HTTP_STATE_IDLE,
         HTTP_STATE_ERROR,
-        HTTP_STATE_READ_SERVER_METHOD,
-        HTTP_STATE_READ_SERVER_PATH,
-        HTTP_STATE_READ_SERVER_QUERY,
-        HTTP_STATE_READ_SERVER_VERSION,
-        HTTP_STATE_READ_CLIENT_VERSION,
-        HTTP_STATE_READ_CLIENT_STATUS,
-        HTTP_STATE_READ_CLIENT_STATUS_DESC,
-        HTTP_STATE_READ_HEADER,
+        HTTP_STATE_SERVER_READ_METHOD,
+        HTTP_STATE_SERVER_READ_PATH,
+        HTTP_STATE_SERVER_READ_QUERY,
+        HTTP_STATE_SERVER_READ_VERSION,
+        HTTP_STATE_SERVER_READ_HEADER,
+        HTTP_STATE_CLIENT_READ_VERSION,
+        HTTP_STATE_CLIENT_READ_STATUS,
+        HTTP_STATE_CLIENT_READ_STATUS_DESC,
+        HTTP_STATE_CLIENT_READ_HEADER,
     };
 
     for(int i = 0; i < sizeof(all_other_states)/sizeof(all_other_states[0]); i++) {
@@ -249,20 +251,21 @@ static void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
     enum http_state all_other_states[] = {
         HTTP_STATE_IDLE,
         HTTP_STATE_ERROR,
-        HTTP_STATE_READ_SERVER_METHOD,
-        HTTP_STATE_READ_SERVER_PATH,
-        HTTP_STATE_READ_SERVER_QUERY,
-        HTTP_STATE_READ_SERVER_VERSION,
-        HTTP_STATE_READ_CLIENT_VERSION,
-        HTTP_STATE_READ_CLIENT_STATUS,
-        HTTP_STATE_READ_CLIENT_STATUS_DESC,
-        HTTP_STATE_READ_HEADER,
+        HTTP_STATE_SERVER_READ_METHOD,
+        HTTP_STATE_SERVER_READ_PATH,
+        HTTP_STATE_SERVER_READ_QUERY,
+        HTTP_STATE_SERVER_READ_VERSION,
+        HTTP_STATE_SERVER_READ_HEADER,
+        HTTP_STATE_CLIENT_READ_VERSION,
+        HTTP_STATE_CLIENT_READ_STATUS,
+        HTTP_STATE_CLIENT_READ_STATUS_DESC,
+        HTTP_STATE_CLIENT_READ_HEADER,
     };
 
     for(int i = 0; i < sizeof(all_other_states)/sizeof(all_other_states[0]); i++) {
@@ -289,7 +292,7 @@ static void test__http_getc__read_to_end_of_file_with_te_chunked(void **states)
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
     int c;
@@ -313,7 +316,7 @@ static void test__http_getc__returns_zero_if_eof_is_found_when_content_length_is
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.content_length = strlen(s) + 1;
 
     int c;
@@ -341,7 +344,7 @@ static void test__http_getc__returns_zero_if_eof_is_found_in_chunk_header(void *
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
     int c;
@@ -369,7 +372,7 @@ static void test__http_getc__returns_zero_if_eof_is_found_after_chunk_header(voi
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
     int c;
@@ -398,7 +401,7 @@ static void test__http_getc__returns_zero_if_eof_is_found_in_chunk_footer(void *
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
     int c;
@@ -425,7 +428,7 @@ static void test__http_getc__returns_zero_if_missing_chunk_footer(void **states)
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
     int c;
@@ -455,7 +458,7 @@ static void test__http_getc__returns_zero_if_extra_characters_are_found_in_chunk
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
     int c;
@@ -479,7 +482,7 @@ static void test__http_peek__returns_the_next_character_with_te_identity(void **
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.content_length = strlen(str);
 
     assert_int_equal('0', http_peek(&request));
@@ -508,7 +511,7 @@ static void test__http_peek__returns_the_next_character_with_te_chunked(void **s
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
     assert_int_equal('0', http_peek(&request));
@@ -529,7 +532,7 @@ static void test__http_write_header__writes_the_header(void **states)
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
 
     http_write_header(&request, "Connection", "close");
     assert_string_equal("Connection: close\r\n", get_file_content(fd));
@@ -543,7 +546,7 @@ static void test__http_write_header__writes_nothing_when_name_is_null(void **sta
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
 
     http_write_header(&request, NULL, "close");
     assert_string_equal("", get_file_content(fd));
@@ -557,7 +560,7 @@ static void test__http_write_header__writes_nothing_when_value_is_null(void **st
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_request(&request, fd);
+    init_server_request(&request, fd);
 
     http_write_header(&request, "Test", NULL);
     assert_string_equal("", get_file_content(fd));
@@ -570,14 +573,10 @@ static void test__http_begin_request__writes_the_request_line_without_query(void
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .method = HTTP_METHOD_GET,
-        .host = "www.example.com",
-        .path = "/",
-        .query = 0,
-        .port = 80,
-    };
+    struct http_request request;
+    init_client_request(&request, fd);
+    request.path = "/";
+    request.query = 0;
 
     http_begin_request(&request);
     assert_string_prefix_equal("GET / HTTP/1.1\r\n", get_file_content(fd));
@@ -590,14 +589,10 @@ static void test__http_begin_request__writes_the_request_line_with_query(void **
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .method = HTTP_METHOD_GET,
-        .host = "www.example.com",
-        .path = "/",
-        .query = "a=1",
-        .port = 80,
-    };
+    struct http_request request;
+    init_client_request(&request, fd);
+    request.path = "/";
+    request.query = "a=1";
 
     http_begin_request(&request);
     assert_string_prefix_equal("GET /?a=1 HTTP/1.1\r\n", get_file_content(fd));
@@ -610,14 +605,10 @@ static void test__http_begin_request__writes_the_request_line_with_empty_query(v
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .method = HTTP_METHOD_GET,
-        .host = "www.example.com",
-        .path = "/",
-        .query = "",
-        .port = 80,
-    };
+    struct http_request request;
+    init_client_request(&request, fd);
+    request.path = "/";
+    request.query = "";
 
     http_begin_request(&request);
     assert_string_prefix_equal("GET / HTTP/1.1\r\n", get_file_content(fd));
@@ -630,14 +621,9 @@ static void test__http_begin_request__sends_host_header(void **states)
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .method = HTTP_METHOD_GET,
-        .host = "www.example.com",
-        .path = "/",
-        .query = "a=1",
-        .port = 80,
-    };
+    struct http_request request;
+    init_client_request(&request, fd);
+    request.host = "www.example.com";
 
     http_begin_request(&request);
     assert_string_contains_substring("Host: www.example.com\r\n", get_file_content(fd));
@@ -650,14 +636,10 @@ static void test__http_begin_request__sends_host_header_with_port_if_port_is_not
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .method = HTTP_METHOD_GET,
-        .host = "www.example.com",
-        .path = "/",
-        .query = "a=1",
-        .port = 8080,
-    };
+    struct http_request request;
+    init_client_request(&request, fd);
+    request.host = "www.example.com";
+    request.port = 8080;
 
     http_begin_request(&request);
     assert_string_contains_substring("Host: www.example.com:8080\r\n", get_file_content(fd));
@@ -670,13 +652,10 @@ static void test__http_begin_request__has_GET_as_default_method(void **states)
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .host = "www.example.com",
-        .path = "/",
-        .query = 0,
-        .port = 80,
-    };
+    struct http_request request;
+    init_client_request(&request, fd);
+    request.path = "/";
+    request.method = 0;
 
     http_begin_request(&request);
     assert_string_prefix_equal("GET / HTTP/1.1\r\n", get_file_content(fd));
@@ -689,14 +668,10 @@ static void test__http_begin_request__writes_the_POST_request_line(void **states
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .method = HTTP_METHOD_POST,
-        .host = "www.example.com",
-        .path = "/",
-        .query = 0,
-        .port = 80,
-    };
+    struct http_request request;
+    init_client_request(&request, fd);
+    request.path = "/";
+    request.method = HTTP_METHOD_POST;
 
     http_begin_request(&request);
     assert_string_prefix_equal("POST / HTTP/1.1\r\n", get_file_content(fd));
@@ -709,17 +684,11 @@ static void test__http_begin_request__sends_user_agent_header(void **states)
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .method = HTTP_METHOD_GET,
-        .host = "www.example.com",
-        .path = "/",
-        .query = "a=1",
-        .port = 80,
-    };
+    struct http_request request;
+    init_client_request(&request, fd);
 
     http_begin_request(&request);
-    assert_string_contains_substring("User-Agent: " HTTP_USER_AGENT, get_file_content(fd));
+    assert_string_contains_substring("User-Agent: ", get_file_content(fd));
 
     close(fd);
 }
@@ -730,15 +699,8 @@ static void test__http_end_headers__sends_new_line_if_client(void **states)
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .method = HTTP_METHOD_GET,
-        .host = "www.example.com",
-        .path = "/",
-        .query = "a=1",
-        .port = 80,
-        .flags = HTTP_FLAG_CLIENT,
-    };
+    struct http_request request;
+    init_client_request(&request, fd);
 
     http_end_header(&request);
     assert_string_equal("\r\n", get_file_content(fd));
@@ -752,15 +714,9 @@ static void test__http_end_headers__does_not_change_chunked_flag_if_client(void 
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .method = HTTP_METHOD_GET,
-        .host = "www.example.com",
-        .path = "/",
-        .query = "a=1",
-        .port = 80,
-        .flags = HTTP_FLAG_CLIENT | HTTP_FLAG_CHUNKED,
-    };
+    struct http_request request;
+    init_client_request(&request, fd);
+    request.flags |= HTTP_FLAG_CHUNKED;
 
     http_end_header(&request);
     assert_string_equal("\r\n", get_file_content(fd));
@@ -774,16 +730,9 @@ static void test__http_end_headers__server_sets_chunked_flag_if_no_content_lengt
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .method = HTTP_METHOD_GET,
-        .host = "www.example.com",
-        .path = "/",
-        .query = "a=1",
-        .port = 80,
-        .flags = 0,
-        .content_length = -1,
-    };
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.content_length = -1;
 
     http_end_header(&request);
     assert_true(request.flags & HTTP_FLAG_CHUNKED);
@@ -801,16 +750,9 @@ static void test__http_end_headers__server_does_not_set_chunked_flag_if_content_
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .method = HTTP_METHOD_GET,
-        .host = "www.example.com",
-        .path = "/",
-        .query = "a=1",
-        .port = 80,
-        .flags = 0,
-        .content_length = 1,
-    };
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.content_length = 1;
 
     http_end_header(&request);
     assert_string_equal("\r\n", get_file_content(fd));
@@ -824,10 +766,9 @@ static void test__http_set_content_length__sets_variable_and_sends_header(void *
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .content_length = -1,
-    };
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.content_length = -1;
 
     http_set_content_length(&request, 10);
     assert_int_equal(request.content_length, 10);
@@ -841,9 +782,8 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-    };
+    struct http_request request;
+    init_server_request(&request, fd);
 
     const char *s = "test";
 
@@ -859,10 +799,9 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
     int fd = open_tmp_file();
     assert_true(0 <= fd);
 
-    struct http_request request = {
-        .fd = fd,
-        .flags = HTTP_FLAG_CHUNKED,
-    };
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.flags |= HTTP_FLAG_CHUNKED;
 
     const char *s = "test";
 
@@ -940,10 +879,25 @@ int main(void)
 
 // Support functions for test setup ////////////////////////////////////////////
 
-static void init_request(struct http_request *request, int fd)
+static void init_server_request(struct http_request *request, int fd)
 {
     memset(request, 0, sizeof(*request));
     request->fd = fd;
     request->poke = -1;
-    request->state = HTTP_STATE_READ_BODY;
+    request->host = "www.example.com";
+    request->path = "/";
+    request->method = HTTP_METHOD_GET;
+    request->state = HTTP_STATE_SERVER_READ_BODY;
+}
+
+static void init_client_request(struct http_request *request, int fd)
+{
+    memset(request, 0, sizeof(*request));
+    request->fd = fd;
+    request->method = HTTP_METHOD_GET;
+    request->host = "www.example.com";
+    request->path = "/";
+    request->query = 0;
+    request->port = 80;
+    request->flags = HTTP_FLAG_CLIENT;
 }

@@ -63,7 +63,7 @@ static int read_chunk_footer(struct http_request *request)
 
 int http_getc(struct http_request *request)
 {
-    if(request->state != HTTP_STATE_READ_BODY) {
+    if(request->state != HTTP_STATE_SERVER_READ_BODY && request->state != HTTP_STATE_CLIENT_READ_BODY) {
         return 0;
     }
 

@@ -100,7 +100,7 @@ static void test__http_getc__returns_minus_one_if_read_fails_with_te_identity(vo
     struct http_request request = {
         .fd = 3,
         .poke = -1,
-        .state = HTTP_STATE_READ_BODY,
+        .state = HTTP_STATE_CLIENT_READ_BODY,
         .flags = 0,
         .content_length = 4,
     };
@@ -118,7 +118,7 @@ static void test__http_getc__returns_minus_one_if_read_fails_with_te_chunked(voi
     struct http_request request = {
         .fd = 3,
         .poke = -1,
-        .state = HTTP_STATE_READ_BODY,
+        .state = HTTP_STATE_CLIENT_READ_BODY,
         .flags = HTTP_FLAG_CHUNKED,
         .chunk_length = 4,
     };
@@ -136,7 +136,7 @@ static void test__http_getc__returns_minus_one_if_read_fails_in_beginning_of_chu
     struct http_request request = {
         .fd = 3,
         .poke = -1,
-        .state = HTTP_STATE_READ_BODY,
+        .state = HTTP_STATE_CLIENT_READ_BODY,
         .flags = HTTP_FLAG_CHUNKED,
         .chunk_length = 0,
     };
@@ -154,7 +154,7 @@ static void test__http_getc__returns_minus_one_if_read_fails_at_end_of_chunk_hea
     struct http_request request = {
         .fd = 3,
         .poke = -1,
-        .state = HTTP_STATE_READ_BODY,
+        .state = HTTP_STATE_CLIENT_READ_BODY,
         .flags = HTTP_FLAG_CHUNKED,
         .chunk_length = 0,
     };
