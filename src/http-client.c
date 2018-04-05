@@ -8,21 +8,19 @@
 
 int http_get_request(struct http_request *request)
 {
-    request->flags |= HTTP_FLAG_CLIENT;
-
     int err;
 
     err = http_open_request_socket(request);
     if(err < 0) {
         LOG("http_open_request_socket failed");
-        request->state = HTTP_STATE_ERROR;
+        request->state = HTTP_STATE_CLIENT_ERROR;
         return err;
     }
 
     err = http_begin_request(request);
     if(err < 0) {
         LOG("http_begin_request failed");
-        request->state = HTTP_STATE_ERROR;
+        request->state = HTTP_STATE_CLIENT_ERROR;
         http_close(request);
         return err;
     }
@@ -46,7 +44,7 @@ int http_get_request(struct http_request *request)
             free(request->line);
             request->line = 0;
             request->line_len = 0;
-            request->state = HTTP_STATE_ERROR;
+            request->state = HTTP_STATE_CLIENT_ERROR;
             http_close(request);
 
             return -1;
@@ -59,7 +57,7 @@ int http_get_request(struct http_request *request)
     request->line = 0;
     request->line_len = 0;
 
-    if(request->state == HTTP_STATE_ERROR) {
+    if(http_is_error(request)) {
         http_close(request);
         return -1;
     }

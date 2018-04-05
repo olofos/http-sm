@@ -811,7 +811,7 @@ static void test__http_response_init__initialises_the_request(void **states)
     http_response_init(&request);
 
     assert_int_equal(request.fd, 3);
-    assert_int_equal(request.state, HTTP_STATE_SERVER_READ_METHOD);
+    assert_int_equal(request.state, HTTP_STATE_SERVER_READ_BEGIN);
     assert_int_equal(request.flags, 0);
     assert_null(request.path);
     assert_null(request.query);
@@ -828,6 +828,9 @@ static void test__http_response_init__initialises_the_request(void **states)
     assert_null(request.handler);
     assert_null(request.cgi_data);
     assert_null(request.cgi_arg);
+    assert_true(http_is_server(&request));
+    assert_false(http_is_client(&request));
+    assert_false(http_is_error(&request));
 }
 
 // Main ////////////////////////////////////////////////////////////////////////

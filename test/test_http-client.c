@@ -102,7 +102,7 @@ static void test__http_get_request__returns_minus_one_if_http_open_request_socke
     int ret = http_get_request(&request);
 
     assert_int_equal(-1, ret);
-    assert_int_equal(HTTP_STATE_ERROR, request.state);
+    assert_true(http_is_error(&request));
     assert_int_equal(0, request.line);
     assert_int_equal(0, request.line_len);
 
@@ -139,7 +139,7 @@ static void test__http_get_request__returns_minus_one_if_http_begin_request_fail
     int ret = http_get_request(&request);
 
     assert_int_equal(-1, ret);
-    assert_int_equal(HTTP_STATE_ERROR, request.state);
+    assert_true(http_is_error(&request));
     assert_int_equal(0, request.line);
     assert_int_equal(0, request.line_len);
 
@@ -176,7 +176,7 @@ static void test__http_get_request__returns_minus_one_if_header_is_incomplete(vo
     int ret = http_get_request(&request);
 
     assert_int_equal(-1, ret);
-    assert_int_equal(HTTP_STATE_ERROR, request.state);
+    assert_true(http_is_error(&request));
     assert_int_equal(0, request.line);
     assert_int_equal(0, request.line_len);
 
@@ -213,7 +213,7 @@ static void test__http_get_request__returns_minus_one_if_header_does_not_parse_c
     int ret = http_get_request(&request);
 
     assert_int_equal(-1, ret);
-    assert_int_equal(HTTP_STATE_ERROR, request.state);
+    assert_true(http_is_error(&request));
     assert_int_equal(0, request.line);
     assert_int_equal(0, request.line_len);
 

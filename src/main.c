@@ -31,16 +31,15 @@ int http_server_read(struct http_request *request)
             perror("read");
         } else if(n == 0) {
             LOG("Connection %d done", request->fd);
-
-            request->state = HTTP_STATE_IDLE;
-            http_close(request);
         } else {
             LOG("Expected EOF but got %c", c);
         }
+
+        request->state = HTTP_STATE_IDLE;
+        http_close(request);
     } else {
         if(request->state == HTTP_STATE_SERVER_READ_BEGIN) {
-            http_response_init(request);
-
+            request->state = HTTP_STATE_SERVER_READ_METHOD;
             const int line_len = HTTP_LINE_LEN;
             request->line = malloc(line_len);
             request->line_len = line_len;
@@ -50,7 +49,7 @@ int http_server_read(struct http_request *request)
         char c;
         int n = read(request->fd, &c, 1);
         if(n < 0) {
-            perror("read");
+            perror("read2");
             request->state = HTTP_STATE_ERROR;
 
             free(request->line);
@@ -149,8 +148,8 @@ int http_server_main_loop(struct http_server *server)
     int n;
     if(num_open != 0) {
         struct timeval t;
-        t.tv_sec = 20;
-        t.tv_usec = 0;
+        t.tv_sec = HTTP_SERVER_TIMEOUT_SECS;
+        t.tv_usec = HTTP_SERVER_TIMEOUT_USECS;
 
         n = select(maxfd+1, &set_read, &set_write, 0, &t);
     } else {
@@ -413,7 +412,6 @@ static void test_stream_request(void **states)
     };
 
     int ret;
-
     ret = http_get_request(&request);
     assert_true(ret > 0);
     assert_int_equal(200, request.status);

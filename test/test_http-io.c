@@ -899,5 +899,5 @@ static void init_client_request(struct http_request *request, int fd)
     request->path = "/";
     request->query = 0;
     request->port = 80;
-    request->flags = HTTP_FLAG_CLIENT;
+    request->state = HTTP_STATE_CLIENT_READ_BODY;
 }

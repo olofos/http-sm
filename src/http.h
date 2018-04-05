@@ -11,6 +11,10 @@
 #define HTTP_SERVER_MAX_CONNECTIONS 3
 #define HTTP_LINE_LEN 64
 
+#define HTTP_SERVER_TIMEOUT_SECS  5
+#define HTTP_SERVER_TIMEOUT_USECS 0
+
+
 enum http_state
 {
     HTTP_STATE_CLIENT                  = 0x80,
@@ -39,6 +43,8 @@ enum http_state
     HTTP_STATE_SERVER_WRITE_BODY        = HTTP_STATE_WRITE | HTTP_STATE_BODY,
     HTTP_STATE_SERVER_WRITE_DONE        = HTTP_STATE_WRITE | HTTP_STATE_DONE,
 
+    HTTP_STATE_SERVER_IDLE              = HTTP_STATE_IDLE,
+    HTTP_STATE_SERVER_ERROR             = HTTP_STATE_ERROR,
 
     HTTP_STATE_CLIENT_READ_BEGIN        = HTTP_STATE_CLIENT | HTTP_STATE_READ | HTTP_STATE_IDLE,
     HTTP_STATE_CLIENT_READ_VERSION      = HTTP_STATE_CLIENT | HTTP_STATE_READ | 0x01,
@@ -52,6 +58,9 @@ enum http_state
     HTTP_STATE_CLIENT_WRITE_HEADER      = HTTP_STATE_CLIENT | HTTP_STATE_WRITE | HTTP_STATE_HEADER,
     HTTP_STATE_CLIENT_WRITE_BODY        = HTTP_STATE_CLIENT | HTTP_STATE_WRITE | HTTP_STATE_BODY,
     HTTP_STATE_CLIENT_WRITE_DONE        = HTTP_STATE_CLIENT | HTTP_STATE_WRITE | HTTP_STATE_DONE,
+
+    HTTP_STATE_CLIENT_IDLE              = HTTP_STATE_CLIENT | HTTP_STATE_IDLE,
+    HTTP_STATE_CLIENT_ERROR             = HTTP_STATE_CLIENT | HTTP_STATE_ERROR,
 };
 
 enum http_method
@@ -75,7 +84,6 @@ enum http_flags
 {
     HTTP_FLAG_ACCEPT_GZIP = 0x01,
     HTTP_FLAG_CHUNKED     = 0x02,
-    HTTP_FLAG_CLIENT      = 0x04,
 };
 
 enum http_cgi_state
@@ -148,5 +156,8 @@ void http_set_content_length(struct http_request *request, int length);
 int http_close(struct http_request *request);
 
 int http_get_request(struct http_request *request);
+
+#define http_is_error(request)  ((request)->state & HTTP_STATE_ERROR)
+
 
 #endif

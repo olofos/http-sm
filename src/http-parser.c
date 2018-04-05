@@ -18,7 +18,7 @@ static char *cmp_str_prefix(char *str, const char *prefix)
 
 static void http_parse_header_next_state(struct http_request *request, int state)
 {
-    request->state = state;
+    request->state = state | (request->state & HTTP_STATE_CLIENT);
     request->line_index = 0;
 }
 
@@ -30,7 +30,7 @@ void http_parse_header(struct http_request *request, char c)
         } else {
             LOG("Expected '\\n' but got '%c'", c);
             request->error = HTTP_STATUS_BAD_REQUEST;
-            request->state = HTTP_STATE_ERROR;
+            http_parse_header_next_state(request, HTTP_STATE_ERROR);
         }
 
         return;
@@ -190,7 +190,7 @@ void http_parse_header(struct http_request *request, char c)
     default:
         LOG("Unhandled state 0x%02X", request->state);
         request->error = HTTP_STATUS_BAD_REQUEST;
-        request->state = HTTP_STATE_ERROR;
+        http_parse_header_next_state(request, HTTP_STATE_ERROR);
         return;
     }
 

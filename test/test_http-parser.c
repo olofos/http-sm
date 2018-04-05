@@ -42,7 +42,7 @@ static void create_client_request(struct http_request *request)
     request->path = 0;
     request->query = 0;
     request->host = 0;
-    request->flags = HTTP_FLAG_CLIENT;
+    request->flags = 0;
     request->status = 0;
     request->error = 0;
     request->content_length = -1;
