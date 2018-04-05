@@ -521,6 +521,22 @@ static void test_not_found_request(void **states)
     http_close(&request);
 }
 
+static void test_that_server_can_handle_a_timeout(void **states)
+{
+    struct http_request request = {
+        .host = "localhost",
+        .path = "/not_found",
+        .port = http_port,
+    };
+
+    int ret;
+
+    ret = http_open_request_socket(&request);
+    assert_true(ret > 0);
+
+    usleep(HTTP_SERVER_TIMEOUT_SECS * 1000 * 1000 + HTTP_SERVER_TIMEOUT_USECS + 250 * 1000);
+}
+
 const struct CMUnitTest tests[] = {
     cmocka_unit_test(test_simple_request),
     cmocka_unit_test(test_stream_request),
@@ -528,6 +544,7 @@ const struct CMUnitTest tests[] = {
     cmocka_unit_test(test_query_request_with_arg),
     cmocka_unit_test(test_wildcard_request),
     cmocka_unit_test(test_not_found_request),
+    cmocka_unit_test(test_that_server_can_handle_a_timeout),
 };
 
 int main(int argc, char *argv[])
