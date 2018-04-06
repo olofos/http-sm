@@ -1,7 +1,7 @@
 # For a verbose build set V to an empty string when calling make: "V= make ..."
 V?=@
 
-SOURCES := main.c http-parser.c http-io.c http-socket.c http-util.c http-server.c http-client.c log.c
+SOURCES := main.c http-parser.c http-io.c http-socket.c http-util.c http-server.c http-server-main.c http-client.c log.c
 
 TARGET=http-test
 

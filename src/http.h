@@ -141,6 +141,11 @@ struct http_url_handler {
 
 extern struct http_url_handler *http_url_tab;
 
+int http_server_main(int port);
+int http_begin_response(struct http_request *request, int status, const char *content_type);
+int http_end_body(struct http_request *request);
+enum http_cgi_state cgi_not_found(struct http_request* request);
+
 int http_getc(struct http_request *request);
 int http_peek(struct http_request *request);
 

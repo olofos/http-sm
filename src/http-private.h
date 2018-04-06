@@ -29,6 +29,11 @@ void http_response_init(struct http_request *request);
 int http_server_match_url(const char *server_url, const char *request_url);
 const char *http_status_string(enum http_status status);
 
+int http_server_read(struct http_request *request);
+int http_server_write(struct http_request *request);
+int http_server_main_loop(struct http_server *server);
+int http_server_start(struct http_server *server, int port);
+
 #define http_is_server(request) (!((request)->state & HTTP_STATE_CLIENT))
 #define http_is_client(request)   ((request)->state & HTTP_STATE_CLIENT)
 
