@@ -8,7 +8,6 @@ BINSOURCES := main.c log.c
 TARGET=http-test
 LIBTARGET=libhttp-sm.a
 
-
 SRCDIR := src/
 OBJDIR := obj/
 BINDIR := bin/
@@ -35,7 +34,7 @@ SOURCES_TST = $(wildcard $(TSTDIR)*.c)
 
 AR = ar
 CC = gcc
-CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer
+CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer -Iinclude/
 
 AR = ar
 
