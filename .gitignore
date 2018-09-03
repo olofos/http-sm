@@ -1,6 +1,7 @@
 *~
 obj/
 bin/
+lib/
 .deps/
 test/results
 gcov/
