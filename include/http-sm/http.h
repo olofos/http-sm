@@ -160,6 +160,7 @@ void http_set_content_length(struct http_request *request, int length);
 
 int http_close(struct http_request *request);
 
+void http_request_init(struct http_request *request);
 int http_get_request(struct http_request *request);
 
 #define http_is_error(request)  ((request)->state & HTTP_STATE_ERROR)

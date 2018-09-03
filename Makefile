@@ -36,8 +36,6 @@ AR = ar
 CC = gcc
 CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer -Iinclude/
 
-AR = ar
-
 TST_CC = gcc
 TST_WRAP = -Wl,--wrap=malloc,--wrap=free,--wrap=read,--wrap=write
 TST_CFLAGS = -Wall -I$(SRCDIR) -g -fsanitize=address -fno-omit-frame-pointer --coverage $(TST_WRAP) -Iinclude/
