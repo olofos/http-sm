@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "http.h"
+#include "http-sm/http.h"
 #include "http-private.h"
 #include "log.h"
 

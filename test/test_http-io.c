@@ -13,7 +13,7 @@
 
 #include <cmocka.h>
 
-#include "http.h"
+#include "http-sm/http.h"
 #include "http-private.h"
 
 #include "test-util.h"

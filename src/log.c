@@ -18,6 +18,14 @@ void LOG(const char *fmt, ...)
     printf("\n");
 }
 
+void LOG_ERROR(const char* str)
+{
+    if(log_system) {
+        printf("[%s] ", log_system);
+    }
+    perror(str);
+}
+
 const char *escaped_string(const char *in)
 {
     static char out[256];

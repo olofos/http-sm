@@ -1,9 +1,13 @@
 #ifndef HTTP_PRIVATE_H_
 #define HTTP_PRIVATE_H_
 
+#ifdef __XTENSA__
+#include "lwip/lwip/sockets.h"
+#else
 #include <sys/select.h>
+#endif
 
-#include "http.h"
+#include "http-sm/http.h"
 
 struct http_server {
     struct http_request request[HTTP_SERVER_MAX_CONNECTIONS];

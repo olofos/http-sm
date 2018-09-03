@@ -1,14 +1,20 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef __XTENSA__
+#include "lwip/lwip/sockets.h"
+#include "lwip/lwip/netdb.h"
+#else
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#endif
 
-#include "http.h"
+#include "http-sm/http.h"
 #include "http-private.h"
 #include "log.h"
 
@@ -37,7 +43,7 @@ int http_open_request_socket(struct http_request *request)
 
     if (err != 0 || res == NULL)
     {
-        perror("getaddrinfo");
+        LOG_ERROR("getaddrinfo failed");
         if(res) {
             freeaddrinfo(res);
         }
@@ -54,13 +60,13 @@ int http_open_request_socket(struct http_request *request)
     int s = socket(res->ai_family, res->ai_socktype, 0);
 
     if(s < 0) {
-        perror("socket");
+        LOG_ERROR("socket failed");
         freeaddrinfo(res);
         return -1;
     }
 
     if(connect(s, res->ai_addr, res->ai_addrlen) != 0) {
-        perror("connect");
+        LOG_ERROR("connect failed");
         close(s);
         freeaddrinfo(res);
         return -1;
@@ -95,7 +101,7 @@ int http_open_listen_socket(int port)
     int fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if(fd < 0) {
-        perror("socket");
+        LOG_ERROR("socket failed");
         return -1;
     }
 
@@ -108,13 +114,13 @@ int http_open_listen_socket(int port)
     };
 
     if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        perror("bind");
+        LOG_ERROR("bind failed");
         close(fd);
         return -1;
     }
 
     if(listen(fd, HTTP_SERVER_MAX_CONNECTIONS) < 0) {
-        perror("listen");
+        LOG_ERROR("listen failed");
         close(fd);
         return -1;
     }
@@ -207,7 +213,7 @@ int http_accept_new_connection(struct http_server *server)
     int fd = accept(server->fd, (struct sockaddr *)&addr, &len);
 
     if(fd < 0) {
-        perror("accept");
+        LOG_ERROR("accept failed");
         return -1;
     }
 
@@ -231,6 +237,7 @@ void http_response_init(struct http_request *request)
     request->host = 0;
     request->line = 0;
     request->line_len = 0;
+    request->line_index = 0;
     request->query_list = 0;
     request->content_length = -1;
     request->poke = -1;
@@ -241,4 +248,22 @@ void http_response_init(struct http_request *request)
     request->handler = 0;
     request->cgi_arg = 0;
     request->cgi_data = 0;
+}
+
+void http_request_init(struct http_request *request)
+{
+    request->state = HTTP_STATE_CLIENT_IDLE;
+    request->flags = 0;
+    request->path = 0;
+    request->query = 0;
+    request->host = 0;
+    request->line = 0;
+    request->line_len = 0;
+    request->line_index = 0;
+    request->query_list = 0;
+    request->content_length = -1;
+    request->poke = -1;
+    request->status = 0;
+    request->error = 0;
+    request->chunk_length = 0;
 }

@@ -40,7 +40,7 @@ AR = ar
 
 TST_CC = gcc
 TST_WRAP = -Wl,--wrap=malloc,--wrap=free,--wrap=read,--wrap=write
-TST_CFLAGS = -Wall -I$(SRCDIR) -g -fsanitize=address -fno-omit-frame-pointer --coverage $(TST_WRAP)
+TST_CFLAGS = -Wall -I$(SRCDIR) -g -fsanitize=address -fno-omit-frame-pointer --coverage $(TST_WRAP) -Iinclude/
 
 TST_RESULTS = $(patsubst $(TSTDIR)test_%.c,$(RESULTDIR)test_%.txt,$(SOURCES_TST))
 TST_DEPS = $(TSTDEPDIR)*.d

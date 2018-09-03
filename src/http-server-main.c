@@ -1,6 +1,11 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef __XTENSA__
+#include "lwip/lwip/sockets.h"
+#include "lwip/lwip/netdb.h"
+#else
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/select.h>
@@ -10,8 +15,9 @@
 #include <netdb.h>
 #include <signal.h>
 #include <time.h>
+#endif
 
-#include "http.h"
+#include "http-sm/http.h"
 #include "http-private.h"
 #include "log.h"
 
@@ -24,7 +30,7 @@ int http_server_read(struct http_request *request)
         int n = read(request->fd, &c, 1);
 
         if(n < 0) {
-            perror("read");
+            LOG_ERROR("read failed");
         } else if(n == 0) {
             LOG("Connection %d done", request->fd);
         } else {
@@ -45,7 +51,7 @@ int http_server_read(struct http_request *request)
         char c;
         int n = read(request->fd, &c, 1);
         if(n < 0) {
-            perror("read2");
+            LOG_ERROR("read2 failed");
             request->state = HTTP_STATE_ERROR;
 
             free(request->line);
@@ -153,7 +159,7 @@ int http_server_main_loop(struct http_server *server)
     }
 
     if(n < 0) {
-        perror("select");
+        LOG_ERROR("select failed");
     } else if(n == 0) {
         for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
             if(server->request[i].fd >= 0) {

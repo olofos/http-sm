@@ -2,7 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "http.h"
+#include "http-sm/http.h"
 #include "http-private.h"
 #include "log.h"
 
@@ -13,7 +13,7 @@ static int read_chunk_header(struct http_request *request)
     for(;;) {
         ret = read(request->fd, &c, 1);
         if(ret < 0) {
-            perror("read");
+            LOG_ERROR("read failed");
             return -1;
         } else if(ret == 0) {
             LOG("Got EOF");
@@ -30,7 +30,7 @@ static int read_chunk_header(struct http_request *request)
     for(;;) {
         ret = read(request->fd, &c, 1);
         if(ret < 0) {
-            perror("read");
+            LOG_ERROR("read failed");
             return -1;
         } else if(ret == 0) {
             LOG("Got EOF");
@@ -48,7 +48,7 @@ static int read_chunk_footer(struct http_request *request)
     char buf[2];
     int ret = read(request->fd, buf, 2);
     if(ret < 0) {
-        perror("read");
+        LOG_ERROR("read failed");
         return -1;
     } else if(ret == 0) {
         LOG("Got EOF");
@@ -91,7 +91,7 @@ int http_getc(struct http_request *request)
 
         ret = read(request->fd, &c, 1);
         if(ret < 0) {
-            perror("read");
+            LOG_ERROR("read failed");
             return -1;
         } else if(ret == 0) {
             LOG("Got EOF");
@@ -111,7 +111,7 @@ int http_getc(struct http_request *request)
             unsigned char c;
             int ret = read(request->fd, &c, 1);
             if(ret < 0) {
-                perror("read");
+                LOG_ERROR("read failed");
                 return -1;
             } else if(ret == 0) {
                 LOG("Got EOF");
@@ -140,7 +140,7 @@ static int write_all(int fd, const char *str, int len)
     while(num < len) {
         int n = write(fd, str, len);
         if(n < 0) {
-            perror("write");
+            LOG_ERROR("write failed");
             return -1;
         }
         str += n;
@@ -201,7 +201,7 @@ int http_begin_request(struct http_request *request)
         char *buf = malloc(len + 1);
 
         if(!buf) {
-            perror("malloc");
+            LOG_ERROR("malloc failed");
             return 0;
         }
 

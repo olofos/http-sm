@@ -9,7 +9,7 @@
 
 #include <cmocka.h>
 
-#include "http.h"
+#include "http-sm/http.h"
 
 #include "test-util.h"
 

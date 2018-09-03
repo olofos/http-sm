@@ -2,7 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "http.h"
+#include "http-sm/http.h"
 #include "http-private.h"
 #include "log.h"
 
@@ -32,8 +32,15 @@ int http_get_request(struct http_request *request)
 
     const int line_len = HTTP_LINE_LEN;
     request->line = malloc(line_len);
-    request->line_len = line_len;
 
+    if(!request->line) {
+        LOG_ERROR("malloc failed");
+        request->state = HTTP_STATE_CLIENT_ERROR;
+        http_close(request);
+        return -1;
+    }
+
+    request->line_len = line_len;
     request->state = HTTP_STATE_CLIENT_READ_VERSION;
 
     while(request->state & HTTP_STATE_READ) {

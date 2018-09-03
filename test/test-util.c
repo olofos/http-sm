@@ -24,6 +24,12 @@ void LOG(const char *fmt, ...)
     printf("\n");
 }
 
+void LOG_ERROR(const char* str)
+{
+    perror(str);
+}
+
+
 int open_tmp_file(void)
 {
     char filename[] = "/tmp/http-test-XXXXXX";
