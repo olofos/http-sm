@@ -1,13 +1,18 @@
 # For a verbose build set V to an empty string when calling make: "V= make ..."
 V?=@
 
-SOURCES := main.c http-parser.c http-io.c http-socket.c http-util.c http-server.c http-server-main.c http-client.c log.c
+LIBSOURCES := http-parser.c http-io.c http-socket.c http-util.c http-server.c http-server-main.c http-client.c
+
+BINSOURCES := main.c log.c
 
 TARGET=http-test
+LIBTARGET=libhttp-sm.a
+
 
 SRCDIR := src/
 OBJDIR := obj/
 BINDIR := bin/
+LIBDIR := lib/
 DEPDIR := .deps/
 TSTDIR := test/
 TSTOBJDIR := test/obj/
@@ -16,16 +21,23 @@ TSTDEPDIR := test/.deps/
 RESULTDIR := test/results/
 GCOVDIR := gcov/
 
-BUILD_DIRS = $(BINDIR) $(OBJDIR) $(DEPDIR) $(RESULTDIR) $(TSTOBJDIR) $(TSTBINDIR) $(TSTDEPDIR)
+BUILD_DIRS = $(BINDIR) $(OBJDIR) $(LIBDIR) $(DEPDIR) $(RESULTDIR) $(TSTOBJDIR) $(TSTBINDIR) $(TSTDEPDIR)
 
-SRC := $(SOURCES:%.c=$(SRCDIR)%.c)
-OBJ := $(SOURCES:%.c=$(OBJDIR)%.o)
-DEPS := $(SOURCES:%.c=$(DEPDIR)%.d)
+LIBSRC := $(LIBSOURCES:%.c=$(SRCDIR)%.c)
+LIBOBJ := $(LIBSOURCES:%.c=$(OBJDIR)%.o)
+LIBDEPS := $(LIBSOURCES:%.c=$(DEPDIR)%.d)
+
+BINSRC := $(BINSOURCES:%.c=$(SRCDIR)%.c)
+BINOBJ := $(BINSOURCES:%.c=$(OBJDIR)%.o)
+BINDEPS := $(BINSOURCES:%.c=$(DEPDIR)%.d)
 
 SOURCES_TST = $(wildcard $(TSTDIR)*.c)
 
+AR = ar
 CC = gcc
 CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer
+
+AR = ar
 
 TST_CC = gcc
 TST_WRAP = -Wl,--wrap=malloc,--wrap=free,--wrap=read,--wrap=write
@@ -50,9 +62,13 @@ $(TSTBINDIR)test_http-client: $(TSTOBJDIR)http-client.o $(TSTOBJDIR)http-parser.
 -include $(DEPS)
 -include $(TST_DEPS)
 
-$(BINDIR)$(TARGET): build_dirs $(OBJ)
+$(BINDIR)$(TARGET): build_dirs $(BINOBJ) $(LIBDIR)$(LIBTARGET)
 	@echo LD $@
-	$(V)$(CC) $(CFLAGS) $(OBJ) -o $@ -lcmocka
+	$(V)$(CC) $(CFLAGS) $(BINOBJ) -o $@ -lcmocka -L$(LIBDIR) -lhttp-sm
+
+$(LIBDIR)$(LIBTARGET): build_dirs $(LIBOBJ)
+	@echo AR $@
+	$(V)$(AR) cr $@ $(LIBOBJ)
 
 $(OBJDIR)%.o : $(SRCDIR)%.c
 	@echo CC $<
@@ -113,7 +129,7 @@ coverage-open: coverage
 
 clean:
 	@echo Cleaning
-	$(V)-rm -f $(OBJ) $(DEPS) $(TST_DEPS) $(TSTOBJDIR)*.o $(TSTOBJDIR)*.gcda $(TSTOBJDIR)*.gcno $(TSTBINDIR)test_* $(RESULTDIR)*.txt $(BINDIR)$(TARGET)
+	$(V)-rm -f $(LIBOBJ) $(LIBDEPS) $(BINOBJ) $(BINDEPS) $(TST_DEPS) $(TSTOBJDIR)*.o $(TSTOBJDIR)*.gcda $(TSTOBJDIR)*.gcno $(TSTBINDIR)test_* $(RESULTDIR)*.txt $(BINDIR)$(TARGET) $(LIBDIR)$(LIBTARGET)
 	$(V)-rm -rf $(GCOVDIR)
 
 .PRECIOUS: $(TSTBINDIR)test_%
