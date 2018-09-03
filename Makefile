@@ -34,11 +34,13 @@ SOURCES_TST = $(wildcard $(TSTDIR)*.c)
 
 AR = ar
 CC = gcc
-CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer -Iinclude/
+CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer
+
+INCLUDES=-Iinclude/
 
 TST_CC = gcc
 TST_WRAP = -Wl,--wrap=malloc,--wrap=free,--wrap=read,--wrap=write
-TST_CFLAGS = -Wall -I$(SRCDIR) -g -fsanitize=address -fno-omit-frame-pointer --coverage $(TST_WRAP) -Iinclude/
+TST_CFLAGS = -Wall -I$(SRCDIR) -g -fsanitize=address -fno-omit-frame-pointer --coverage $(TST_WRAP)
 
 TST_RESULTS = $(patsubst $(TSTDIR)test_%.c,$(RESULTDIR)test_%.txt,$(SOURCES_TST))
 TST_DEPS = $(TSTDEPDIR)*.d
@@ -69,8 +71,8 @@ $(LIBDIR)$(LIBTARGET): build_dirs $(LIBOBJ)
 
 $(OBJDIR)%.o : $(SRCDIR)%.c
 	@echo CC $<
-	$(V)$(CC) $(CFLAGS) -c $< -o $@
-	$(V)$(CC) -MM -MT $@ $(CFLAGS) $< > $(DEPDIR)$*.d
+	$(V)$(CC) $(CFLAGS)  $(INCLUDES) -c $< -o $@
+	$(V)$(CC) -MM -MT $@ $(CFLAGS)  $(INCLUDES) $< > $(DEPDIR)$*.d
 
 test: build_dirs $(TST_RESULTS)
 	@echo "-----------------------"
@@ -98,13 +100,13 @@ $(RESULTDIR)%.txt: $(TSTBINDIR)%
 
 $(TSTOBJDIR)%.o : $(TSTDIR)%.c
 	@echo CC $@
-	$(V)$(TST_CC) $(TST_CFLAGS) -c $< -o $@
-	$(V)$(TST_CC) -MM -MT $@ $(TST_CFLAGS) $< > $(TSTDEPDIR)$*.d
+	$(V)$(TST_CC) $(TST_CFLAGS)  $(INCLUDES) -c $< -o $@
+	$(V)$(TST_CC) -MM -MT $@ $(TST_CFLAGS) $(INCLUDES) $< > $(TSTDEPDIR)$*.d
 
 $(TSTOBJDIR)%.o : $(SRCDIR)%.c
 	@echo CC $@
-	$(V)$(TST_CC) $(TST_CFLAGS) -c $< -o $@
-	$(V)$(TST_CC) -MM -MT $@ $(TST_CFLAGS) $< > $(TSTDEPDIR)$*.d
+	$(V)$(TST_CC) $(TST_CFLAGS)  $(INCLUDES) -c $< -o $@
+	$(V)$(TST_CC) -MM -MT $@ $(TST_CFLAGS) $(INCLUDES) $< > $(TSTDEPDIR)$*.d
 
 $(TSTBINDIR)test_%: $(TSTOBJDIR)test_%.o
 	@echo CC $@
