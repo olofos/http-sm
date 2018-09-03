@@ -9,6 +9,7 @@ TARGET=http-test
 LIBTARGET=libhttp-sm.a
 
 SRCDIR := src/
+BINSRCDIR := main/
 OBJDIR := obj/
 BINDIR := bin/
 LIBDIR := lib/
@@ -34,13 +35,13 @@ SOURCES_TST = $(wildcard $(TSTDIR)*.c)
 
 AR = ar
 CC = gcc
-CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer
+CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer -I$(SRCDIR) -I$(BINSRCDIR)
 
 INCLUDES=-Iinclude/
 
 TST_CC = gcc
 TST_WRAP = -Wl,--wrap=malloc,--wrap=free,--wrap=read,--wrap=write
-TST_CFLAGS = -Wall -I$(SRCDIR) -g -fsanitize=address -fno-omit-frame-pointer --coverage $(TST_WRAP)
+TST_CFLAGS = -Wall -I$(SRCDIR) -I$(BINSRCDIR) -g -fsanitize=address -fno-omit-frame-pointer --coverage $(TST_WRAP)
 
 TST_RESULTS = $(patsubst $(TSTDIR)test_%.c,$(RESULTDIR)test_%.txt,$(SOURCES_TST))
 TST_DEPS = $(TSTDEPDIR)*.d
@@ -70,6 +71,11 @@ $(LIBDIR)$(LIBTARGET): build_dirs $(LIBOBJ)
 	$(V)$(AR) cr $@ $(LIBOBJ)
 
 $(OBJDIR)%.o : $(SRCDIR)%.c
+	@echo CC $<
+	$(V)$(CC) $(CFLAGS)  $(INCLUDES) -c $< -o $@
+	$(V)$(CC) -MM -MT $@ $(CFLAGS)  $(INCLUDES) $< > $(DEPDIR)$*.d
+
+$(OBJDIR)%.o : $(BINSRCDIR)%.c
 	@echo CC $<
 	$(V)$(CC) $(CFLAGS)  $(INCLUDES) -c $< -o $@
 	$(V)$(CC) -MM -MT $@ $(CFLAGS)  $(INCLUDES) $< > $(DEPDIR)$*.d
