@@ -140,7 +140,6 @@ static int write_all(int fd, const char *str, int len)
     while(num < len) {
         int n = write(fd, str, len);
         if(n < 0) {
-            LOG_ERROR("write failed");
             return -1;
         }
         str += n;
@@ -149,10 +148,8 @@ static int write_all(int fd, const char *str, int len)
     return num;
 }
 
-int http_write_string(struct http_request *request, const char *str)
+int http_write_bytes(struct http_request *request, const char *data, int len)
 {
-    int len = strlen(str);
-
     if(request->flags & HTTP_FLAG_CHUNKED) {
         char buf[16];
         int n = snprintf(buf, sizeof(buf), "%X\r\n", len);
@@ -161,13 +158,18 @@ int http_write_string(struct http_request *request, const char *str)
         }
     }
 
-    int num = write_all(request->fd, str, len);
+    int num = write_all(request->fd, data, len);
 
     if(request->flags & HTTP_FLAG_CHUNKED) {
         write_all(request->fd, "\r\n", 2);
     }
 
     return num;
+}
+
+int http_write_string(struct http_request *request, const char *str)
+{
+    return http_write_bytes(request, str, strlen(str));
 }
 
 void http_write_header(struct http_request *request, const char *name, const char *value)
