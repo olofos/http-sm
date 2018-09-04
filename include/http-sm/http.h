@@ -129,7 +129,7 @@ struct http_request
     char **query_list;
 
     http_url_handler_func handler;
-    void *cgi_arg;
+    const void *cgi_arg;
     void *cgi_data;
 };
 
