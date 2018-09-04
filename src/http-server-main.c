@@ -158,9 +158,16 @@ int http_server_main_loop(struct http_server *server)
         n = select(maxfd+1, &set_read, &set_write, 0, 0);
     }
 
+    // select seems to return -1 on timeout on esp8266 RTOS SDK
+    // and does not set errno...
+#ifndef __XTENSA__
     if(n < 0) {
-        LOG_ERROR("select failed");
-    } else if(n == 0) {
+        LOG("select failed");
+        return -1;
+    }
+#endif
+
+    if(n <= 0) {
         for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
             if(server->request[i].fd >= 0) {
                 LOG("Socket %d timed out. Closing.", server->request[i].fd);
