@@ -5,6 +5,8 @@
 #ifdef __XTENSA__
 #include "lwip/lwip/sockets.h"
 #include "lwip/lwip/netdb.h"
+#include <esp_common.h>
+
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -132,6 +134,7 @@ int http_server_write(struct http_request *request)
             continue;
         } else if(http_server_match_url(http_url_tab[i].url, request->path)) {
             request->handler = http_url_tab[i].handler;
+            request->cgi_arg = http_url_tab[i].cgi_arg;
         }
 
         i++;
