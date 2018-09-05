@@ -61,6 +61,73 @@ static int read_chunk_footer(struct http_request *request)
     return 1;
 }
 
+int http_read(struct http_request *request, void *buf_, size_t count)
+{
+    uint8_t *buf = buf_;
+
+    size_t num = 0;
+
+    if(request->flags & HTTP_FLAG_CHUNKED) {
+        while(count > 0) {
+            if(request->chunk_length == 0) {
+                int ret = read_chunk_header(request);
+
+                if(ret < 0) {
+                    return ret;
+                }
+
+                if(request->chunk_length == 0) {
+                    read_chunk_footer(request);
+                    request->state = HTTP_STATE_IDLE | (request->state & HTTP_STATE_CLIENT);
+                    break;
+                }
+            }
+
+            int num_to_read = (count < request->chunk_length) ? count : request->chunk_length;
+            int n = read(request->fd, buf, num_to_read);
+
+            if(n < 0) {
+                LOG("read_failed");
+                return -1;
+            } else if(n == 0) {
+                break;
+            } else {
+                num += n;
+                count -= n;
+                buf += n;
+                request->chunk_length -= n;
+
+                if(request->chunk_length == 0) {
+                    int ret = read_chunk_footer(request);
+                    if(ret < 0) {
+                        return ret;
+                    }
+                }
+            }
+        }
+    } else {
+        while((count > 0) && (request->content_length > 0)) {
+            int num_to_read = (count < request->content_length) ? count : request->content_length;
+            int n = read(request->fd, buf, num_to_read);
+            LOG("read %d", n);
+
+            if(n < 0) {
+                LOG_ERROR("read failed");
+                return -1;
+            } else if(n == 0) {
+                break;
+            } else {
+                num += n;
+                count -= n;
+                request->content_length -= n;
+                buf += n;
+            }
+        }
+    }
+
+    return num;
+}
+
 int http_getc(struct http_request *request)
 {
     if(request->state != HTTP_STATE_SERVER_READ_BODY && request->state != HTTP_STATE_CLIENT_READ_BODY) {

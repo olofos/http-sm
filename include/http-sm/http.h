@@ -148,6 +148,7 @@ enum http_cgi_state cgi_not_found(struct http_request* request);
 
 int http_getc(struct http_request *request);
 int http_peek(struct http_request *request);
+int http_read(struct http_request *request, void *buf_, size_t count);
 
 const char *http_get_query_arg(struct http_request *request, const char *name);
 

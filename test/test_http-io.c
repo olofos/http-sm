@@ -526,6 +526,205 @@ static void test__http_peek__returns_the_next_character_with_te_chunked(void **s
 }
 
 
+
+static void test__http_read__can_read_correctly_with_te_identity(void **states)
+{
+    char *str = "0123";
+
+    int fd = write_tmp_file(str);
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.content_length = strlen(str);
+
+    char buf[5] = "XXXX";
+
+    int n = http_read(&request, buf, 4);
+
+    assert_string_equal(str, buf);
+    assert_int_equal(4, n);
+
+    close(fd);
+}
+
+static void test__http_read__can_read_correctly_with_te_chunked(void **states)
+{
+    char *str = "0123";
+    const char *s[] = {
+        "4\r\n",
+        str,
+        "\r\n",
+        "0\r\n",
+        0
+    };
+
+    int fd = write_tmp_file_n(s);
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.flags |= HTTP_FLAG_CHUNKED;
+
+    char buf[5] = "XXXX";
+
+    int n = http_read(&request, buf, 4);
+    assert_int_equal(4, n);
+    assert_string_equal(str, buf);
+
+    close(fd);
+}
+
+static void test__http_read__stops_reading_at_end_of_file_with_te_identity(void **states)
+{
+    const char *s = "0123";
+
+    int fd = write_tmp_file(s);
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.content_length = strlen(s);
+
+    char buf[6] = "XXXX";
+
+    int n = http_read(&request, buf, 5);
+
+    assert_int_equal(4, n);
+    assert_string_equal(s, buf);
+
+    off_t pos = lseek(request.fd, 0, SEEK_CUR);
+    off_t end = lseek(request.fd, 0, SEEK_END);
+
+    assert_int_equal(end, pos);
+
+    close(fd);
+}
+
+static void test__http_read__stops_reading_at_end_of_file_with_te_chunked(void **states)
+{
+    char *str = "0123";
+    const char *s[] = {
+        "4\r\n",
+        str,
+        "\r\n",
+        "0\r\n",
+        0
+    };
+
+    int fd = write_tmp_file_n(s);
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.flags |= HTTP_FLAG_CHUNKED;
+
+    char buf[6] = "XXXX";
+
+    int n = http_read(&request, buf, 5);
+
+    assert_int_equal(4, n);
+    assert_string_equal(str, buf);
+
+    off_t pos = lseek(request.fd, 0, SEEK_CUR);
+    off_t end = lseek(request.fd, 0, SEEK_END);
+
+    assert_int_equal(end, pos);
+
+    close(fd);
+}
+
+static void test__http_read__returns_zero_at_end_of_file_with_te_identity(void **states)
+{
+    const char *s = "0123";
+
+    int fd = write_tmp_file(s);
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.content_length = strlen(s);
+
+    char buf[5] = "XXXX";
+
+    int n = http_read(&request, buf, 4);
+
+    assert_int_equal(4, n);
+    assert_string_equal(s, buf);
+
+    n = http_read(&request, buf, 4);
+    assert_int_equal(0, n);
+
+    off_t pos = lseek(request.fd, 0, SEEK_CUR);
+    off_t end = lseek(request.fd, 0, SEEK_END);
+
+    assert_int_equal(end, pos);
+
+    close(fd);
+}
+
+static void test__http_read__returns_zero_at_end_of_file_with_te_chunked(void **states)
+{
+    const char *str = "0123";
+
+    const char *s[] = {
+        "4\r\n",
+        str,
+        "\r\n",
+        "0\r\n",
+        0
+    };
+
+
+    int fd = write_tmp_file_n(s);
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.flags |= HTTP_FLAG_CHUNKED;
+
+    char buf[5] = "XXXX";
+
+    int n = http_read(&request, buf, 4);
+
+    assert_int_equal(4, n);
+    assert_string_equal(str, buf);
+
+    n = http_read(&request, buf, 4);
+    assert_int_equal(0, n);
+
+    off_t pos = lseek(request.fd, 0, SEEK_CUR);
+    off_t end = lseek(request.fd, 0, SEEK_END);
+
+    assert_int_equal(end, pos);
+
+    close(fd);
+}
+
+static void test__http_read__doesnt_read_more_than_content_length_te_identity(void **states)
+{
+    char *str = "0123";
+
+    int fd = write_tmp_file(str);
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.content_length = strlen(str)-1;
+
+    char buf[5] = "XXXX";
+
+    int n = http_read(&request, buf, 4);
+
+    assert_int_equal(str[0], buf[0]);
+    assert_int_equal(str[1], buf[1]);
+    assert_int_equal(str[2], buf[2]);
+    assert_int_equal(3, n);
+
+    close(fd);
+}
+
+
 static void test__http_write_header__writes_the_header(void **states)
 {
     int fd = open_tmp_file();
@@ -844,6 +1043,14 @@ const struct CMUnitTest tests_for_http_io[] = {
 
     cmocka_unit_test(test__http_peek__returns_the_next_character_with_te_identity),
     cmocka_unit_test(test__http_peek__returns_the_next_character_with_te_chunked),
+
+    cmocka_unit_test(test__http_read__can_read_correctly_with_te_identity),
+    cmocka_unit_test(test__http_read__can_read_correctly_with_te_chunked),
+    cmocka_unit_test(test__http_read__stops_reading_at_end_of_file_with_te_identity),
+    cmocka_unit_test(test__http_read__stops_reading_at_end_of_file_with_te_chunked),
+    cmocka_unit_test(test__http_read__returns_zero_at_end_of_file_with_te_identity),
+    cmocka_unit_test(test__http_read__returns_zero_at_end_of_file_with_te_chunked),
+    cmocka_unit_test(test__http_read__doesnt_read_more_than_content_length_te_identity),
 
     cmocka_unit_test(test__http_write_header__writes_the_header),
     cmocka_unit_test(test__http_write_header__writes_nothing_when_name_is_null),
