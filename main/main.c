@@ -204,7 +204,7 @@ static void test_simple_request(void **states)
     ret = read_all(&request, buf);
     assert_int_equal(ret, 0);
 
-    assert_non_null(strstr(buf, "'cgi_simple'"));
+    assert_string_equal(buf, simple_response);
 
     http_close(&request);
 }
@@ -299,7 +299,7 @@ static void test_wildcard_request(void **states)
     ret = read_all(&request, buf);
     assert_int_equal(ret, 0);
 
-    assert_string_equal(buf, simple_response);
+    assert_non_null(strstr(buf, "'cgi_simple'"));
 
     http_close(&request);
 }
