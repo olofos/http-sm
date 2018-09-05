@@ -109,7 +109,6 @@ int http_read(struct http_request *request, void *buf_, size_t count)
         while((count > 0) && (request->content_length > 0)) {
             int num_to_read = (count < request->content_length) ? count : request->content_length;
             int n = read(request->fd, buf, num_to_read);
-            LOG("read %d", n);
 
             if(n < 0) {
                 LOG_ERROR("read failed");
