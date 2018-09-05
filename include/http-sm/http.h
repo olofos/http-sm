@@ -129,7 +129,7 @@ struct http_request
     char **query_list;
 
     http_url_handler_func handler;
-    void *cgi_arg;
+    const void *cgi_arg;
     void *cgi_data;
 };
 
@@ -151,6 +151,7 @@ int http_peek(struct http_request *request);
 
 const char *http_get_query_arg(struct http_request *request, const char *name);
 
+int http_write_bytes(struct http_request *request, const char *data, int len);
 int http_write_string(struct http_request *request, const char *str);
 
 void http_write_header(struct http_request *request, const char *name, const char *value);
