@@ -19,6 +19,9 @@
 #include "http-private.h"
 #include "log.h"
 
+const char *simple_response = "This is a response from \'cgi_simple\'";
+const char *stream_response = "This is a response from \'cgi_stream\'";
+
 
 enum http_cgi_state cgi_not_found(struct http_request* request)
 {
@@ -40,7 +43,7 @@ enum http_cgi_state cgi_simple(struct http_request* request)
         return HTTP_CGI_NOT_FOUND;
     }
 
-    const char *response = "This is a response from \'cgi_simple\'\r\n";
+    const char *response = simple_response;
 
     http_begin_response(request, 200, "text/plain");
     http_set_content_length(request, strlen(response));
@@ -67,7 +70,7 @@ enum http_cgi_state cgi_stream(struct http_request* request)
 
         return HTTP_CGI_MORE;
     } else {
-        const char response[] = "This is a response from \'cgi_stream\'\r\n";
+        const char *response = stream_response;
 
         http_write_string(request, response);
         http_end_body(request);
@@ -223,7 +226,7 @@ static void test_stream_request(void **states)
     ret = read_all(&request, buf);
     assert_int_equal(ret, 0);
 
-    assert_non_null(strstr(buf, "'cgi_stream'"));
+    assert_string_equal(buf, stream_response);
 
     http_close(&request);
 }
@@ -296,7 +299,7 @@ static void test_wildcard_request(void **states)
     ret = read_all(&request, buf);
     assert_int_equal(ret, 0);
 
-    assert_non_null(strstr(buf, "'cgi_simple'"));
+    assert_string_equal(buf, simple_response);
 
     http_close(&request);
 }

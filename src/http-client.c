@@ -43,7 +43,7 @@ int http_get_request(struct http_request *request)
     request->line_len = line_len;
     request->state = HTTP_STATE_CLIENT_READ_VERSION;
 
-    while(request->state & HTTP_STATE_READ) {
+    while(request->state & (HTTP_STATE_READ | HTTP_STATE_READ_NL)) {
         int c;
         int ret = read(request->fd, &c, 1);
 
