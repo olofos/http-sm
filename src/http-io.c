@@ -139,55 +139,14 @@ int http_getc(struct http_request *request)
         return c;
     }
 
-    if(request->flags & HTTP_FLAG_CHUNKED) {
-        int ret;
-        unsigned char c;
-
-        if(request->chunk_length == 0) {
-           if((ret = read_chunk_header(request)) < 0) {
-                return ret;
-            }
-
-            if(request->chunk_length == 0) {
-                read_chunk_footer(request);
-                request->state = HTTP_STATE_IDLE | (request->state & HTTP_STATE_CLIENT);
-                return 0;
-            }
-        }
-
-        ret = read(request->fd, &c, 1);
-        if(ret < 0) {
-            LOG_ERROR("read failed");
-            return -1;
-        } else if(ret == 0) {
-            LOG("Got EOF");
-            return 0;
-        }
-
-        request->chunk_length--;
-
-        if(request->chunk_length == 0) {
-            if((ret = read_chunk_footer(request)) <= 0) {
-                return ret;
-            }
-        }
-        return c;
+    unsigned char c;
+    int n = http_read(request, &c, 1);
+    if(n < 0) {
+        return -1;
+    } else if(n == 0) {
+        return 0;
     } else {
-        if(request->content_length > 0) {
-            unsigned char c;
-            int ret = read(request->fd, &c, 1);
-            if(ret < 0) {
-                LOG_ERROR("read failed");
-                return -1;
-            } else if(ret == 0) {
-                LOG("Got EOF");
-                return 0;
-            }
-            request->content_length--;
-            return c;
-        } else {
-            return 0;
-        }
+        return c;
     }
 }
 
