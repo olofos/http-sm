@@ -47,6 +47,9 @@ void http_parse_header(struct http_request *request, char c)
             } else if(strcmp(request->line, "POST") == 0) {
                 request->method = HTTP_METHOD_POST;
                 http_parse_header_next_state(request, HTTP_STATE_SERVER_READ_PATH);
+            } else if(strcmp(request->line, "DELETE") == 0) {
+                request->method = HTTP_METHOD_DELETE;
+                http_parse_header_next_state(request, HTTP_STATE_SERVER_READ_PATH);
             } else {
                 LOG("Unsupported HTTP method \"%s\"", request->line);
                 request->method = HTTP_METHOD_UNSUPPORTED;

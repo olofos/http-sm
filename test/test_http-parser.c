@@ -114,12 +114,27 @@ static void test__http_parse_header__can_parse_post_request(void **state)
     free_request(&request);
 }
 
-static void test__http_parse_header__unsupported_method_gives_error(void **state)
+static void test__http_parse_header__can_parse_delete_request(void **state)
 {
     struct http_request request;
     create_server_request(&request);
 
     parse_header_helper(&request, "DELETE / HTTP/1.1\r\n");
+
+    assert_int_equal(HTTP_METHOD_DELETE, request.method);
+    assert_non_null(request.path);
+    assert_null(request.query);
+    assert_string_equal("/", request.path);
+
+    free_request(&request);
+}
+
+static void test__http_parse_header__unsupported_method_gives_error(void **state)
+{
+    struct http_request request;
+    create_server_request(&request);
+
+    parse_header_helper(&request, "UNKOWN / HTTP/1.1\r\n");
 
     assert_int_equal(HTTP_METHOD_UNSUPPORTED, request.method);
     assert_int_equal(HTTP_STATUS_METHOD_NOT_ALLOWED, request.error);
@@ -453,6 +468,7 @@ const struct CMUnitTest tests_for_http_parse_header[] = {
     cmocka_unit_test(test__http_parse_header__can_parse_get_request_without_query),
     cmocka_unit_test(test__http_parse_header__can_parse_get_request_with_query),
     cmocka_unit_test(test__http_parse_header__can_parse_post_request),
+    cmocka_unit_test(test__http_parse_header__can_parse_delete_request),
     cmocka_unit_test(test__http_parse_header__unsupported_method_gives_error),
     cmocka_unit_test(test__http_parse_header__http_version_10_gives_error),
     cmocka_unit_test(test__http_parse_header__unknown_http_version_gives_error),

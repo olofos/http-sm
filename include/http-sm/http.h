@@ -68,7 +68,8 @@ enum http_method
     HTTP_METHOD_UNKNOWN = 0,
     HTTP_METHOD_GET = 1,
     HTTP_METHOD_POST = 2,
-    HTTP_METHOD_UNSUPPORTED = 3,
+    HTTP_METHOD_DELETE = 2,
+    HTTP_METHOD_UNSUPPORTED = 4,
 };
 
 enum http_status
