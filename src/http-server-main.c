@@ -79,7 +79,7 @@ int http_server_read(struct http_request *request)
                 request->line = 0;
                 request->line_len = 0;
 
-                if(request->method == HTTP_METHOD_POST) {
+                if(request->method == HTTP_METHOD_POST || request->method == HTTP_METHOD_DELETE) {
                     request->state = HTTP_STATE_SERVER_READ_BODY;
                 } else {
                     request->state = HTTP_STATE_SERVER_WRITE_BEGIN;
