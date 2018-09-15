@@ -113,6 +113,38 @@ enum http_cgi_state cgi_query(struct http_request* request)
     return HTTP_CGI_DONE;
 }
 
+enum http_cgi_state cgi_post(struct http_request* request)
+{
+    if(request->method != HTTP_METHOD_POST) {
+        return HTTP_CGI_NOT_FOUND;
+    }
+
+    char data[32];
+    int len = 0;
+
+    while(request->state == HTTP_STATE_SERVER_READ_BODY) {
+        int c = http_getc(request);
+        if(c && (len < sizeof(data) - 1)) {
+            data[len++] = c;
+        }
+    }
+
+    data[len] = 0;
+    LOG("Post data: \"%s\"", data);
+
+    http_begin_response(request, 200, "text/plain");
+    http_end_header(request);
+
+    http_write_string(request, "This is a response from \'cgi_post\'\r\nYou posted: \"");
+    http_write_string(request, data);
+    http_write_string(request, "\"\r\n");
+
+    http_end_body(request);
+
+    return HTTP_CGI_DONE;
+}
+
+
 enum http_cgi_state cgi_exit(struct http_request* request)
 {
     const char *response = "Exiting\r\n";
@@ -141,6 +173,7 @@ struct http_url_handler http_url_tab_[] = {
     {"/simple", cgi_simple, NULL},
     {"/stream", cgi_stream, NULL},
     {"/query", cgi_query, NULL},
+    {"/post", cgi_post, NULL},
     {"/wildcard/*", cgi_simple, NULL},
     {"/exit", cgi_exit, NULL},
     {NULL, NULL, NULL}

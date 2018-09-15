@@ -23,7 +23,7 @@
 #include "http-private.h"
 #include "log.h"
 
-int http_server_read(struct http_request *request)
+static int http_server_read_headers(struct http_request *request)
 {
     if(request->state == HTTP_STATE_SERVER_READ_BODY) {
         return 0;
@@ -39,7 +39,7 @@ int http_server_read(struct http_request *request)
             LOG("Expected EOF but got %c", c);
         }
 
-        request->state = HTTP_STATE_IDLE;
+        request->state = HTTP_STATE_SERVER_IDLE;
         http_close(request);
     } else {
         if(request->state == HTTP_STATE_SERVER_READ_BEGIN) {
@@ -74,12 +74,12 @@ int http_server_read(struct http_request *request)
             return -1;
         } else {
             http_parse_header(request, c);
-            if(request->state == HTTP_STATE_IDLE) {
+            if(request->state == HTTP_STATE_SERVER_IDLE) {
                 free(request->line);
                 request->line = 0;
                 request->line_len = 0;
 
-                if(request->method == HTTP_METHOD_POST || request->method == HTTP_METHOD_DELETE) {
+                if((request->read_content_length > 0) || (request->flags & HTTP_FLAG_READ_CHUNKED)) {
                     request->state = HTTP_STATE_SERVER_READ_BODY;
                 } else {
                     request->state = HTTP_STATE_SERVER_WRITE_BEGIN;
@@ -93,6 +93,16 @@ int http_server_read(struct http_request *request)
 int http_begin_response(struct http_request *request, int status, const char *content_type)
 {
     char buf[64];
+
+    if(request->state == HTTP_STATE_SERVER_READ_BODY) {
+        LOG("Beginning response before reading body");
+
+        do {
+            http_read(request, buf, sizeof(buf));
+        } while(request->state != HTTP_STATE_SERVER_IDLE);
+    }
+
+    request->state = HTTP_STATE_SERVER_WRITE_HEADER;
 
     snprintf(buf, sizeof(buf), "HTTP/1.1 %d %s\r\n", status, http_status_string(status));
     http_write_string(request, buf);
@@ -112,7 +122,7 @@ int http_end_body(struct http_request *request)
 
 enum http_cgi_state cgi_not_found(struct http_request* request);
 
-int http_server_write(struct http_request *request)
+static int http_server_call_handler(struct http_request *request)
 {
     int i = 0;
 
@@ -143,7 +153,7 @@ int http_server_write(struct http_request *request)
     return 0;
 }
 
-int http_server_main_loop(struct http_server *server)
+static int http_server_main_loop(struct http_server *server)
 {
     fd_set set_read, set_write;
     int maxfd;
@@ -183,11 +193,16 @@ int http_server_main_loop(struct http_server *server)
         }
 
         for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
-            if(server->request[i].fd >= 0) {
-                if(FD_ISSET(server->request[i].fd, &set_read)) {
-                    http_server_read(&server->request[i]);
+            struct http_request *request = &server->request[i];
+            if(request->fd >= 0) {
+                if(FD_ISSET(request->fd, &set_read)) {
+                    if(request->state == HTTP_STATE_SERVER_READ_BODY) {
+                        http_server_call_handler(&server->request[i]);
+                    } else {
+                        http_server_read_headers(&server->request[i]);
+                    }
                 } else if(FD_ISSET(server->request[i].fd, &set_write)) {
-                    http_server_write(&server->request[i]);
+                    http_server_call_handler(&server->request[i]);
                 }
             }
         }
@@ -196,7 +211,7 @@ int http_server_main_loop(struct http_server *server)
     return 0;
 }
 
-int http_server_start(struct http_server *server, int port)
+static int http_server_start(struct http_server *server, int port)
 {
     int listen_fd = http_open_listen_socket(port);
 

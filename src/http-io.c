@@ -252,6 +252,8 @@ void http_end_header(struct http_request *request)
             http_write_header(request, "Transfer-Encoding", "chunked");
             request->flags |= HTTP_FLAG_WRITE_CHUNKED;
         }
+
+        request->state = HTTP_STATE_SERVER_WRITE_BODY;
     }
 
     write_all(request->fd, "\r\n", 2);
