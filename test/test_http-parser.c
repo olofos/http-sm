@@ -27,7 +27,8 @@ static void create_server_request(struct http_request *request)
     request->flags = 0;
     request->status = 0;
     request->error = 0;
-    request->content_length = -1;
+    request->read_content_length = -1;
+    request->write_content_length = -1;
 }
 
 static void create_client_request(struct http_request *request)
@@ -45,7 +46,8 @@ static void create_client_request(struct http_request *request)
     request->flags = 0;
     request->status = 0;
     request->error = 0;
-    request->content_length = -1;
+    request->read_content_length = -1;
+    request->write_content_length = -1;
 }
 
 static void free_request(struct http_request *request)
@@ -252,7 +254,7 @@ static void test__http_parse_header__can_parse_content_length(void **state)
 
     parse_header_helper(&request, "GET / HTTP/1.1\r\nContent-Length: 10\r\n");
 
-    assert_int_equal(10, request.content_length);
+    assert_int_equal(10, request.read_content_length);
 
     free_request(&request);
 }

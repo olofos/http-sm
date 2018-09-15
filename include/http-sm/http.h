@@ -107,7 +107,8 @@ struct http_request
     int line_index;
     int line_len;
 
-    int content_length;
+    int read_content_length;
+    int write_content_length;
     int chunk_length;
 
     int poke;

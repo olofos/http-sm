@@ -238,7 +238,8 @@ static void http_request_init_common(struct http_request *request)
     request->line_len = 0;
     request->line_index = 0;
     request->query_list = 0;
-    request->content_length = -1;
+    request->read_content_length = -1;
+    request->write_content_length = -1;
     request->chunk_length = 0;
     request->poke = -1;
     request->status = 0;

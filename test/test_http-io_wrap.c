@@ -102,7 +102,7 @@ static void test__http_getc__returns_minus_one_if_read_fails_with_te_identity(vo
         .poke = -1,
         .state = HTTP_STATE_CLIENT_READ_BODY,
         .flags = 0,
-        .content_length = 4,
+        .read_content_length = 4,
     };
 
     expect_value(__wrap_read, fd, 3);

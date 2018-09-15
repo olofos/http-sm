@@ -106,8 +106,8 @@ int http_read(struct http_request *request, void *buf_, size_t count)
             }
         }
     } else {
-        while((count > 0) && (request->content_length > 0)) {
-            int num_to_read = (count < request->content_length) ? count : request->content_length;
+        while((count > 0) && (request->read_content_length > 0)) {
+            int num_to_read = (count < request->read_content_length) ? count : request->read_content_length;
             int n = read(request->fd, buf, num_to_read);
 
             if(n < 0) {
@@ -118,7 +118,7 @@ int http_read(struct http_request *request, void *buf_, size_t count)
             } else {
                 num += n;
                 count -= n;
-                request->content_length -= n;
+                request->read_content_length -= n;
                 buf += n;
             }
         }
@@ -245,7 +245,7 @@ int http_begin_request(struct http_request *request)
 void http_end_header(struct http_request *request)
 {
     if(http_is_server(request)) {
-        if(request->content_length < 0) {
+        if(request->write_content_length < 0) {
             http_write_header(request, "Transfer-Encoding", "chunked");
             request->flags |= HTTP_FLAG_CHUNKED;
         }
@@ -256,7 +256,7 @@ void http_end_header(struct http_request *request)
 
 void http_set_content_length(struct http_request *request, int length)
 {
-    request->content_length = length;
+    request->write_content_length = length;
 
     char buf[12];
     snprintf(buf, sizeof(buf), "%d", length);

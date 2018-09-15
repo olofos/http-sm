@@ -74,7 +74,7 @@ static void test__http_get_request__parses_http_headers(void **states)
     assert_true(ret > 0);
     assert_int_equal(HTTP_STATE_CLIENT_READ_BODY, request.state);
     assert_int_equal(200, request.status);
-    assert_int_equal(606, request.content_length);
+    assert_int_equal(606, request.read_content_length);
     assert_int_equal(0, request.line);
     assert_int_equal(0, request.line_len);
     assert_int_equal(0, n);

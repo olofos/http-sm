@@ -27,9 +27,6 @@ int http_get_request(struct http_request *request)
 
     http_end_header(request);
 
-    request->poke = -1;
-    request->content_length = -1;
-
     const int line_len = HTTP_LINE_LEN;
     request->line = malloc(line_len);
 

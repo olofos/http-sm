@@ -32,7 +32,7 @@ static void test__http_getc__can_read_correctly_with_te_identity(void **states)
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = strlen(str);
+    request.read_content_length = strlen(str);
 
     for(int i = 0; i < strlen(str); i++) {
         assert_int_equal(str[i], http_getc(&request));
@@ -50,7 +50,7 @@ static void test__http_getc__doesnt_read_more_than_content_length_with_te_identi
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = 1;
+    request.read_content_length = 1;
 
     assert_int_equal('0', http_getc(&request));
     assert_int_equal(0, http_getc(&request));
@@ -79,7 +79,7 @@ static void test__http_getc__can_read_correctly_with_te_chunked(void **states)
     init_server_request(&request, fd);
     request.flags |= HTTP_FLAG_CHUNKED;
 
-    request.content_length = strlen(str);
+    request.read_content_length = strlen(str);
 
     for(int i = 0; i < strlen(str); i++) {
         int c = http_getc(&request);
@@ -130,7 +130,7 @@ static void test__http_getc__can_read_non_ascii_characters_with_te_identity(void
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = strlen(str);
+    request.read_content_length = strlen(str);
 
     assert_int_equal(0xBA, http_getc(&request));
     assert_int_equal(0xAD, http_getc(&request));
@@ -174,7 +174,7 @@ static void test__http_getc__returns_zero_when_reading_eof_with_te_identity(void
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = strlen(str);
+    request.read_content_length = strlen(str);
 
     assert_int_equal('X', http_getc(&request));
     assert_int_equal(0, http_getc(&request));
@@ -216,7 +216,7 @@ static void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = strlen(str);
+    request.read_content_length = strlen(str);
 
     enum http_state all_other_states[] = {
         HTTP_STATE_IDLE,
@@ -317,7 +317,7 @@ static void test__http_getc__returns_zero_if_eof_is_found_when_content_length_is
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = strlen(s) + 1;
+    request.read_content_length = strlen(s) + 1;
 
     int c;
     while((c = http_getc(&request)) > 0) {
@@ -483,7 +483,7 @@ static void test__http_peek__returns_the_next_character_with_te_identity(void **
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = strlen(str);
+    request.read_content_length = strlen(str);
 
     assert_int_equal('0', http_peek(&request));
     assert_int_equal('0', http_peek(&request));
@@ -536,7 +536,7 @@ static void test__http_read__can_read_correctly_with_te_identity(void **states)
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = strlen(str);
+    request.read_content_length = strlen(str);
 
     char buf[5] = "XXXX";
 
@@ -584,7 +584,7 @@ static void test__http_read__stops_reading_at_end_of_file_with_te_identity(void 
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = strlen(s);
+    request.read_content_length = strlen(s);
 
     char buf[6] = "XXXX";
 
@@ -643,7 +643,7 @@ static void test__http_read__returns_zero_at_end_of_file_with_te_identity(void *
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = strlen(s);
+    request.read_content_length = strlen(s);
 
     char buf[5] = "XXXX";
 
@@ -710,7 +710,7 @@ static void test__http_read__doesnt_read_more_than_content_length_te_identity(vo
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = strlen(str)-1;
+    request.read_content_length = strlen(str)-1;
 
     char buf[5] = "XXXX";
 
@@ -931,7 +931,7 @@ static void test__http_end_headers__server_sets_chunked_flag_if_no_content_lengt
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = -1;
+    request.write_content_length = -1;
 
     http_end_header(&request);
     assert_true(request.flags & HTTP_FLAG_CHUNKED);
@@ -951,7 +951,7 @@ static void test__http_end_headers__server_does_not_set_chunked_flag_if_content_
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = 1;
+    request.write_content_length = 1;
 
     http_end_header(&request);
     assert_string_equal("\r\n", get_file_content(fd));
@@ -967,10 +967,10 @@ static void test__http_set_content_length__sets_variable_and_sends_header(void *
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.content_length = -1;
+    request.write_content_length = -1;
 
     http_set_content_length(&request, 10);
-    assert_int_equal(request.content_length, 10);
+    assert_int_equal(request.write_content_length, 10);
     assert_string_equal("Content-Length: 10\r\n", get_file_content(fd));
 
     close(fd);
