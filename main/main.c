@@ -398,7 +398,11 @@ int main(int argc, char *argv[])
 {
     if(argc > 1) {
         if(strcmp(argv[1], "-s") == 0) {
-            http_server_main(8080);
+            int port = 8080;
+            if(argc > 2) {
+                port = strtol(argv[2], NULL, 10);
+            }
+            http_server_main(port);
         }
     } else {
         pid_t child = fork();
