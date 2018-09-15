@@ -152,11 +152,12 @@ extern const char *log_system;
 
 void test_request(int port, char *path)
 {
-    struct http_request request = {
-        .host = "localhost",
-        .path = path,
-        .port = port,
-    };
+    struct http_request request;
+    http_request_init(&request);
+
+    request.host = "localhost";
+    request.path = path;
+    request.port = port;
 
     if(http_get_request(&request) > 0) {
         putchar('\n');
@@ -188,11 +189,12 @@ static int read_all(struct http_request *request, char *buf)
 
 static void test_simple_request(void **states)
 {
-    struct http_request request = {
-        .host = "localhost",
-        .path = "/simple",
-        .port = http_port,
-    };
+    struct http_request request;
+    http_request_init(&request);
+
+    request.host = "localhost";
+    request.path = "/simple";
+    request.port = http_port;
 
     int ret;
 
@@ -211,11 +213,12 @@ static void test_simple_request(void **states)
 
 static void test_stream_request(void **states)
 {
-    struct http_request request = {
-        .host = "localhost",
-        .path = "/stream",
-        .port = http_port,
-    };
+    struct http_request request;
+    http_request_init(&request);
+
+    request.host = "localhost";
+    request.path = "/stream";
+    request.port = http_port;
 
     int ret;
     ret = http_get_request(&request);
@@ -233,11 +236,12 @@ static void test_stream_request(void **states)
 
 static void test_query_request_no_arg(void **states)
 {
-    struct http_request request = {
-        .host = "localhost",
-        .path = "/query",
-        .port = http_port,
-    };
+    struct http_request request;
+    http_request_init(&request);
+
+    request.host = "localhost";
+    request.path = "/query";
+    request.port = http_port;
 
     int ret;
 
@@ -257,11 +261,12 @@ static void test_query_request_no_arg(void **states)
 
 static void test_query_request_with_arg(void **states)
 {
-    struct http_request request = {
-        .host = "localhost",
-        .path = "/query?a=1&b=2%203&c=4",
-        .port = http_port,
-    };
+    struct http_request request;
+    http_request_init(&request);
+
+    request.host = "localhost";
+    request.path = "/query?a=1&b=2%203&c=4";
+    request.port = http_port;
 
     int ret;
 
@@ -283,11 +288,12 @@ static void test_query_request_with_arg(void **states)
 
 static void test_wildcard_request(void **states)
 {
-    struct http_request request = {
-        .host = "localhost",
-        .path = "/wildcard/xyz?abc=123",
-        .port = http_port,
-    };
+    struct http_request request;
+    http_request_init(&request);
+
+    request.host = "localhost";
+    request.path = "/wildcard/xyz?abc=123";
+    request.port = http_port;
 
     int ret;
 
@@ -306,11 +312,12 @@ static void test_wildcard_request(void **states)
 
 static void test_not_found_request(void **states)
 {
-    struct http_request request = {
-        .host = "localhost",
-        .path = "/not_found",
-        .port = http_port,
-    };
+    struct http_request request;
+    http_request_init(&request);
+
+    request.host = "localhost";
+    request.path = "/not_found";
+    request.port = http_port;
 
     int ret;
 
@@ -329,11 +336,12 @@ static void test_not_found_request(void **states)
 
 static void test_that_server_can_handle_a_timeout(void **states)
 {
-    struct http_request request = {
-        .host = "localhost",
-        .path = "/not_found",
-        .port = http_port,
-    };
+    struct http_request request;
+    http_request_init(&request);
+
+    request.host = "localhost";
+    request.path = "/not_found";
+    request.port = http_port;
 
     int ret;
 
@@ -382,11 +390,12 @@ int main(int argc, char *argv[])
 
             int fails = cmocka_run_group_tests(tests, NULL, NULL);
 
-            struct http_request request = {
-                .host = "localhost",
-                .path = "/exit",
-                .port = http_port,
-            };
+            struct http_request request;
+            http_request_init(&request);
+
+            request.host = "localhost";
+            request.path = "/exit";
+            request.port = http_port;
 
             http_get_request(&request);
             char buf[256];
