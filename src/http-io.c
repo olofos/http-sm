@@ -67,7 +67,7 @@ int http_read(struct http_request *request, void *buf_, size_t count)
 
     size_t num = 0;
 
-    if(request->flags & HTTP_FLAG_CHUNKED) {
+    if(request->flags & HTTP_FLAG_READ_CHUNKED) {
         while(count > 0) {
             if(request->chunk_length == 0) {
                 int ret = read_chunk_header(request);
@@ -175,7 +175,7 @@ static int write_all(int fd, const char *str, int len)
 
 int http_write_bytes(struct http_request *request, const char *data, int len)
 {
-    if(request->flags & HTTP_FLAG_CHUNKED) {
+    if(request->flags & HTTP_FLAG_WRITE_CHUNKED) {
         char buf[16];
         int n = snprintf(buf, sizeof(buf), "%X\r\n", len);
         if(write_all(request->fd, buf, n) < 0) {
@@ -185,7 +185,7 @@ int http_write_bytes(struct http_request *request, const char *data, int len)
 
     int num = write_all(request->fd, data, len);
 
-    if(request->flags & HTTP_FLAG_CHUNKED) {
+    if(request->flags & HTTP_FLAG_WRITE_CHUNKED) {
         write_all(request->fd, "\r\n", 2);
     }
 
@@ -247,7 +247,7 @@ void http_end_header(struct http_request *request)
     if(http_is_server(request)) {
         if(request->write_content_length < 0) {
             http_write_header(request, "Transfer-Encoding", "chunked");
-            request->flags |= HTTP_FLAG_CHUNKED;
+            request->flags |= HTTP_FLAG_WRITE_CHUNKED;
         }
     }
 

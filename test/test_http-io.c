@@ -77,7 +77,7 @@ static void test__http_getc__can_read_correctly_with_te_chunked(void **states)
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     request.read_content_length = strlen(str);
 
@@ -110,7 +110,7 @@ static void test__http_getc__can_read_correctly_te_chunked_and_chunk_extension(v
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     for(int i = 0; i < strlen(str); i++) {
         int c = http_getc(&request);
@@ -156,7 +156,7 @@ static void test__http_getc__can_read_non_ascii_characters_with_te_chunked(void 
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     assert_int_equal(0xBA, http_getc(&request));
     assert_int_equal(0xAD, http_getc(&request));
@@ -198,7 +198,7 @@ static void test__http_getc__returns_zero_when_reading_eof_with_te_chunked(void 
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     assert_int_equal('X', http_getc(&request));
     assert_int_equal(0, http_getc(&request));
@@ -252,7 +252,7 @@ static void test__http_getc__returns_zero_if_state_is_not_http_read_body_with_te
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     enum http_state all_other_states[] = {
         HTTP_STATE_IDLE,
@@ -293,7 +293,7 @@ static void test__http_getc__read_to_end_of_file_with_te_chunked(void **states)
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     int c;
     while((c = http_getc(&request)) > 0) {
@@ -345,7 +345,7 @@ static void test__http_getc__returns_zero_if_eof_is_found_in_chunk_header(void *
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     int c;
     while((c = http_getc(&request)) > 0) {
@@ -373,7 +373,7 @@ static void test__http_getc__returns_zero_if_eof_is_found_after_chunk_header(voi
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     int c;
     while((c = http_getc(&request)) > 0) {
@@ -402,7 +402,7 @@ static void test__http_getc__returns_zero_if_eof_is_found_in_chunk_footer(void *
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     int c;
     while((c = http_getc(&request)) > 0) {
@@ -429,7 +429,7 @@ static void test__http_getc__returns_zero_if_missing_chunk_footer(void **states)
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     int c;
     while((c = http_getc(&request)) > 0) {
@@ -459,7 +459,7 @@ static void test__http_getc__returns_zero_if_extra_characters_are_found_in_chunk
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     int c;
     while((c = http_getc(&request)) > 0) {
@@ -512,7 +512,7 @@ static void test__http_peek__returns_the_next_character_with_te_chunked(void **s
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     assert_int_equal('0', http_peek(&request));
     assert_int_equal('0', http_peek(&request));
@@ -564,7 +564,7 @@ static void test__http_read__can_read_correctly_with_te_chunked(void **states)
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     char buf[5] = "XXXX";
 
@@ -617,7 +617,7 @@ static void test__http_read__stops_reading_at_end_of_file_with_te_chunked(void *
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     char buf[6] = "XXXX";
 
@@ -681,7 +681,7 @@ static void test__http_read__returns_zero_at_end_of_file_with_te_chunked(void **
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_READ_CHUNKED;
 
     char buf[5] = "XXXX";
 
@@ -903,7 +903,7 @@ static void test__http_end_headers__sends_new_line_if_client(void **states)
 
     http_end_header(&request);
     assert_string_equal("\r\n", get_file_content(fd));
-    assert_false(request.flags & HTTP_FLAG_CHUNKED);
+    assert_false(request.flags & HTTP_FLAG_WRITE_CHUNKED);
 
     close(fd);
 }
@@ -915,11 +915,11 @@ static void test__http_end_headers__does_not_change_chunked_flag_if_client(void 
 
     struct http_request request;
     init_client_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
 
     http_end_header(&request);
     assert_string_equal("\r\n", get_file_content(fd));
-    assert_true(request.flags & HTTP_FLAG_CHUNKED);
+    assert_true(request.flags & HTTP_FLAG_WRITE_CHUNKED);
 
     close(fd);
 }
@@ -934,7 +934,7 @@ static void test__http_end_headers__server_sets_chunked_flag_if_no_content_lengt
     request.write_content_length = -1;
 
     http_end_header(&request);
-    assert_true(request.flags & HTTP_FLAG_CHUNKED);
+    assert_true(request.flags & HTTP_FLAG_WRITE_CHUNKED);
 
     const char *s = get_file_content(fd);
     assert_true(strlen(s) > 2);
@@ -955,7 +955,7 @@ static void test__http_end_headers__server_does_not_set_chunked_flag_if_content_
 
     http_end_header(&request);
     assert_string_equal("\r\n", get_file_content(fd));
-    assert_false(request.flags & HTTP_FLAG_CHUNKED);
+    assert_false(request.flags & HTTP_FLAG_WRITE_CHUNKED);
 
     close(fd);
 }
@@ -1000,7 +1000,7 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
 
     struct http_request request;
     init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_CHUNKED;
+    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
 
     const char *s = "test";
 

@@ -104,7 +104,7 @@ int http_begin_response(struct http_request *request, int status, const char *co
 
 int http_end_body(struct http_request *request)
 {
-    if(request->flags & HTTP_FLAG_CHUNKED) {
+    if(request->flags & HTTP_FLAG_WRITE_CHUNKED) {
         http_write_string(request, "");
     }
     return 0;

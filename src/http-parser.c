@@ -130,7 +130,7 @@ void http_parse_header(struct http_request *request, char c)
 
                 if((val = cmp_str_prefix(request->line, "Transfer-Encoding: ")) != 0) {
                     if(strstr(val, "chunked") != 0) {
-                        request->flags |= HTTP_FLAG_CHUNKED;
+                        request->flags |= HTTP_FLAG_READ_CHUNKED;
                     }
                 } else if((val = cmp_str_prefix(request->line, "Content-Length: ")) != 0) {
                     char *p;

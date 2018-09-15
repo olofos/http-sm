@@ -119,7 +119,7 @@ static void test__http_getc__returns_minus_one_if_read_fails_with_te_chunked(voi
         .fd = 3,
         .poke = -1,
         .state = HTTP_STATE_CLIENT_READ_BODY,
-        .flags = HTTP_FLAG_CHUNKED,
+        .flags = HTTP_FLAG_READ_CHUNKED,
         .chunk_length = 4,
     };
 
@@ -137,7 +137,7 @@ static void test__http_getc__returns_minus_one_if_read_fails_in_beginning_of_chu
         .fd = 3,
         .poke = -1,
         .state = HTTP_STATE_CLIENT_READ_BODY,
-        .flags = HTTP_FLAG_CHUNKED,
+        .flags = HTTP_FLAG_READ_CHUNKED,
         .chunk_length = 0,
     };
 
@@ -155,7 +155,7 @@ static void test__http_getc__returns_minus_one_if_read_fails_at_end_of_chunk_hea
         .fd = 3,
         .poke = -1,
         .state = HTTP_STATE_CLIENT_READ_BODY,
-        .flags = HTTP_FLAG_CHUNKED,
+        .flags = HTTP_FLAG_READ_CHUNKED,
         .chunk_length = 0,
     };
 
@@ -177,7 +177,7 @@ static void test__http_write_string__returns_minus_one_if_write_fails_with_te_id
 {
     struct http_request request = {
         .fd = 3,
-        .flags = ~HTTP_FLAG_CHUNKED,
+        .flags = ~HTTP_FLAG_WRITE_CHUNKED,
     };
 
     char *str = "test";
@@ -196,7 +196,7 @@ static void test__http_write_string__returns_minus_one_if_write_fails_with_te_ch
 {
     struct http_request request = {
         .fd = 3,
-        .flags = HTTP_FLAG_CHUNKED,
+        .flags = HTTP_FLAG_WRITE_CHUNKED,
     };
 
     char *str = "test";

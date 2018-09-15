@@ -241,7 +241,7 @@ static void test__http_parse_header__can_parse_transfer_encoding_chunked(void **
 
     parse_header_helper(&request, "GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n");
 
-    assert_int_equal(HTTP_FLAG_CHUNKED, request.flags & HTTP_FLAG_CHUNKED);
+    assert_int_equal(HTTP_FLAG_READ_CHUNKED, request.flags & HTTP_FLAG_READ_CHUNKED);
 
     free_request(&request);
 }
