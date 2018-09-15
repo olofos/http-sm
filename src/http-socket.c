@@ -239,6 +239,7 @@ static void http_request_init_common(struct http_request *request)
     request->line_index = 0;
     request->query_list = 0;
     request->content_length = -1;
+    request->chunk_length = 0;
     request->poke = -1;
     request->status = 0;
     request->error = 0;
@@ -249,7 +250,6 @@ void http_response_init(struct http_request *request)
     http_request_init_common(request);
     request->state = HTTP_STATE_SERVER_READ_BEGIN;
     request->method = HTTP_METHOD_UNKNOWN;
-    request->chunk_length = 0;
     request->handler = 0;
     request->cgi_arg = 0;
     request->cgi_data = 0;
@@ -259,7 +259,4 @@ void http_request_init(struct http_request *request)
 {
     http_request_init_common(request);
     request->state = HTTP_STATE_CLIENT_IDLE;
-    request->content_length = -1;
-    request->error = 0;
-    request->chunk_length = 0;
 }
