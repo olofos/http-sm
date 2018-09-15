@@ -59,7 +59,8 @@ $(TSTBINDIR)test_http-socket: $(TSTOBJDIR)http-socket.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-server: $(TSTOBJDIR)http-server.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-client: $(TSTOBJDIR)http-client.o $(TSTOBJDIR)http-parser.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
 
--include $(DEPS)
+-include $(LIBDEPS)
+-include $(BINDEPS)
 -include $(TST_DEPS)
 
 $(BINDIR)$(TARGET): build_dirs $(BINOBJ) $(LIBDIR)$(LIBTARGET)
