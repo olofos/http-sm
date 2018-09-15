@@ -105,6 +105,8 @@ int http_read(struct http_request *request, void *buf_, size_t count)
                 }
             }
         }
+    } else if(request->read_content_length == 0) {
+        request->state = HTTP_STATE_IDLE | (request->state & HTTP_STATE_CLIENT);
     } else {
         while((count > 0) && (request->read_content_length > 0)) {
             int num_to_read = (count < request->read_content_length) ? count : request->read_content_length;
@@ -114,6 +116,7 @@ int http_read(struct http_request *request, void *buf_, size_t count)
                 LOG_ERROR("read failed");
                 return -1;
             } else if(n == 0) {
+                request->state = HTTP_STATE_IDLE | (request->state & HTTP_STATE_CLIENT);
                 break;
             } else {
                 num += n;
