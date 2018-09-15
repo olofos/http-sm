@@ -228,9 +228,8 @@ int http_accept_new_connection(struct http_server *server)
     return i;
 }
 
-void http_response_init(struct http_request *request)
+static void http_request_init_common(struct http_request *request)
 {
-    request->state = HTTP_STATE_SERVER_READ_BEGIN;
     request->flags = 0;
     request->path = 0;
     request->query = 0;
@@ -241,9 +240,15 @@ void http_response_init(struct http_request *request)
     request->query_list = 0;
     request->content_length = -1;
     request->poke = -1;
-    request->method = HTTP_METHOD_UNKNOWN;
     request->status = 0;
     request->error = 0;
+}
+
+void http_response_init(struct http_request *request)
+{
+    http_request_init_common(request);
+    request->state = HTTP_STATE_SERVER_READ_BEGIN;
+    request->method = HTTP_METHOD_UNKNOWN;
     request->chunk_length = 0;
     request->handler = 0;
     request->cgi_arg = 0;
@@ -252,18 +257,9 @@ void http_response_init(struct http_request *request)
 
 void http_request_init(struct http_request *request)
 {
+    http_request_init_common(request);
     request->state = HTTP_STATE_CLIENT_IDLE;
-    request->flags = 0;
-    request->path = 0;
-    request->query = 0;
-    request->host = 0;
-    request->line = 0;
-    request->line_len = 0;
-    request->line_index = 0;
-    request->query_list = 0;
     request->content_length = -1;
-    request->poke = -1;
-    request->status = 0;
     request->error = 0;
     request->chunk_length = 0;
 }
