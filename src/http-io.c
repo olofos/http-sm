@@ -263,8 +263,10 @@ void http_set_content_length(struct http_request *request, int length)
 {
     request->write_content_length = length;
 
-    char buf[12];
-    snprintf(buf, sizeof(buf), "%d", length);
+    if(length > 0) {
+        char buf[12];
+        snprintf(buf, sizeof(buf), "%d", length);
 
-    http_write_header(request, "Content-Length", buf);
+        http_write_header(request, "Content-Length", buf);
+    }
 }

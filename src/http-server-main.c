@@ -107,7 +107,10 @@ int http_begin_response(struct http_request *request, int status, const char *co
     snprintf(buf, sizeof(buf), "HTTP/1.1 %d %s\r\n", status, http_status_string(status));
     http_write_string(request, buf);
     http_write_header(request, "Connection", "close");
-    http_write_header(request, "Content-Type", content_type);
+
+    if(content_type) {
+        http_write_header(request, "Content-Type", content_type);
+    }
 
     return 0;
 }

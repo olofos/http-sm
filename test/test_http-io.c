@@ -960,6 +960,22 @@ static void test__http_end_headers__server_does_not_set_chunked_flag_if_content_
     close(fd);
 }
 
+static void test__http_end_headers__server_does_not_set_chunked_flag_if_content_length_is_zero(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.write_content_length = 0;
+
+    http_end_header(&request);
+    assert_string_equal("\r\n", get_file_content(fd));
+    assert_false(request.flags & HTTP_FLAG_WRITE_CHUNKED);
+
+    close(fd);
+}
+
 static void test__http_set_content_length__sets_variable_and_sends_header(void **states)
 {
     int fd = open_tmp_file();
@@ -972,6 +988,22 @@ static void test__http_set_content_length__sets_variable_and_sends_header(void *
     http_set_content_length(&request, 10);
     assert_int_equal(request.write_content_length, 10);
     assert_string_equal("Content-Length: 10\r\n", get_file_content(fd));
+
+    close(fd);
+}
+
+static void test__http_set_content_length__does_not_send_header_if_zero(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.write_content_length = -1;
+
+    http_set_content_length(&request, 0);
+    assert_int_equal(request.write_content_length, 0);
+    assert_string_equal("", get_file_content(fd));
 
     close(fd);
 }
@@ -1069,8 +1101,10 @@ const struct CMUnitTest tests_for_http_io[] = {
     cmocka_unit_test(test__http_end_headers__does_not_change_chunked_flag_if_client),
     cmocka_unit_test(test__http_end_headers__server_sets_chunked_flag_if_no_content_length),
     cmocka_unit_test(test__http_end_headers__server_does_not_set_chunked_flag_if_content_length_is_nonzero),
+    cmocka_unit_test(test__http_end_headers__server_does_not_set_chunked_flag_if_content_length_is_zero),
 
     cmocka_unit_test(test__http_set_content_length__sets_variable_and_sends_header),
+    cmocka_unit_test(test__http_set_content_length__does_not_send_header_if_zero),
 
     cmocka_unit_test(test__http_write_string__writes_the_string_and_returns_its_length_with_te_identity),
     cmocka_unit_test(test__http_write_string__writes_the_string_and_returns_its_length_with_te_chunked),

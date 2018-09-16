@@ -40,6 +40,7 @@ static void test__http_server_match_url__returns_false_if_wildcard_does_not_matc
 static void test__http_status_string__returns_non_null_strings_for_all_known_status(void **states)
 {
     assert_non_null(http_status_string(HTTP_STATUS_OK));
+    assert_non_null(http_status_string(HTTP_STATUS_NO_CONTENT));
     assert_non_null(http_status_string(HTTP_STATUS_BAD_REQUEST));
     assert_non_null(http_status_string(HTTP_STATUS_NOT_FOUND));
     assert_non_null(http_status_string(HTTP_STATUS_METHOD_NOT_ALLOWED));
