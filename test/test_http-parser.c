@@ -49,6 +49,7 @@ static void free_request(struct http_request *request)
     free(request->path);
     free(request->host);
     free(request->query);
+    free(request->content_type);
 }
 
 
@@ -264,6 +265,18 @@ static void test__http_parse_header__unparseable_content_length_gives_error(void
     free_request(&request);
 }
 
+static void test__http_parse_header__can_parse_content_type_if_client(void **state)
+{
+    struct http_request request;
+    create_client_request(&request);
+
+    parse_header_helper(&request, "GET / HTTP/1.1\r\nContent-Type: text/plain\r\n");
+
+    assert_non_null(request.content_type);
+    assert_string_equal("text/plain", request.content_type);
+    free_request(&request);
+}
+
 
 static void test__http_parse_header__missing_newline_in_header_gives_error(void **state)
 {
@@ -474,6 +487,7 @@ const struct CMUnitTest tests_for_http_parse_header[] = {
     cmocka_unit_test(test__http_parse_header__can_parse_accept_encoding_no_gzip),
     cmocka_unit_test(test__http_parse_header__does_not_set_accept_encoding_if_client),
     cmocka_unit_test(test__http_parse_header__can_parse_transfer_encoding_chunked),
+    cmocka_unit_test(test__http_parse_header__can_parse_content_type_if_client),
     cmocka_unit_test(test__http_parse_header__can_parse_content_length),
     cmocka_unit_test(test__http_parse_header__unparseable_content_length_gives_error),
     cmocka_unit_test(test__http_parse_header__missing_newline_in_header_gives_error),

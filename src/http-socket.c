@@ -89,6 +89,8 @@ int http_close(struct http_request *request)
         free(request->path);
         free(request->query);
         free(request->query_list);
+    } else {
+        free(request->content_type);
     }
 
     close(request->fd);

@@ -122,7 +122,7 @@ struct http_request
 
     // This is only used by the client for outgoing requests
     uint16_t port;
-
+    char *content_type;
 
     // Theses are only used by the server for incoming requests
     uint8_t method;

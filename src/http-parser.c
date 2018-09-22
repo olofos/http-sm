@@ -126,6 +126,11 @@ void http_parse_header(struct http_request *request, char c)
                             request->flags |= HTTP_FLAG_ACCEPT_GZIP;
                         }
                     }
+                } else {
+                    if((val = cmp_str_prefix(request->line, "Content-Type: ")) != 0) {
+                        request->content_type = malloc(strlen(val) + 1);
+                        strcpy(request->content_type, val);
+                    }
                 }
 
                 if((val = cmp_str_prefix(request->line, "Transfer-Encoding: ")) != 0) {

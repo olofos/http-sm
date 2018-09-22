@@ -75,9 +75,12 @@ static void test__http_get_request__parses_http_headers(void **states)
     assert_int_equal(HTTP_STATE_CLIENT_READ_BODY, request.state);
     assert_int_equal(200, request.status);
     assert_int_equal(606, request.read_content_length);
+    assert_string_equal("text/html", request.content_type);
     assert_int_equal(0, request.line);
     assert_int_equal(0, request.line_len);
     assert_int_equal(0, n);
+
+    free(request.content_type);
 
     close(fd);
 }
@@ -87,7 +90,6 @@ static void test__http_get_request__returns_minus_one_if_http_open_request_socke
     const char *reply =
         "HTTP/1.1 200 OK\r\n"
         "Accept-Ranges: bytes\r\n"
-        "Content-Type: text/html\r\n"
         "Content-Length: 606\r\n"
         "\r\n";
 
@@ -118,7 +120,6 @@ static void test__http_get_request__returns_minus_one_if_http_begin_request_fail
     const char *reply =
         "HTTP/1.1 200 OK\r\n"
         "Accept-Ranges: bytes\r\n"
-        "Content-Type: text/html\r\n"
         "Content-Length: 606\r\n"
         "\r\n";
 
@@ -155,7 +156,7 @@ static void test__http_get_request__returns_minus_one_if_header_is_incomplete(vo
     const char *reply =
         "HTTP/1.1 200 OK\r\n"
         "Accept-Ranges: bytes\r\n"
-        "Content-Type: text/html\r\n";
+        "Content-Length: 606\r\n";
 
     int fd = write_tmp_file(reply);
 
@@ -192,7 +193,7 @@ static void test__http_get_request__returns_minus_one_if_header_does_not_parse_c
     const char *reply =
         "HTTP/1.1 200 OK\r\n"
         "Accept-Ranges: bytes\rX\n"
-        "Content-Type: text/html\r\n";
+        "Content-Length: 606\r\n";
 
     int fd = write_tmp_file(reply);
 
