@@ -12,11 +12,10 @@
 
 // Tests ///////////////////////////////////////////////////////////////////////
 
-static void create_server_request(struct http_request *request)
+static void init_request(struct http_request *request)
 {
     const int line_len = 32;
 
-    request->state  = HTTP_STATE_SERVER_READ_METHOD;
     request->method = HTTP_METHOD_UNKNOWN;
     request->line = malloc(line_len);
     request->line_len = line_len;
@@ -27,27 +26,21 @@ static void create_server_request(struct http_request *request)
     request->flags = 0;
     request->status = 0;
     request->error = 0;
+    request->content_type = 0;
     request->read_content_length = -1;
     request->write_content_length = -1;
 }
 
+static void create_server_request(struct http_request *request)
+{
+    init_request(request);
+    request->state  = HTTP_STATE_SERVER_READ_METHOD;
+}
+
 static void create_client_request(struct http_request *request)
 {
-    const int line_len = 32;
-
+    init_request(request);
     request->state  = HTTP_STATE_CLIENT_READ_VERSION;
-    request->method = HTTP_METHOD_UNKNOWN;
-    request->line = malloc(line_len);
-    request->line_len = line_len;
-    request->line_index = 0;
-    request->path = 0;
-    request->query = 0;
-    request->host = 0;
-    request->flags = 0;
-    request->status = 0;
-    request->error = 0;
-    request->read_content_length = -1;
-    request->write_content_length = -1;
 }
 
 static void free_request(struct http_request *request)
