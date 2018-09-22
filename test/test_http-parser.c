@@ -399,6 +399,44 @@ static void test__http_urldecode__copies_up_to_given_number_of_characters(void *
 }
 
 
+static void test__http_urlencode__returns_the_length_of_the_encoded_string(void **state)
+{
+    assert_int_equal(0, http_urlencode(0, "", 0));
+    assert_int_equal(4, http_urlencode(0, "ABCD", 0));
+    assert_int_equal(4, http_urlencode(0, "-_.~", 0));
+    assert_int_equal(3, http_urlencode(0, " ", 0));
+    assert_int_equal(3, http_urlencode(0, "+", 0));
+    assert_int_equal(4, http_urlencode(0, "X ", 0));
+    assert_int_equal(4, http_urlencode(0, " X", 0));
+    assert_int_equal(5, http_urlencode(0, "X X", 0));
+    assert_int_equal(9, http_urlencode(0, "   ", 0));
+    assert_int_equal(3, http_urlencode(0, "%", 0));
+    assert_int_equal(6, http_urlencode(0, "% ", 0));
+}
+
+static void test__http_urlencode__copies_up_to_given_number_of_characters(void **state)
+{
+    char buf[32];
+    int ret;
+
+    ret = http_urlencode(buf, "ABC", sizeof(buf));
+    assert_int_equal(3, ret);
+    assert_string_equal("ABC", buf);
+
+    ret = http_urlencode(buf, " ", sizeof(buf));
+    assert_int_equal(3, ret);
+    assert_string_equal("%20", buf);
+
+    ret = http_urlencode(buf, " !", sizeof(buf));
+    assert_int_equal(6, ret);
+    assert_string_equal("%20%21", buf);
+
+    ret = http_urlencode(buf, "@!", 4);
+    assert_int_equal(3, ret);
+    assert_string_equal("%40", buf);
+}
+
+
 static void test__http_get_query_arg__can_find_args(void **states)
 {
     char buf[] = "a=1&bcd=123";
@@ -502,6 +540,11 @@ const struct CMUnitTest tests_for_http_urldecode[] = {
     cmocka_unit_test(test__http_urldecode__copies_up_to_given_number_of_characters),
 };
 
+const struct CMUnitTest tests_for_http_urlencode[] = {
+    cmocka_unit_test(test__http_urlencode__returns_the_length_of_the_encoded_string),
+    cmocka_unit_test(test__http_urlencode__copies_up_to_given_number_of_characters),
+};
+
 const struct CMUnitTest tests_for_http_get_query_arg[] = {
     cmocka_unit_test(test__http_get_query_arg__can_find_args),
     cmocka_unit_test(test__http_get_query_arg__returns_null_when_there_are_no_query),
@@ -515,6 +558,7 @@ int main(void)
     int fails = 0;
     fails += cmocka_run_group_tests(tests_for_http_parse_header, NULL, NULL);
     fails += cmocka_run_group_tests(tests_for_http_urldecode, NULL, NULL);
+    fails += cmocka_run_group_tests(tests_for_http_urlencode, NULL, NULL);
     fails += cmocka_run_group_tests(tests_for_http_get_query_arg, NULL, NULL);
     return fails;
 }

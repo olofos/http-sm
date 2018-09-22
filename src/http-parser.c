@@ -308,6 +308,48 @@ static void parse_query_string(struct http_request *request)
 
 }
 
+int http_urlencode(char *dest, const char* src, int max_len)
+{
+    int len = 0;
+
+    while(*src) {
+        char c = *src++;
+        if(('0' <= c && c <= '9') || ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z')
+           || c == '-' || c == '.' || c == '_' || c == '~') {
+            if(dest) {
+                if(len > max_len) {
+                    break;
+                }
+
+                dest[len] = c;
+            }
+
+            len++;
+        } else {
+            if(dest) {
+                if(len > max_len - 2) {
+                    break;
+                }
+
+                uint8_t hi = c >> 4;
+                uint8_t lo = c & 0x0F;
+
+                dest[len] = '%';
+                dest[len+1] = (hi <= 9) ? (hi + '0') : (hi - 0x0A + 'A');
+                dest[len+2] = (lo <= 9) ? (lo + '0') : (lo - 0x0A + 'A');
+            }
+
+            len += 3;
+        }
+    }
+
+    if(dest && len < max_len) {
+        dest[len] = 0;
+    }
+
+    return len;
+}
+
 
 const char *http_get_query_arg(struct http_request *request, const char *name)
 {

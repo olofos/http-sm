@@ -169,6 +169,9 @@ int http_close(struct http_request *request);
 void http_request_init(struct http_request *request);
 int http_get_request(struct http_request *request);
 
+int http_urldecode(char *dest, const char* src, int max_len);
+int http_urlencode(char *dest, const char* src, int max_len);
+
 #define http_is_error(request)  ((request)->state & HTTP_STATE_ERROR)
 
 
