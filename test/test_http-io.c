@@ -1047,6 +1047,103 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
     close(fd);
 }
 
+static void test__http_write_string__writes_nothing_for_empty_string_with_te_chunked(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
+
+    int ret = http_write_string(&request, "");
+    assert_int_equal(0, ret);
+
+    assert_string_equal("", get_file_content(fd));
+
+    close(fd);
+}
+
+static void test__http_write_bytes__writes_the_data_and_returns_the_length_with_te_identity(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+
+    const char s[] = {'t', 'e', 0, 't'};
+
+    int ret = http_write_bytes(&request, s, sizeof(s));
+    assert_int_equal(sizeof(s), ret);
+    assert_int_equal(sizeof(s), lseek(fd, 0, SEEK_END));
+    assert_memory_equal(s, get_file_content(fd), sizeof(s));
+
+    close(fd);
+}
+
+static void test__http_write_bytes__writes_the_data_and_returns_the_length_with_te_chunked(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
+
+    const char s[] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+    };
+
+    const char expected[] = {
+        '1', '0', '\r', '\n',
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+        '\r', '\n'};
+
+    int ret = http_write_bytes(&request, s, sizeof(s));
+    assert_int_equal(sizeof(s), ret);
+    assert_int_equal(sizeof(expected), lseek(fd, 0, SEEK_END));
+    assert_memory_equal(expected, get_file_content(fd), sizeof(expected));
+
+    close(fd);
+}
+
+static void test__http_write_bytes__writes_nothing_for_empty_data_with_te_chunked(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
+
+    int ret = http_write_bytes(&request, "", 0);
+    assert_int_equal(0, ret);
+
+    assert_string_equal("", get_file_content(fd));
+
+    close(fd);
+}
+
+static void test__http_end_body__writes_chunk_end_with_te_chunked(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
+
+    http_end_body(&request);
+
+    assert_string_equal("0\r\n\r\n", get_file_content(fd));
+
+    close(fd);
+}
+
+
 
 // Main ////////////////////////////////////////////////////////////////////////
 
@@ -1108,6 +1205,13 @@ const struct CMUnitTest tests_for_http_io[] = {
 
     cmocka_unit_test(test__http_write_string__writes_the_string_and_returns_its_length_with_te_identity),
     cmocka_unit_test(test__http_write_string__writes_the_string_and_returns_its_length_with_te_chunked),
+    cmocka_unit_test(test__http_write_string__writes_nothing_for_empty_string_with_te_chunked),
+
+    cmocka_unit_test(test__http_write_bytes__writes_the_data_and_returns_the_length_with_te_identity),
+    cmocka_unit_test(test__http_write_bytes__writes_the_data_and_returns_the_length_with_te_chunked),
+    cmocka_unit_test(test__http_write_bytes__writes_nothing_for_empty_data_with_te_chunked),
+
+    cmocka_unit_test(test__http_end_body__writes_chunk_end_with_te_chunked),
 };
 
 int main(void)

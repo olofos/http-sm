@@ -178,21 +178,25 @@ static int write_all(int fd, const char *str, int len)
 
 int http_write_bytes(struct http_request *request, const char *data, int len)
 {
-    if(request->flags & HTTP_FLAG_WRITE_CHUNKED) {
-        char buf[16];
-        int n = snprintf(buf, sizeof(buf), "%X\r\n", len);
-        if(write_all(request->fd, buf, n) < 0) {
-            return -1;
+    if(len > 0) {
+        if(request->flags & HTTP_FLAG_WRITE_CHUNKED) {
+            char buf[16];
+            int n = snprintf(buf, sizeof(buf), "%X\r\n", len);
+            if(write_all(request->fd, buf, n) < 0) {
+                return -1;
+            }
         }
+
+        int num = write_all(request->fd, data, len);
+
+        if(request->flags & HTTP_FLAG_WRITE_CHUNKED) {
+            write_all(request->fd, "\r\n", 2);
+        }
+
+        return num;
+    } else {
+        return 0;
     }
-
-    int num = write_all(request->fd, data, len);
-
-    if(request->flags & HTTP_FLAG_WRITE_CHUNKED) {
-        write_all(request->fd, "\r\n", 2);
-    }
-
-    return num;
 }
 
 int http_write_string(struct http_request *request, const char *str)
@@ -258,6 +262,16 @@ void http_end_header(struct http_request *request)
 
     write_all(request->fd, "\r\n", 2);
 }
+
+int http_end_body(struct http_request *request)
+{
+    if(request->flags & HTTP_FLAG_WRITE_CHUNKED) {
+        const char *final_chunk = "0\r\n\r\n";
+        write_all(request->fd, final_chunk, strlen(final_chunk));
+    }
+    return 0;
+}
+
 
 void http_set_content_length(struct http_request *request, int length)
 {
