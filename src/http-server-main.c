@@ -32,9 +32,9 @@ static int http_server_read_headers(struct http_request *request)
         int n = read(request->fd, &c, 1);
 
         if(n < 0) {
-            LOG_ERROR("read failed");
+            ERROR("read failed before EOF");
         } else if(n == 0) {
-            LOG("Connection %d done", request->fd);
+            INFO("Connection %d done", request->fd);
         } else {
             LOG("Expected EOF but got %c", c);
         }
@@ -53,7 +53,7 @@ static int http_server_read_headers(struct http_request *request)
         char c;
         int n = read(request->fd, &c, 1);
         if(n < 0) {
-            LOG_ERROR("read2 failed");
+            ERROR("read failed in header");
             request->state = HTTP_STATE_ERROR;
 
             free(request->line);
@@ -178,7 +178,7 @@ static int http_server_main_loop(struct http_server *server)
     if(n <= 0) {
         for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
             if(server->request[i].fd >= 0) {
-                LOG("Socket %d timed out. Closing.", server->request[i].fd);
+                INFO("Socket %d timed out. Closing.", server->request[i].fd);
                 http_close(&server->request[i]);
             }
         }

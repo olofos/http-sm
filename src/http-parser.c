@@ -51,7 +51,7 @@ void http_parse_header(struct http_request *request, char c)
                 request->method = HTTP_METHOD_DELETE;
                 http_parse_header_next_state(request, HTTP_STATE_SERVER_READ_PATH);
             } else {
-                LOG("Unsupported HTTP method \"%s\"", request->line);
+                LOG("Unsupported HTTP method '%s'", request->line);
                 request->method = HTTP_METHOD_UNSUPPORTED;
                 request->error = HTTP_STATUS_METHOD_NOT_ALLOWED;
                 http_parse_header_next_state(request, HTTP_STATE_ERROR);
@@ -97,7 +97,7 @@ void http_parse_header(struct http_request *request, char c)
                 request->error = HTTP_STATUS_VERSION_NOT_SUPPORTED;
                 http_parse_header_next_state(request, HTTP_STATE_ERROR);
             } else {
-                LOG("Unsupported HTTP version \"%s\"", request->line);
+                LOG("Unsupported HTTP version '%s'", request->line);
                 request->error = HTTP_STATUS_BAD_REQUEST;
                 http_parse_header_next_state(request, HTTP_STATE_ERROR);
             }
@@ -143,7 +143,7 @@ void http_parse_header(struct http_request *request, char c)
                     if(!p || *p) {
                         http_parse_header_next_state(request, HTTP_STATE_ERROR);
                         request->error = HTTP_STATUS_BAD_REQUEST;
-                        LOG("Error parsing content length \"%s\"", val);
+                        LOG("Error parsing content length '%s'", val);
                         return;
                     }
                 }
@@ -159,7 +159,7 @@ void http_parse_header(struct http_request *request, char c)
         if(c == ' ') {
             request->line[request->line_index] = 0;
             if(strcmp(request->line, "HTTP/1.1") != 0) {
-                LOG("Unexpected HTTP version \"%s\"", request->line);
+                LOG("Unexpected HTTP version '%s'", request->line);
             }
 
             http_parse_header_next_state(request, HTTP_STATE_CLIENT_READ_STATUS);
@@ -174,7 +174,7 @@ void http_parse_header(struct http_request *request, char c)
             request->line[request->line_index] = 0;
             request->status = strtol(request->line, &p, 10);
             if(!p || *p) {
-                LOG("Error reading response code \"%s\" (%s)", request->line, p);
+                LOG("Error reading response code '%s' (%s)", request->line, p);
             }
 
             http_parse_header_next_state(request, HTTP_STATE_CLIENT_READ_STATUS_DESC);

@@ -18,7 +18,7 @@ void LOG(const char *fmt, ...)
     printf("\n");
 }
 
-void LOG_ERROR(const char* str)
+void ERROR(const char* str)
 {
     if(log_system) {
         printf("[%s] ", log_system);

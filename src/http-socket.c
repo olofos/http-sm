@@ -43,7 +43,7 @@ int http_open_request_socket(struct http_request *request)
 
     if (err != 0 || res == NULL)
     {
-        LOG_ERROR("getaddrinfo failed");
+        ERROR("getaddrinfo failed");
         if(res) {
             freeaddrinfo(res);
         }
@@ -54,19 +54,19 @@ int http_open_request_socket(struct http_request *request)
     struct sockaddr *sa = res->ai_addr;
     if (sa->sa_family == AF_INET)
     {
-        LOG("DNS lookup for %s succeeded. IP=%s", request->host, inet_ntoa(((struct sockaddr_in *)sa)->sin_addr));
+        INFO("DNS lookup for %s succeeded. IP=%s", request->host, inet_ntoa(((struct sockaddr_in *)sa)->sin_addr));
     }
 
     int s = socket(res->ai_family, res->ai_socktype, 0);
 
     if(s < 0) {
-        LOG_ERROR("socket failed");
+        ERROR("socket failed");
         freeaddrinfo(res);
         return -1;
     }
 
     if(connect(s, res->ai_addr, res->ai_addrlen) != 0) {
-        LOG_ERROR("connect failed");
+        ERROR("connect failed");
         close(s);
         freeaddrinfo(res);
         return -1;
@@ -103,7 +103,7 @@ int http_open_listen_socket(int port)
     int fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if(fd < 0) {
-        LOG_ERROR("socket failed");
+        ERROR("socket failed");
         return -1;
     }
 
@@ -116,13 +116,13 @@ int http_open_listen_socket(int port)
     };
 
     if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        LOG_ERROR("bind failed");
+        ERROR("bind failed");
         close(fd);
         return -1;
     }
 
     if(listen(fd, HTTP_SERVER_MAX_CONNECTIONS) < 0) {
-        LOG_ERROR("listen failed");
+        ERROR("listen failed");
         close(fd);
         return -1;
     }
@@ -160,7 +160,7 @@ int http_create_select_sets(struct http_server *server, fd_set *set_read,
                     *maxfd = fd;
                 }
             } else {
-                LOG("Request %d (fd %d) is neither reading nor writing", i, fd);
+                WARNING("Request %d (fd %d) is neither reading nor writing", i, fd);
             }
         }
     }
@@ -190,7 +190,7 @@ int http_create_select_sets(struct http_server *server, fd_set *set_read,
         }
     }
     s += sprintf(s, ")");
-    LOG(buf);
+    DEBUG("%s", buf);
 #endif
 
     return num;
@@ -215,12 +215,12 @@ int http_accept_new_connection(struct http_server *server)
     int fd = accept(server->fd, (struct sockaddr *)&addr, &len);
 
     if(fd < 0) {
-        LOG_ERROR("accept failed");
+        ERROR("accept failed");
         return -1;
     }
 
     uint32_t remote_ip = ntohl(addr.sin_addr.s_addr);
-    LOG("Connection %d from %d.%d.%d.%d:%d", fd, IP2STR(remote_ip), addr.sin_port);
+    INFO("Connection %d from %d.%d.%d.%d:%d", fd, IP2STR(remote_ip), addr.sin_port);
 
     struct http_request *request = &server->request[i];
 

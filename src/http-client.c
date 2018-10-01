@@ -12,14 +12,14 @@ int http_get_request(struct http_request *request)
 
     err = http_open_request_socket(request);
     if(err < 0) {
-        LOG("http_open_request_socket failed");
+        ERROR("http_open_request_socket failed");
         request->state = HTTP_STATE_CLIENT_ERROR;
         return err;
     }
 
     err = http_begin_request(request);
     if(err < 0) {
-        LOG("http_begin_request failed");
+        ERROR("http_begin_request failed");
         request->state = HTTP_STATE_CLIENT_ERROR;
         http_close(request);
         return err;
@@ -31,7 +31,7 @@ int http_get_request(struct http_request *request)
     request->line = malloc(line_len);
 
     if(!request->line) {
-        LOG_ERROR("malloc failed");
+        ERROR("Malloc failed while allocating line");
         request->state = HTTP_STATE_CLIENT_ERROR;
         http_close(request);
         return -1;

@@ -13,7 +13,7 @@ static int read_chunk_header(struct http_request *request)
     for(;;) {
         ret = read(request->fd, &c, 1);
         if(ret < 0) {
-            LOG_ERROR("read failed");
+            ERROR("Read failed in chunk header");
             return -1;
         } else if(ret == 0) {
             LOG("Got EOF");
@@ -30,7 +30,7 @@ static int read_chunk_header(struct http_request *request)
     for(;;) {
         ret = read(request->fd, &c, 1);
         if(ret < 0) {
-            LOG_ERROR("read failed");
+            ERROR("Read failed before newline");
             return -1;
         } else if(ret == 0) {
             LOG("Got EOF");
@@ -48,7 +48,7 @@ static int read_chunk_footer(struct http_request *request)
     char buf[2];
     int ret = read(request->fd, buf, 2);
     if(ret < 0) {
-        LOG_ERROR("read failed");
+        ERROR("Read failed while reading chunk footer");
         return -1;
     } else if(ret == 0) {
         LOG("Got EOF");
@@ -87,7 +87,7 @@ int http_read(struct http_request *request, void *buf_, size_t count)
             int n = read(request->fd, buf, num_to_read);
 
             if(n < 0) {
-                LOG("read_failed");
+                ERROR("Read failed in body (chunked)");
                 return -1;
             } else if(n == 0) {
                 break;
@@ -113,7 +113,7 @@ int http_read(struct http_request *request, void *buf_, size_t count)
             int n = read(request->fd, buf, num_to_read);
 
             if(n < 0) {
-                LOG_ERROR("read failed");
+                ERROR("Read failed in reading body");
                 return -1;
             } else if(n == 0) {
                 request->state = HTTP_STATE_IDLE | (request->state & HTTP_STATE_CLIENT);
@@ -235,7 +235,7 @@ int http_begin_request(struct http_request *request)
         char *buf = malloc(len + 1);
 
         if(!buf) {
-            LOG_ERROR("malloc failed");
+            ERROR("Malloc failed while allocation buf");
             return 0;
         }
 
