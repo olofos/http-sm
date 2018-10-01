@@ -125,6 +125,9 @@ void http_parse_header(struct http_request *request, char c)
                         if(strstr(val, "gzip") != 0) {
                             request->flags |= HTTP_FLAG_ACCEPT_GZIP;
                         }
+                        if(strstr(val, "br") != 0) {
+                            request->flags |= HTTP_FLAG_ACCEPT_BR;
+                        }
                     }
                 } else {
                     if((val = cmp_str_prefix(request->line, "Content-Type: ")) != 0) {
