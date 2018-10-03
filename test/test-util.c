@@ -202,6 +202,103 @@ const char *get_file_content(int fd)
     return buf;
 }
 
+
+static int read_chunk_header(int fd)
+{
+    char buf[4096];
+    char c;
+    int ret;
+    int i = 0;
+
+    while((ret = read(fd, &c, 1)) > 0) {
+        buf[i++] = c;
+        if(c == '\n') {
+            break;
+        }
+    }
+
+    if((ret == 0) && (i == 0)) {
+        return 0;
+    }
+
+    if(ret != 1) {
+        return -1;
+    }
+
+    buf[i] = 0;
+
+    char *end;
+
+    int len = strtol(buf, &end, 16);
+
+    if((end[0] != '\r') || (end[1] != '\n')) {
+        return -1;
+    }
+
+    return len;
+}
+
+static int read_chunk_footer(int fd)
+{
+    char buf[2];
+    int ret = read(fd, buf, 2);
+
+    if(ret != 2) {
+        return -1;
+    }
+
+    if(buf[0] != '\r' || buf[1] != '\n') {
+        return -1;
+    }
+
+    return 1;
+}
+
+const char *get_file_content_chunked(int fd) {
+    static char buf[4096];
+
+    off_t off;
+    if((off = lseek(fd, 0, SEEK_SET)) < 0) {
+        perror("lseek");
+        return 0;
+    }
+
+    int done = 0;
+    int i = 0;
+
+    while(!done) {
+        int len = read_chunk_header(fd);
+        if(len < 0) {
+            if(lseek(fd, off, SEEK_SET) < 0) {
+                perror("lseek");
+            }
+            return 0;
+        }
+        if(len == 0) {
+            break;
+        }
+
+        read(fd, &buf[i], len);
+        i += len;
+
+        int ret = read_chunk_footer(fd);
+        if(ret != 1) {
+            if(lseek(fd, off, SEEK_SET) < 0) {
+                perror("lseek");
+            }
+            return 0;
+        }
+    }
+
+    buf[i] = 0;
+
+    if(lseek(fd, off, SEEK_SET) < 0) {
+        perror("lseek");
+    }
+
+    return buf;
+}
+
 // Trivial implementations of wrapped functions ////////////////////////////////
 
 void *__real_malloc(size_t size);

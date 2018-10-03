@@ -1038,11 +1038,30 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
 
     int ret = http_write_string(&request, s);
     assert_int_equal(strlen(s), ret);
+    assert_non_null(get_file_content_chunked(fd));
+    assert_string_equal(s, get_file_content_chunked(fd));
 
+    close(fd);
+}
 
-    char expected[64];
-    snprintf(expected, sizeof(expected), "%lX\r\n%s\r\n", strlen(s), s);
-    assert_string_equal(expected, get_file_content(fd));
+static void test__http_write_string__writes_the_string_and_returns_its_length_with_multiple_calls_and_te_chunked(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
+
+    const char *s = "test";
+
+    int ret1 = http_write_string(&request, "te");
+    int ret2 = http_write_string(&request, "st");
+
+    assert_int_equal(2, ret1);
+    assert_int_equal(2, ret2);
+    assert_non_null(get_file_content_chunked(fd));
+    assert_string_equal(s, get_file_content_chunked(fd));
 
     close(fd);
 }
@@ -1059,6 +1078,7 @@ static void test__http_write_string__writes_nothing_for_empty_string_with_te_chu
     int ret = http_write_string(&request, "");
     assert_int_equal(0, ret);
 
+    assert_non_null(get_file_content_chunked(fd));
     assert_string_equal("", get_file_content(fd));
 
     close(fd);
@@ -1096,16 +1116,11 @@ static void test__http_write_bytes__writes_the_data_and_returns_the_length_with_
         0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
     };
 
-    const char expected[] = {
-        '1', '0', '\r', '\n',
-        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-        0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
-        '\r', '\n'};
-
     int ret = http_write_bytes(&request, s, sizeof(s));
+
     assert_int_equal(sizeof(s), ret);
-    assert_int_equal(sizeof(expected), lseek(fd, 0, SEEK_END));
-    assert_memory_equal(expected, get_file_content(fd), sizeof(expected));
+    assert_non_null(get_file_content_chunked(fd));
+    assert_memory_equal(s, get_file_content_chunked(fd), sizeof(s));
 
     close(fd);
 }
@@ -1205,6 +1220,7 @@ const struct CMUnitTest tests_for_http_io[] = {
 
     cmocka_unit_test(test__http_write_string__writes_the_string_and_returns_its_length_with_te_identity),
     cmocka_unit_test(test__http_write_string__writes_the_string_and_returns_its_length_with_te_chunked),
+    cmocka_unit_test(test__http_write_string__writes_the_string_and_returns_its_length_with_multiple_calls_and_te_chunked),
     cmocka_unit_test(test__http_write_string__writes_nothing_for_empty_string_with_te_chunked),
 
     cmocka_unit_test(test__http_write_bytes__writes_the_data_and_returns_the_length_with_te_identity),

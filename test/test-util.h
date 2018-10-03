@@ -9,6 +9,7 @@ int write_socket_n(const char *s[]);
 void close_socket(int fd);
 
 const char *get_file_content(int fd);
+const char *get_file_content_chunked(int fd);
 
 #define assert_string_prefix_equal(pre, s) do { assert_true(strncmp(pre,s,strlen(pre)) == 0); } while(0)
 
