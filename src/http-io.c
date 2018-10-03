@@ -176,27 +176,32 @@ static int write_all(int fd, const char *str, int len)
     return num;
 }
 
+static int write_chunk(int fd, const char *data, int len)
+{
+    char buf[16];
+    int n = snprintf(buf, sizeof(buf), "%X\r\n", len);
+
+    if(write_all(fd, buf, n) < 0) {
+        return -1;
+    }
+
+    int num = write_all(fd, data, len);
+
+    write_all(fd, "\r\n", 2);
+
+    return num;
+}
+
 int http_write_bytes(struct http_request *request, const char *data, int len)
 {
     if(len > 0) {
         if(request->flags & HTTP_FLAG_WRITE_CHUNKED) {
-            char buf[16];
-            int n = snprintf(buf, sizeof(buf), "%X\r\n", len);
-            if(write_all(request->fd, buf, n) < 0) {
-                return -1;
-            }
+            return write_chunk(request->fd, data, len);
+        } else {
+            return write_all(request->fd, data, len);
         }
-
-        int num = write_all(request->fd, data, len);
-
-        if(request->flags & HTTP_FLAG_WRITE_CHUNKED) {
-            write_all(request->fd, "\r\n", 2);
-        }
-
-        return num;
-    } else {
-        return 0;
     }
+    return 0;
 }
 
 int http_write_string(struct http_request *request, const char *str)
