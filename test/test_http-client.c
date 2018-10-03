@@ -77,7 +77,7 @@ static void test__http_get_request__parses_http_headers(void **states)
     assert_int_equal(606, request.read_content_length);
     assert_string_equal("text/html", request.content_type);
     assert_int_equal(0, request.line);
-    assert_int_equal(0, request.line_len);
+    assert_int_equal(0, request.line_length);
     assert_int_equal(0, n);
 
     free(request.content_type);
@@ -110,7 +110,7 @@ static void test__http_get_request__returns_minus_one_if_http_open_request_socke
     assert_int_equal(-1, ret);
     assert_true(http_is_error(&request));
     assert_int_equal(0, request.line);
-    assert_int_equal(0, request.line_len);
+    assert_int_equal(0, request.line_length);
 
     close(fd);
 }
@@ -146,7 +146,7 @@ static void test__http_get_request__returns_minus_one_if_http_begin_request_fail
     assert_int_equal(-1, ret);
     assert_true(http_is_error(&request));
     assert_int_equal(0, request.line);
-    assert_int_equal(0, request.line_len);
+    assert_int_equal(0, request.line_length);
 
     close(fd);
 }
@@ -183,7 +183,7 @@ static void test__http_get_request__returns_minus_one_if_header_is_incomplete(vo
     assert_int_equal(-1, ret);
     assert_true(http_is_error(&request));
     assert_int_equal(0, request.line);
-    assert_int_equal(0, request.line_len);
+    assert_int_equal(0, request.line_length);
 
     close(fd);
 }
@@ -220,7 +220,7 @@ static void test__http_get_request__returns_minus_one_if_header_does_not_parse_c
     assert_int_equal(-1, ret);
     assert_true(http_is_error(&request));
     assert_int_equal(0, request.line);
-    assert_int_equal(0, request.line_len);
+    assert_int_equal(0, request.line_length);
 
     close(fd);
 }

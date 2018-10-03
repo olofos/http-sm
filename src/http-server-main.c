@@ -44,9 +44,9 @@ static int http_server_read_headers(struct http_request *request)
     } else {
         if(request->state == HTTP_STATE_SERVER_READ_BEGIN) {
             request->state = HTTP_STATE_SERVER_READ_METHOD;
-            const int line_len = HTTP_LINE_LEN;
-            request->line = malloc(line_len);
-            request->line_len = line_len;
+            const int line_length = HTTP_LINE_LEN;
+            request->line = malloc(line_length);
+            request->line_length = line_length;
             request->line_index = 0;
         }
 
@@ -58,7 +58,7 @@ static int http_server_read_headers(struct http_request *request)
 
             free(request->line);
             request->line = 0;
-            request->line_len = 0;
+            request->line_length = 0;
 
             http_close(request);
             return -1;
@@ -68,7 +68,7 @@ static int http_server_read_headers(struct http_request *request)
 
             free(request->line);
             request->line = 0;
-            request->line_len = 0;
+            request->line_length = 0;
 
             http_close(request);
             return -1;
@@ -77,7 +77,7 @@ static int http_server_read_headers(struct http_request *request)
             if(request->state == HTTP_STATE_SERVER_IDLE) {
                 free(request->line);
                 request->line = 0;
-                request->line_len = 0;
+                request->line_length = 0;
 
                 if((request->read_content_length > 0) || (request->flags & HTTP_FLAG_READ_CHUNKED)) {
                     request->state = HTTP_STATE_SERVER_READ_BODY;

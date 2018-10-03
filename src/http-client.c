@@ -27,8 +27,8 @@ int http_get_request(struct http_request *request)
 
     http_end_header(request);
 
-    const int line_len = HTTP_LINE_LEN;
-    request->line = malloc(line_len);
+    const int line_length = HTTP_LINE_LEN;
+    request->line = malloc(line_length);
 
     if(!request->line) {
         ERROR("Malloc failed while allocating line");
@@ -37,7 +37,7 @@ int http_get_request(struct http_request *request)
         return -1;
     }
 
-    request->line_len = line_len;
+    request->line_length = line_length;
     request->state = HTTP_STATE_CLIENT_READ_VERSION;
 
     while(request->state & (HTTP_STATE_READ | HTTP_STATE_READ_NL)) {
@@ -47,7 +47,7 @@ int http_get_request(struct http_request *request)
         if(ret <= 0) {
             free(request->line);
             request->line = 0;
-            request->line_len = 0;
+            request->line_length = 0;
             request->state = HTTP_STATE_CLIENT_ERROR;
             http_close(request);
 
@@ -59,7 +59,7 @@ int http_get_request(struct http_request *request)
 
     free(request->line);
     request->line = 0;
-    request->line_len = 0;
+    request->line_length = 0;
 
     if(http_is_error(request)) {
         http_close(request);

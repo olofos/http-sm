@@ -237,7 +237,7 @@ static void http_request_init_common(struct http_request *request)
     request->query = 0;
     request->host = 0;
     request->line = 0;
-    request->line_len = 0;
+    request->line_length = 0;
     request->line_index = 0;
     request->query_list = 0;
     request->read_content_length = -1;

@@ -202,7 +202,7 @@ void http_parse_header(struct http_request *request, char c)
         return;
     }
 
-    if(request->line_index < request->line_len - 1) {
+    if(request->line_index < request->line_length - 1) {
         request->line[request->line_index++] = c;
     }
 }

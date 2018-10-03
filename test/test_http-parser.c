@@ -14,11 +14,11 @@
 
 static void init_request(struct http_request *request)
 {
-    const int line_len = 32;
+    const int line_length = 32;
 
     request->method = HTTP_METHOD_UNKNOWN;
-    request->line = malloc(line_len);
-    request->line_len = line_len;
+    request->line = malloc(line_length);
+    request->line_length = line_length;
     request->line_index = 0;
     request->path = 0;
     request->query = 0;

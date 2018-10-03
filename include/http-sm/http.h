@@ -107,7 +107,7 @@ struct http_request
 
     char *line;
     int line_index;
-    int line_len;
+    int line_length;
 
     int read_content_length;
     int write_content_length;

@@ -817,7 +817,7 @@ static void test__http_response_init__initialises_the_request(void **states)
     assert_null(request.query);
     assert_null(request.host);
     assert_null(request.line);
-    assert_int_equal(request.line_len, 0);
+    assert_int_equal(request.line_length, 0);
     assert_null(request.query_list);
     assert_int_equal(request.read_content_length, -1);
     assert_int_equal(request.write_content_length, -1);
