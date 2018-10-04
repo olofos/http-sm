@@ -196,7 +196,25 @@ int http_write_bytes(struct http_request *request, const char *data, int len)
 {
     if(len > 0) {
         if(request->flags & HTTP_FLAG_WRITE_CHUNKED) {
-            return write_chunk(request->fd, data, len);
+            if(len < (request->line_length - request->chunk_length)) {
+                memcpy(request->line + request->chunk_length, data, len);
+                request->chunk_length += len;
+                return len;
+            } else {
+                if(request->chunk_length > 0) {
+                    write_chunk(request->fd, request->line, request->chunk_length);
+                }
+
+                if(len < request->line_length) {
+                    memcpy(request->line, data, len);
+                    request->chunk_length = len;
+                    return len;
+                } else {
+                    int ret = write_chunk(request->fd, data, len);
+                    request->chunk_length = 0;
+                    return ret;
+                }
+            }
         } else {
             return write_all(request->fd, data, len);
         }
@@ -260,6 +278,10 @@ void http_end_header(struct http_request *request)
         if(request->write_content_length < 0) {
             http_write_header(request, "Transfer-Encoding", "chunked");
             request->flags |= HTTP_FLAG_WRITE_CHUNKED;
+
+            request->line = malloc(HTTP_LINE_LEN);
+            request->line_length = HTTP_LINE_LEN;
+            request->chunk_length = 0;
         }
 
         request->state = HTTP_STATE_SERVER_WRITE_BODY;
@@ -271,8 +293,14 @@ void http_end_header(struct http_request *request)
 int http_end_body(struct http_request *request)
 {
     if(request->flags & HTTP_FLAG_WRITE_CHUNKED) {
+
+        if(request->chunk_length > 0) {
+            write_chunk(request->fd, request->line, request->chunk_length);
+        }
+
         const char *final_chunk = "0\r\n\r\n";
         write_all(request->fd, final_chunk, strlen(final_chunk));
+        free(request->line);
     }
     return 0;
 }
