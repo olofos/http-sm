@@ -192,25 +192,6 @@ static void test__http_write_string__returns_minus_one_if_write_fails_with_te_id
     assert_int_equal(-1, ret);
 }
 
-static void test__http_write_string__returns_minus_one_if_write_fails_with_te_chunked(void **states)
-{
-    struct http_request request = {
-        .fd = 3,
-        .flags = HTTP_FLAG_WRITE_CHUNKED,
-    };
-
-    char *str = "test";
-
-    expect_value(__wrap_write, fd, 3);
-    expect_any(__wrap_write, buf);
-    expect_any(__wrap_write, count);
-    will_return(__wrap_write, -1);
-
-    int ret = http_write_string(&request, str);
-
-    assert_int_equal(-1, ret);
-}
-
 // Setup & Teardown ////////////////////////////////////////////////////////////
 
 static int gr_setup_malloc_mock(void **state)
@@ -265,7 +246,6 @@ const struct CMUnitTest tests_for_http_io_read_mock[] = {
 
 const struct CMUnitTest tests_for_http_io_write_mock[] = {
     cmocka_unit_test(test__http_write_string__returns_minus_one_if_write_fails_with_te_identity),
-    cmocka_unit_test(test__http_write_string__returns_minus_one_if_write_fails_with_te_chunked),
 };
 
 int main(void)
