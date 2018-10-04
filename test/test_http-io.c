@@ -1040,12 +1040,12 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
     const char *s = "test";
 
     int ret = http_write_string(&request, s);
+    http_end_body(&request);
 
     assert_int_equal(strlen(s), ret);
     assert_non_null(get_file_content_chunked(fd));
     assert_string_equal(s, get_file_content_chunked(fd));
 
-    http_end_body(&request);
 
     close(fd);
 }
@@ -1066,12 +1066,11 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
     s[sizeof(s) - 1] = 0;
 
     int ret = http_write_string(&request, s);
+    http_end_body(&request);
 
     assert_int_equal(strlen(s), ret);
     assert_non_null(get_file_content_chunked(fd));
     assert_string_equal(s, get_file_content_chunked(fd));
-
-    http_end_body(&request);
 
     close(fd);
 }
@@ -1088,13 +1087,13 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
 
     int ret1 = http_write_string(&request, "te");
     int ret2 = http_write_string(&request, "st");
+    http_end_body(&request);
 
     assert_int_equal(2, ret1);
     assert_int_equal(2, ret2);
     assert_non_null(get_file_content_chunked(fd));
     assert_string_equal(s, get_file_content_chunked(fd));
 
-    http_end_body(&request);
 
     close(fd);
 }
@@ -1110,9 +1109,9 @@ static void test__http_write_string__writes_nothing_for_empty_string_with_te_chu
     int ret = http_write_string(&request, "");
 
     assert_int_equal(0, ret);
-
     assert_non_null(get_file_content(fd));
     assert_string_equal("", get_file_content(fd));
+    assert_int_equal(0, request.chunk_length);
 
     http_end_body(&request);
 
@@ -1150,12 +1149,11 @@ static void test__http_write_bytes__writes_the_data_and_returns_the_length_with_
     };
 
     int ret = http_write_bytes(&request, s, sizeof(s));
+    http_end_body(&request);
 
     assert_int_equal(sizeof(s), ret);
     assert_non_null(get_file_content_chunked(fd));
     assert_memory_equal(s, get_file_content_chunked(fd), sizeof(s));
-
-    http_end_body(&request);
 
     close(fd);
 }
@@ -1168,11 +1166,10 @@ static void test__http_write_bytes__writes_nothing_for_empty_data_with_te_chunke
     struct http_request request;
     init_server_request_write_chunked(&request, fd);
     int ret = http_write_bytes(&request, "", 0);
+    http_end_body(&request);
 
     assert_int_equal(0, ret);
     assert_string_equal("", get_file_content_chunked(fd));
-
-    http_end_body(&request);
 
     close(fd);
 }
