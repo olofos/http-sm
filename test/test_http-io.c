@@ -19,6 +19,7 @@
 #include "test-util.h"
 
 static void init_server_request(struct http_request *request, int fd);
+static void init_server_request_write_chunked(struct http_request *request, int fd);
 static void init_client_request(struct http_request *request, int fd);
 
 // Tests ///////////////////////////////////////////////////////////////////////
@@ -941,6 +942,8 @@ static void test__http_end_headers__server_sets_chunked_flag_if_no_content_lengt
     assert_string_equal("\r\n", &s[strlen(s)-2]);
     assert_non_null(strstr(s, "Transfer-Encoding: chunked\r\n"));
 
+    http_end_body(&request);
+
     close(fd);
 }
 
@@ -1019,6 +1022,7 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
     const char *s = "test";
 
     int ret = http_write_string(&request, s);
+
     assert_int_equal(strlen(s), ret);
     assert_string_equal(s, get_file_content(fd));
 
@@ -1031,15 +1035,17 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
+    init_server_request_write_chunked(&request, fd);
 
     const char *s = "test";
 
     int ret = http_write_string(&request, s);
+
     assert_int_equal(strlen(s), ret);
     assert_non_null(get_file_content_chunked(fd));
     assert_string_equal(s, get_file_content_chunked(fd));
+
+    http_end_body(&request);
 
     close(fd);
 }
@@ -1050,8 +1056,7 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
+    init_server_request_write_chunked(&request, fd);
 
     char s[256];
 
@@ -1060,12 +1065,13 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
     }
     s[sizeof(s) - 1] = 0;
 
-    printf("%s",s);
-
     int ret = http_write_string(&request, s);
+
     assert_int_equal(strlen(s), ret);
     assert_non_null(get_file_content_chunked(fd));
     assert_string_equal(s, get_file_content_chunked(fd));
+
+    http_end_body(&request);
 
     close(fd);
 }
@@ -1076,8 +1082,7 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
+    init_server_request_write_chunked(&request, fd);
 
     const char *s = "test";
 
@@ -1089,6 +1094,8 @@ static void test__http_write_string__writes_the_string_and_returns_its_length_wi
     assert_non_null(get_file_content_chunked(fd));
     assert_string_equal(s, get_file_content_chunked(fd));
 
+    http_end_body(&request);
+
     close(fd);
 }
 
@@ -1098,14 +1105,16 @@ static void test__http_write_string__writes_nothing_for_empty_string_with_te_chu
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
+    init_server_request_write_chunked(&request, fd);
 
     int ret = http_write_string(&request, "");
+
     assert_int_equal(0, ret);
 
-    assert_non_null(get_file_content_chunked(fd));
+    assert_non_null(get_file_content(fd));
     assert_string_equal("", get_file_content(fd));
+
+    http_end_body(&request);
 
     close(fd);
 }
@@ -1134,9 +1143,7 @@ static void test__http_write_bytes__writes_the_data_and_returns_the_length_with_
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
-
+    init_server_request_write_chunked(&request, fd);
     const char s[] = {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
@@ -1148,6 +1155,8 @@ static void test__http_write_bytes__writes_the_data_and_returns_the_length_with_
     assert_non_null(get_file_content_chunked(fd));
     assert_memory_equal(s, get_file_content_chunked(fd), sizeof(s));
 
+    http_end_body(&request);
+
     close(fd);
 }
 
@@ -1157,13 +1166,13 @@ static void test__http_write_bytes__writes_nothing_for_empty_data_with_te_chunke
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
-
+    init_server_request_write_chunked(&request, fd);
     int ret = http_write_bytes(&request, "", 0);
-    assert_int_equal(0, ret);
 
-    assert_string_equal("", get_file_content(fd));
+    assert_int_equal(0, ret);
+    assert_string_equal("", get_file_content_chunked(fd));
+
+    http_end_body(&request);
 
     close(fd);
 }
@@ -1174,9 +1183,7 @@ static void test__http_end_body__writes_chunk_end_with_te_chunked(void **states)
     assert_true(0 <= fd);
 
     struct http_request request;
-    init_server_request(&request, fd);
-    request.flags |= HTTP_FLAG_WRITE_CHUNKED;
-
+    init_server_request_write_chunked(&request, fd);
     http_end_body(&request);
 
     assert_string_equal("0\r\n\r\n", get_file_content(fd));
@@ -1276,6 +1283,18 @@ static void init_server_request(struct http_request *request, int fd)
     request->path = "/";
     request->method = HTTP_METHOD_GET;
     request->state = HTTP_STATE_SERVER_READ_BODY;
+}
+
+static void init_server_request_write_chunked(struct http_request *request, int fd)
+{
+    init_server_request(request, fd);
+
+    request->write_content_length = -1;
+
+    http_end_header(request);
+
+    lseek(request->fd, 0, SEEK_SET);
+    ftruncate(request->fd, 0);
 }
 
 static void init_client_request(struct http_request *request, int fd)
