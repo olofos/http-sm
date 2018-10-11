@@ -169,7 +169,7 @@ enum http_cgi_state cgi_exit(struct http_request* request)
     exit(0);
 }
 
-struct http_url_handler http_url_tab_[] = {
+struct http_url_handler http_url_tab[] = {
     {"/simple", cgi_simple, NULL},
     {"/stream", cgi_stream, NULL},
     {"/query", cgi_query, NULL},
@@ -178,8 +178,6 @@ struct http_url_handler http_url_tab_[] = {
     {"/exit", cgi_exit, NULL},
     {NULL, NULL, NULL}
 };
-
-struct http_url_handler *http_url_tab = http_url_tab_;
 
 extern const char *log_system;
 

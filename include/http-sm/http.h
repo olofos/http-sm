@@ -143,7 +143,7 @@ struct http_url_handler {
     const void *cgi_arg;
 };
 
-extern struct http_url_handler *http_url_tab;
+extern struct http_url_handler http_url_tab[];
 
 int http_server_main(int port);
 int http_begin_response(struct http_request *request, int status, const char *content_type);
