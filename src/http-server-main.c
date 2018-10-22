@@ -95,7 +95,9 @@ int http_begin_response(struct http_request *request, int status, const char *co
     char buf[64];
 
     if(request->state == HTTP_STATE_SERVER_READ_BODY) {
-        LOG("Beginning response before reading body");
+        if(http_read(request, buf, sizeof(buf)) > 0) {
+            LOG("Beginning response before reading body");
+        }
 
         do {
             http_read(request, buf, sizeof(buf));
