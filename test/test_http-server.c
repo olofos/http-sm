@@ -44,6 +44,7 @@ static void test__http_status_string__returns_non_null_strings_for_all_known_sta
     assert_non_null(http_status_string(HTTP_STATUS_BAD_REQUEST));
     assert_non_null(http_status_string(HTTP_STATUS_NOT_FOUND));
     assert_non_null(http_status_string(HTTP_STATUS_METHOD_NOT_ALLOWED));
+    assert_non_null(http_status_string(HTTP_STATUS_INTERNAL_SERVER_ERROR));
     assert_non_null(http_status_string(HTTP_STATUS_VERSION_NOT_SUPPORTED));
 }
 

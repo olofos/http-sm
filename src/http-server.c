@@ -31,6 +31,9 @@ const char *http_status_string(enum http_status status)
     case HTTP_STATUS_METHOD_NOT_ALLOWED:
         return "Method Not Allowed";
 
+    case HTTP_STATUS_INTERNAL_SERVER_ERROR:
+        return "Internal Server Error";
+
     case HTTP_STATUS_VERSION_NOT_SUPPORTED:
         return "HTTP Version Not Supported";
     }
