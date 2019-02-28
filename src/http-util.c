@@ -11,3 +11,21 @@ int http_hex_to_int(char c)
     }
     return 0;
 }
+
+
+unsigned http_base64_encode_length(unsigned len)
+{
+    unsigned pad = (3 - (len % 3)) % 3;
+    return 4 * ((len + pad) / 3);
+}
+
+unsigned http_base64_decode_length(const char *buf, unsigned len)
+{
+    if(!len || !buf || len % 4) {
+        return 0;
+    }
+
+    unsigned pad = (buf[len-1] == '=') + (buf[len-2] == '=');
+
+    return 3 * (len - pad) / 4;
+}

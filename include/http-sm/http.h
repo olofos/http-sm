@@ -175,5 +175,8 @@ int http_urlencode(char *dest, const char* src, int max_len);
 
 #define http_is_error(request)  ((request)->state & HTTP_STATE_ERROR)
 
+unsigned http_base64_encode_length(unsigned len);
+unsigned http_base64_decode_length(const char *buf, unsigned len);
+
 
 #endif
