@@ -112,7 +112,7 @@ static void test__http_base64_decode_length__returns_zero_if_there_length_is_not
 }
 
 
-static void test__http_base64_encode__can_encode_simple_strings(void **state)
+static void test__http_base64_encode__can_encode_strings_with_zero_byte_padding(void **state)
 {
     const char *s;
     char dest[64];
@@ -220,7 +220,7 @@ const struct CMUnitTest tests_for_http_util[] = {
     cmocka_unit_test(test__http_base64_decode_length__returns_correct_length_if_there_is_two_bytes_padding),
     cmocka_unit_test(test__http_base64_decode_length__returns_zero_if_there_length_is_not_a_multiple_of_four),
 
-    cmocka_unit_test(test__http_base64_encode__can_encode_simple_strings),
+    cmocka_unit_test(test__http_base64_encode__can_encode_strings_with_zero_byte_padding),
     cmocka_unit_test(test__http_base64_encode__can_encode_strings_with_one_byte_padding),
     cmocka_unit_test(test__http_base64_encode__can_encode_strings_with_two_bytes_padding),
     cmocka_unit_test(test__http_base64_encode__returns_the_length_of_the_resulting_string),
