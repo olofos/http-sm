@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <setjmp.h>
+#include <string.h>
 
 #include <cmocka.h>
 
@@ -108,7 +109,100 @@ static void test__http_base64_decode_length__returns_zero_if_there_length_is_not
     assert_int_equal(http_base64_decode_length("01230", 5), 0);
     assert_int_equal(http_base64_decode_length("012301", 6), 0);
     assert_int_equal(http_base64_decode_length("0123012", 7), 0);
+}
 
+
+static void test__http_base64_encode__can_encode_simple_strings(void **state)
+{
+    const char *s;
+    char dest[64];
+    unsigned res;
+
+    s = "abc";
+    res = http_base64_encode(dest, s, strlen(s));
+    dest[res] = 0;
+    assert_string_equal(dest, "YWJj");
+
+    s = "abcdef";
+    res = http_base64_encode(dest, s, strlen(s));
+    dest[res] = 0;
+    assert_string_equal(dest, "YWJjZGVm");
+}
+
+static void test__http_base64_encode__can_encode_strings_with_one_byte_padding(void **state)
+{
+    const char *s;
+    char dest[64];
+    unsigned res;
+
+    s = "ab";
+    res = http_base64_encode(dest, s, strlen(s));
+    dest[res] = 0;
+    assert_string_equal(dest, "YWI=");
+
+    s = "abcab";
+    res = http_base64_encode(dest, s, strlen(s));
+    dest[res] = 0;
+    assert_string_equal(dest, "YWJjYWI=");
+}
+
+static void test__http_base64_encode__can_encode_strings_with_two_bytes_padding(void **state)
+{
+    const char *s;
+    char dest[64];
+    unsigned res;
+
+    s = "a";
+    res = http_base64_encode(dest, s, strlen(s));
+    dest[res] = 0;
+    assert_string_equal(dest, "YQ==");
+
+    s = "abca";
+    res = http_base64_encode(dest, s, strlen(s));
+    dest[res] = 0;
+    assert_string_equal(dest, "YWJjYQ==");
+}
+
+static void test__http_base64_encode__returns_the_length_of_the_resulting_string(void **state)
+{
+    char dest[64] = {0};
+
+    const char *s;
+
+    s = "";
+    assert_int_equal(http_base64_encode(dest, s, strlen(s)), http_base64_encode_length(strlen(s)));
+
+    s = "0";
+    assert_int_equal(http_base64_encode(dest, s, strlen(s)), http_base64_encode_length(strlen(s)));
+
+    s = "01";
+    assert_int_equal(http_base64_encode(dest, s, strlen(s)), http_base64_encode_length(strlen(s)));
+
+    s = "012";
+    assert_int_equal(http_base64_encode(dest, s, strlen(s)), http_base64_encode_length(strlen(s)));
+
+    s = "0123";
+    assert_int_equal(http_base64_encode(dest, s, strlen(s)), http_base64_encode_length(strlen(s)));
+
+    s = "01234";
+    assert_int_equal(http_base64_encode(dest, s, strlen(s)), http_base64_encode_length(strlen(s)));
+
+    s = "012345";
+    assert_int_equal(http_base64_encode(dest, s, strlen(s)), http_base64_encode_length(strlen(s)));
+
+    s = "012346";
+    assert_int_equal(http_base64_encode(dest, s, strlen(s)), http_base64_encode_length(strlen(s)));
+}
+
+static void test__http_base64_encode__returns_zero_if_src_is_null(void **state)
+{
+    char dest[64];
+    assert_int_equal(http_base64_encode(dest, NULL, 3) , 0);
+}
+
+static void test__http_base64_encode__returns_zero_if_dest_is_null(void **state)
+{
+    assert_int_equal(http_base64_encode(NULL, "012", 3) , 0);
 }
 
 const struct CMUnitTest tests_for_http_util[] = {
@@ -125,6 +219,13 @@ const struct CMUnitTest tests_for_http_util[] = {
     cmocka_unit_test(test__http_base64_decode_length__returns_correct_length_if_there_is_one_byte_padding),
     cmocka_unit_test(test__http_base64_decode_length__returns_correct_length_if_there_is_two_bytes_padding),
     cmocka_unit_test(test__http_base64_decode_length__returns_zero_if_there_length_is_not_a_multiple_of_four),
+
+    cmocka_unit_test(test__http_base64_encode__can_encode_simple_strings),
+    cmocka_unit_test(test__http_base64_encode__can_encode_strings_with_one_byte_padding),
+    cmocka_unit_test(test__http_base64_encode__can_encode_strings_with_two_bytes_padding),
+    cmocka_unit_test(test__http_base64_encode__returns_the_length_of_the_resulting_string),
+    cmocka_unit_test(test__http_base64_encode__returns_zero_if_src_is_null),
+    cmocka_unit_test(test__http_base64_encode__returns_zero_if_dest_is_null),
 };
 
 int main(void)

@@ -178,5 +178,8 @@ int http_urlencode(char *dest, const char* src, int max_len);
 unsigned http_base64_encode_length(unsigned len);
 unsigned http_base64_decode_length(const char *buf, unsigned len);
 
+unsigned http_base64_encode(char *dest, const char *src, unsigned len);
+unsigned http_base64_decode(char *dest, const char *src, unsigned len);
+
 
 #endif
