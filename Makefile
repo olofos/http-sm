@@ -58,6 +58,7 @@ $(TSTBINDIR)test_http-util: $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-socket: $(TSTOBJDIR)http-socket.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-server: $(TSTOBJDIR)http-server.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-client: $(TSTOBJDIR)http-client.o $(TSTOBJDIR)http-parser.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
+$(TSTBINDIR)test_http-sha1: $(TSTOBJDIR)http-sha1.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
 
 -include $(LIBDEPS)
 -include $(BINDEPS)
