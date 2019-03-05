@@ -688,7 +688,7 @@ static void test__http_create_select_sets__does_not_add_nonready_socket_to_sets(
 }
 
 
-static void test__http_accept_new_connection__accepts_new_connection_when_all_slots_are_empty(void **states)
+static void test__http_accept_new_connection__accepts_new_connection_when_not_all_slots_are_empty(void **states)
 {
     struct http_server server = {
         .fd = 3
@@ -712,7 +712,7 @@ static void test__http_accept_new_connection__accepts_new_connection_when_all_sl
     assert_int_equal(4, server.request[1].fd);
 }
 
-static void test__http_accept_new_connection__accepts_new_connection_when_not_all_slots_are_empty(void **states)
+static void test__http_accept_new_connection__accepts_new_connection_when_all_slots_are_empty(void **states)
 {
     struct http_server server = {
         .fd = 3
