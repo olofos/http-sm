@@ -89,6 +89,15 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
     return mock();
 }
 
+// Helper Functions ////////////////////////////////////////////////////////////
+
+static void init_server(struct http_server *server)
+{
+    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+        server->request[i].fd = -1;
+    }
+    server->fd = 3;
+}
 
 // Tests ///////////////////////////////////////////////////////////////////////
 
@@ -508,10 +517,7 @@ static void test__http_create_select_sets__can_add_listen_fd(void **states)
     int maxfd;
     fd_set set_read, set_write, set_test;
 
-    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
-        server.request[i].fd = -1;
-    }
-    server.fd = 3;
+    init_server(&server);
 
     http_create_select_sets(&server, &set_read, &set_write, &maxfd);
 
@@ -532,10 +538,8 @@ static void test__http_create_select_sets__can_add_request_fd_less_than_listen_f
     int maxfd;
     fd_set set_read, set_write, set_test;
 
-    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
-        server.request[i].fd = -1;
-    }
-    server.fd = 3;
+    init_server(&server);
+
     server.request[0].fd = 2;
     server.request[0].state = HTTP_STATE_SERVER_READ_METHOD;
 
@@ -559,10 +563,8 @@ static void test__http_create_select_sets__can_add_request_fd_greater_than_liste
     int maxfd;
     fd_set set_read, set_write, set_test;
 
-    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
-        server.request[i].fd = -1;
-    }
-    server.fd = 3;
+    init_server(&server);
+
     server.request[0].fd = 5;
     server.request[0].state = HTTP_STATE_SERVER_READ_PATH;
     server.request[2].fd = 2;
@@ -589,10 +591,8 @@ static void test__http_create_select_sets__can_add_request_fd_waiting_for_nl_to_
     int maxfd;
     fd_set set_read, set_write, set_test;
 
-    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
-        server.request[i].fd = -1;
-    }
-    server.fd = 3;
+    init_server(&server);
+
     server.request[0].fd = 2;
     server.request[0].state = HTTP_STATE_IDLE | HTTP_STATE_READ_NL;
 
@@ -617,7 +617,7 @@ static void test__http_create_select_sets__does_not_add_listen_fd_if_full(void *
     int maxfd;
     fd_set set_read, set_write;
 
-    server.fd = 3;
+    init_server(&server);
 
     for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
         server.request[i].fd = 3 + 1 + i;
@@ -639,10 +639,8 @@ static void test__http_create_select_sets__can_add_request_fd_to_read_and_write_
     int maxfd;
     fd_set set_read, set_write, set_test;
 
-    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
-        server.request[i].fd = -1;
-    }
-    server.fd = 3;
+    init_server(&server);
+
     server.request[0].fd = 2;
     server.request[0].state = HTTP_STATE_SERVER_WRITE_HEADER;
     server.request[1].fd = 4;
@@ -669,10 +667,8 @@ static void test__http_create_select_sets__does_not_add_nonready_socket_to_sets(
     int maxfd;
     fd_set set_read, set_write, set_test;
 
-    for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
-        server.request[i].fd = -1;
-    }
-    server.fd = 3;
+    init_server(&server);
+
     server.request[0].fd = 2;
     server.request[0].state = HTTP_STATE_IDLE;
     server.request[1].fd = 4;
