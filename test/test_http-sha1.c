@@ -106,6 +106,7 @@ static void test__http_sha1__can_calculate_hash5_in_steps(void **state)
     assert_string_equal(hash_to_ascii(hash), expected);
 }
 
+#ifdef TEST_SLOW
 static void test__http_sha1__can_calculate_hash6_in_steps(void **state)
 {
     const char * const input = "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno";
@@ -122,6 +123,7 @@ static void test__http_sha1__can_calculate_hash6_in_steps(void **state)
 
     assert_string_equal(hash_to_ascii(hash), expected);
 }
+#endif
 
 const struct CMUnitTest tests_for_http_sha1[] = {
     cmocka_unit_test(test__http_sha1__can_calculate_hash1),
@@ -131,7 +133,10 @@ const struct CMUnitTest tests_for_http_sha1[] = {
 
     cmocka_unit_test(test__http_sha1__can_calculate_hash4_in_steps),
     cmocka_unit_test(test__http_sha1__can_calculate_hash5_in_steps),
+
+#ifdef TEST_SLOW
     cmocka_unit_test(test__http_sha1__can_calculate_hash6_in_steps),
+#endif
 };
 
 int main(void)
