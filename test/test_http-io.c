@@ -1255,6 +1255,8 @@ static void test__http_ws_read_frame_header__can_read_header_with_8bit_length(vo
     assert_int_equal(0x49, conn.frame_mask[1]);
     assert_int_equal(0xb4, conn.frame_mask[2]);
     assert_int_equal(0xb7, conn.frame_mask[3]);
+
+    close(fd);
 }
 
 static void test__http_ws_read_frame_header__can_read_header_with_16bit_length(void **states)
@@ -1276,6 +1278,8 @@ static void test__http_ws_read_frame_header__can_read_header_with_16bit_length(v
     assert_int_equal(0x4f, conn.frame_mask[1]);
     assert_int_equal(0xc9, conn.frame_mask[2]);
     assert_int_equal(0xd3, conn.frame_mask[3]);
+
+    close(fd);
 }
 
 static void test__http_ws_read_frame_header__can_read_header_with_64bit_length(void **states)
@@ -1297,6 +1301,8 @@ static void test__http_ws_read_frame_header__can_read_header_with_64bit_length(v
     assert_int_equal(0x4f, conn.frame_mask[1]);
     assert_int_equal(0xc9, conn.frame_mask[2]);
     assert_int_equal(0xd3, conn.frame_mask[3]);
+
+    close(fd);
 }
 
 static void test__http_ws_read_frame_header__can_read_header_without_mask(void **states)
@@ -1318,6 +1324,8 @@ static void test__http_ws_read_frame_header__can_read_header_without_mask(void *
     assert_int_equal(0, conn.frame_mask[1]);
     assert_int_equal(0, conn.frame_mask[2]);
     assert_int_equal(0, conn.frame_mask[3]);
+
+    close(fd);
 }
 
 
