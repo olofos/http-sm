@@ -91,6 +91,19 @@ void http_parse_header(struct http_request *request, char c)
         if(c == '\r') {
             request->line[request->line_index] = 0;
             if(strcmp(request->line, "HTTP/1.1") == 0) {
+#ifdef LOG_VERBOSE
+                const char *method = 0;
+                if(request->method == HTTP_METHOD_GET) {
+                    method = "GET";
+                } else if(request->method == HTTP_METHOD_POST) {
+                    method = "POST";
+                } else if(request->method == HTTP_METHOD_DELETE) {
+                    method = "DELETE";
+                }
+                if(method) {
+                    LOG("%s %s HTTP/1.1", method, request->path);
+                }
+#endif
                 http_parse_header_next_state(request, HTTP_STATE_SERVER_READ_HEADER | HTTP_STATE_READ_NL);
             } else if(strcmp(request->line, "HTTP/1.0") == 0) {
                 LOG("HTTP/1.0 not supported");
@@ -110,7 +123,9 @@ void http_parse_header(struct http_request *request, char c)
     case HTTP_STATE_CLIENT_READ_HEADER:
         if(c == '\r') {
             request->line[request->line_index] = 0;
-
+#ifdef LOG_VERBOSE
+            LOG("%s", request->line);
+#endif
             if(request->line_index == 0) {
                 http_parse_header_next_state(request, HTTP_STATE_IDLE | HTTP_STATE_READ_NL);
             } else {
