@@ -96,6 +96,9 @@ static void init_server(struct http_server *server)
     for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
         server->request[i].fd = -1;
     }
+    for(int i = 0; i < HTTP_SERVER_MAX_WS_CONNECTIONS; i++) {
+        server->ws_connection[i].fd = -1;
+    }
     server->fd = 3;
 }
 
@@ -825,6 +828,7 @@ static void test__http_response_init__initialises_the_request(void **states)
     assert_null(request.handler);
     assert_null(request.cgi_data);
     assert_null(request.cgi_arg);
+    assert_null(request.websocket_key);
     assert_true(http_is_server(&request));
     assert_false(http_is_client(&request));
     assert_false(http_is_error(&request));

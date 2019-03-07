@@ -78,20 +78,26 @@ int http_open_request_socket(struct http_request *request)
     return s;
 }
 
+void http_free(struct http_request *request)
+{
+    if(http_is_server(request)) {
+        free(request->host);
+        free(request->path);
+        free(request->query);
+        free(request->query_list);
+        free(request->websocket_key);
+    } else {
+        free(request->content_type);
+    }
+}
+
 int http_close(struct http_request *request)
 {
     if(request->fd < 0) {
         return -1;
     }
 
-    if(http_is_server(request)) {
-        free(request->host);
-        free(request->path);
-        free(request->query);
-        free(request->query_list);
-    } else {
-        free(request->content_type);
-    }
+    http_free(request);
 
     close(request->fd);
     request->fd = -1;
@@ -172,6 +178,16 @@ int http_create_select_sets(struct http_server *server, fd_set *set_read,
             *maxfd = server->fd;
         }
     };
+
+    for(int i = 0; i < HTTP_SERVER_MAX_WS_CONNECTIONS; i++) {
+        int fd = server->ws_connection[i].fd;
+        if(fd >= 0) {
+            FD_SET(fd, set_read);
+            if(fd > *maxfd) {
+                *maxfd = fd;
+            }
+        }
+    }
 
 #ifdef LOG_VERBOSE
     char buf[64];
@@ -256,6 +272,7 @@ void http_response_init(struct http_request *request)
     request->handler = 0;
     request->cgi_arg = 0;
     request->cgi_data = 0;
+    request->websocket_key = 0;
 }
 
 void http_request_init(struct http_request *request)

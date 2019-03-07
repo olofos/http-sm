@@ -79,7 +79,9 @@ static int http_server_read_headers(struct http_request *request)
                 request->line = 0;
                 request->line_length = 0;
 
-                if((request->read_content_length > 0) || (request->flags & HTTP_FLAG_READ_CHUNKED)) {
+                if(request->flags & HTTP_FLAG_WEBSOCKET) {
+                    request->state = HTTP_STATE_SERVER_UPGRADE_WEBSOCKET;
+                } else if((request->read_content_length > 0) || (request->flags & HTTP_FLAG_READ_CHUNKED)) {
                     request->state = HTTP_STATE_SERVER_READ_BODY;
                 } else {
                     request->state = HTTP_STATE_SERVER_WRITE_BEGIN;
@@ -221,6 +223,10 @@ static int http_server_start(struct http_server *server, int port)
     for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
         server->request[i].fd = -1;
         server->request[i].state = HTTP_STATE_IDLE;
+    }
+
+    for(int i = 0; i < HTTP_SERVER_MAX_WS_CONNECTIONS; i++) {
+        server->ws_connection[i].fd = -1;
     }
 
     return 0;

@@ -1188,6 +1188,149 @@ static void test__http_end_body__writes_chunk_end_with_te_chunked(void **states)
     close(fd);
 }
 
+static void test__http_ws_send_response__writes_response_without_sec_websocket_key(void **states)
+{
+    const char *expected = ""
+        "HTTP/1.1 101 Switching Protocols\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        "\r\n";
+
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.flags = HTTP_FLAG_WEBSOCKET;
+    request.websocket_key = 0;
+
+    http_ws_send_response(&request);
+
+    assert_string_equal(expected, get_file_content(fd));
+
+    close(fd);
+}
+
+static void test__http_ws_send_response__writes_response_with_sec_websocket_key(void **states)
+{
+    const char *expected = ""
+        "HTTP/1.1 101 Switching Protocols\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n"
+        "\r\n";
+
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct http_request request;
+    init_server_request(&request, fd);
+    request.flags = HTTP_FLAG_WEBSOCKET;
+    request.websocket_key = "dGhlIHNhbXBsZSBub25jZQ==";
+
+    http_ws_send_response(&request);
+
+    assert_string_equal(expected, get_file_content(fd));
+
+    close(fd);
+}
+
+
+static void test__http_ws_read_frame_header__can_read_header_with_8bit_length(void **states)
+{
+    const char frame[] = { 0x81, 0x83, 0x05, 0x49, 0xb4, 0xb7, 0x34, 0x7b, 0x87 };
+
+    int fd = write_tmp_file_bin(frame, sizeof(frame));
+
+    struct http_ws_connection conn = {
+        .fd = fd,
+    };
+
+    struct http_ws_frame_header header = { .opcode = 0, .length = 0, .mask = 0 };
+
+    http_ws_read_frame_header(&conn, &header);
+
+    assert_int_equal(HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT, header.opcode);
+    assert_int_equal(3, header.length);
+    assert_non_null(header.mask);
+    assert_int_equal(0x05, header.mask[0]);
+    assert_int_equal(0x49, header.mask[1]);
+    assert_int_equal(0xb4, header.mask[2]);
+    assert_int_equal(0xb7, header.mask[3]);
+
+    free(header.mask);
+}
+
+static void test__http_ws_read_frame_header__can_read_header_with_16bit_length(void **states)
+{
+    const char frame[] = { 0x81, 0xfe, 0x00, 0x80, 0x91, 0x4f, 0xc9, 0xd3 };
+
+    int fd = write_tmp_file_bin(frame, sizeof(frame));
+
+    struct http_ws_connection conn = {
+        .fd = fd,
+    };
+
+    struct http_ws_frame_header header = { .opcode = 0, .length = 0, .mask = 0 };
+
+    http_ws_read_frame_header(&conn, &header);
+
+    assert_int_equal(HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT, header.opcode);
+    assert_int_equal(0x80, header.length);
+    assert_non_null(header.mask);
+    assert_int_equal(0x91, header.mask[0]);
+    assert_int_equal(0x4f, header.mask[1]);
+    assert_int_equal(0xc9, header.mask[2]);
+    assert_int_equal(0xd3, header.mask[3]);
+
+    free(header.mask);
+}
+
+static void test__http_ws_read_frame_header__can_read_header_with_64bit_length(void **states)
+{
+    const char frame[] = { 0x81, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x91, 0x4f, 0xc9, 0xd3 };
+
+    int fd = write_tmp_file_bin(frame, sizeof(frame));
+
+    struct http_ws_connection conn = {
+        .fd = fd,
+    };
+
+    struct http_ws_frame_header header = { .opcode = 0, .length = 0, .mask = 0 };
+
+    http_ws_read_frame_header(&conn, &header);
+
+    assert_int_equal(HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT, header.opcode);
+    assert_int_equal(0x10000, header.length);
+    assert_non_null(header.mask);
+    assert_int_equal(0x91, header.mask[0]);
+    assert_int_equal(0x4f, header.mask[1]);
+    assert_int_equal(0xc9, header.mask[2]);
+    assert_int_equal(0xd3, header.mask[3]);
+
+    free(header.mask);
+}
+
+static void test__http_ws_read_frame_header__can_read_header_without_mask(void **states)
+{
+    const char frame[] = { 0x81, 0x03 };
+
+    int fd = write_tmp_file_bin(frame, sizeof(frame));
+
+    struct http_ws_connection conn = {
+        .fd = fd,
+    };
+
+    struct http_ws_frame_header header = { .opcode = 0, .length = 0, .mask = 0 };
+
+    http_ws_read_frame_header(&conn, &header);
+
+    assert_int_equal(HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT, header.opcode);
+    assert_int_equal(3, header.length);
+    assert_null(header.mask);
+
+    free(header.mask);
+}
 
 
 // Main ////////////////////////////////////////////////////////////////////////
@@ -1259,6 +1402,14 @@ const struct CMUnitTest tests_for_http_io[] = {
     cmocka_unit_test(test__http_write_bytes__writes_nothing_for_empty_data_with_te_chunked),
 
     cmocka_unit_test(test__http_end_body__writes_chunk_end_with_te_chunked),
+
+    cmocka_unit_test(test__http_ws_send_response__writes_response_without_sec_websocket_key),
+    cmocka_unit_test(test__http_ws_send_response__writes_response_with_sec_websocket_key),
+
+    cmocka_unit_test(test__http_ws_read_frame_header__can_read_header_with_8bit_length),
+    cmocka_unit_test(test__http_ws_read_frame_header__can_read_header_with_16bit_length),
+    cmocka_unit_test(test__http_ws_read_frame_header__can_read_header_with_64bit_length),
+    cmocka_unit_test(test__http_ws_read_frame_header__can_read_header_without_mask),
 };
 
 int main(void)

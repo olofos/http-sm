@@ -125,6 +125,13 @@ void http_parse_header(struct http_request *request, char c)
                         if(strstr(val, "gzip") != 0) {
                             request->flags |= HTTP_FLAG_ACCEPT_GZIP;
                         }
+                    } else if((val = cmp_str_prefix(request->line, "Upgrade: ")) != 0) {
+                        if(strstr(val, "websocket") != 0) {
+                            request->flags |= HTTP_FLAG_WEBSOCKET;
+                        }
+                    } else if((val = cmp_str_prefix(request->line, "Sec-WebSocket-Key: ")) != 0) {
+                        request->websocket_key = malloc(strlen(val) + 1);
+                        strcpy(request->websocket_key, val);
                     }
                 } else {
                     if((val = cmp_str_prefix(request->line, "Content-Type: ")) != 0) {

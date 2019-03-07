@@ -9,6 +9,7 @@
 #endif
 
 #define HTTP_SERVER_MAX_CONNECTIONS 3
+#define HTTP_SERVER_MAX_WS_CONNECTIONS 3
 #define HTTP_LINE_LEN 64
 
 #define HTTP_SERVER_TIMEOUT_SECS  4
@@ -45,6 +46,7 @@ enum http_state
 
     HTTP_STATE_SERVER_IDLE              = HTTP_STATE_IDLE,
     HTTP_STATE_SERVER_ERROR             = HTTP_STATE_ERROR,
+    HTTP_STATE_SERVER_UPGRADE_WEBSOCKET = HTTP_STATE_READ | HTTP_STATE_WRITE | 0x07,
 
     HTTP_STATE_CLIENT_READ_BEGIN        = HTTP_STATE_CLIENT | HTTP_STATE_READ | HTTP_STATE_IDLE,
     HTTP_STATE_CLIENT_READ_VERSION      = HTTP_STATE_CLIENT | HTTP_STATE_READ | 0x01,
@@ -88,6 +90,7 @@ enum http_flags
     HTTP_FLAG_ACCEPT_GZIP   = 0x01,
     HTTP_FLAG_READ_CHUNKED  = 0x02,
     HTTP_FLAG_WRITE_CHUNKED = 0x04,
+    HTTP_FLAG_WEBSOCKET     = 0x08,
 };
 
 enum http_cgi_state
@@ -95,6 +98,34 @@ enum http_cgi_state
     HTTP_CGI_DONE,
     HTTP_CGI_MORE,
     HTTP_CGI_NOT_FOUND,
+};
+
+enum http_ws_frame_bits
+{
+    HTTP_WS_FRAME_FIN  = 0x80,
+    HTTP_WS_FRAME_MASK = 0x80,
+    HTTP_WS_FRAME_LEN  = 0x7F,
+    HTTP_WS_FRAME_LEN_16BIT  = 0x7E,
+    HTTP_WS_FRAME_LEN_64BIT  = 0x7F,
+    HTTP_WS_FRAME_OPCODE = 0x0F,
+};
+
+enum http_ws_frame_opcode
+{
+    HTTP_WS_FRAME_OPCODE_CONT = 0x00,
+    HTTP_WS_FRAME_OPCODE_TEXT = 0x01,
+    HTTP_WS_FRAME_OPCODE_BIN  = 0x01,
+
+    HTTP_WS_FRAME_OPCODE_CLOSE = 0x08,
+    HTTP_WS_FRAME_OPCODE_PING  = 0x09,
+    HTTP_WS_FRAME_OPCODE_PONG  = 0x0a,
+};
+
+struct http_ws_frame_header
+{
+    uint64_t length;
+    uint8_t opcode;
+    uint8_t *mask;
 };
 
 struct http_request;
@@ -129,6 +160,8 @@ struct http_request
     uint8_t method;
     int status;
     int error;
+
+    char *websocket_key;
 
     char *query;
     char **query_list;

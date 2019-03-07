@@ -14,7 +14,7 @@
 
 static void init_request(struct http_request *request)
 {
-    const int line_length = 32;
+    const int line_length = 64;
 
     request->method = HTTP_METHOD_UNKNOWN;
     request->line = malloc(line_length);
@@ -29,6 +29,7 @@ static void init_request(struct http_request *request)
     request->content_type = 0;
     request->read_content_length = -1;
     request->write_content_length = -1;
+    request->websocket_key = 0;
 }
 
 static void create_server_request(struct http_request *request)
@@ -50,6 +51,7 @@ static void free_request(struct http_request *request)
     free(request->host);
     free(request->query);
     free(request->content_type);
+    free(request->websocket_key);
 }
 
 
@@ -249,6 +251,31 @@ static void test__http_parse_header__can_parse_content_length(void **state)
     parse_header_helper(&request, "GET / HTTP/1.1\r\nContent-Length: 10\r\n");
 
     assert_int_equal(10, request.read_content_length);
+
+    free_request(&request);
+}
+
+static void test__http_parse_header__can_parse_upgrade_websocket(void **state)
+{
+    struct http_request request;
+    create_server_request(&request);
+
+    parse_header_helper(&request, "GET / HTTP/1.1\r\nUpgrade: websocket\r\n");
+
+    assert_int_equal(HTTP_FLAG_WEBSOCKET, request.flags & HTTP_FLAG_WEBSOCKET);
+
+    free_request(&request);
+}
+
+static void test__http_parse_header__can_parse_sec_websocket_key(void **state)
+{
+    struct http_request request;
+    create_server_request(&request);
+
+    parse_header_helper(&request, "GET / HTTP/1.1\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n");
+
+    assert_non_null(request.websocket_key);
+    assert_string_equal("dGhlIHNhbXBsZSBub25jZQ==", request.websocket_key);
 
     free_request(&request);
 }
@@ -527,6 +554,8 @@ const struct CMUnitTest tests_for_http_parse_header[] = {
     cmocka_unit_test(test__http_parse_header__can_parse_transfer_encoding_chunked),
     cmocka_unit_test(test__http_parse_header__can_parse_content_type_if_client),
     cmocka_unit_test(test__http_parse_header__can_parse_content_length),
+    cmocka_unit_test(test__http_parse_header__can_parse_upgrade_websocket),
+    cmocka_unit_test(test__http_parse_header__can_parse_sec_websocket_key),
     cmocka_unit_test(test__http_parse_header__unparseable_content_length_gives_error),
     cmocka_unit_test(test__http_parse_header__missing_newline_in_header_gives_error),
     cmocka_unit_test(test__http_parse_header__client_can_read_response),

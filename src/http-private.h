@@ -9,8 +9,13 @@
 
 #include "http-sm/http.h"
 
+struct http_ws_connection {
+    int fd;
+};
+
 struct http_server {
     struct http_request request[HTTP_SERVER_MAX_CONNECTIONS];
+    struct http_ws_connection ws_connection[HTTP_SERVER_MAX_WS_CONNECTIONS];
     int fd;
 };
 
@@ -32,7 +37,14 @@ void http_response_init(struct http_request *request);
 int http_server_match_url(const char *server_url, const char *request_url);
 const char *http_status_string(enum http_status status);
 
+void http_free(struct http_request *request);
+
 #define http_is_server(request) (!((request)->state & HTTP_STATE_CLIENT))
 #define http_is_client(request)   ((request)->state & HTTP_STATE_CLIENT)
+
+int http_ws_init(struct http_server *server, struct http_request *request);
+void http_ws_send_response(struct http_request *request);
+void http_ws_send_error_response(struct http_request *request);
+void http_ws_read_frame_header(struct http_ws_connection *conn, struct http_ws_frame_header *header);
 
 #endif
