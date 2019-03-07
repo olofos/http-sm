@@ -43,10 +43,9 @@ int open_tmp_file(void)
     return fd;
 }
 
-int write_string(int fd, const char *s)
+int write_buf(int fd, const char *s, int len)
 {
     int num = 0;
-    int len = strlen(s);
 
     while(num < len) {
         int n = write(fd, s, len);
@@ -58,6 +57,11 @@ int write_string(int fd, const char *s)
         s += n;
     }
     return num;
+}
+
+int write_string(int fd, const char *s)
+{
+    return write_buf(fd, s, strlen(s));
 }
 
 int open_socket(pid_t *pid)
@@ -142,6 +146,24 @@ int write_tmp_file(const char *s)
     }
 
     if(write_string(fd, s) < 0) {
+        return -1;
+    }
+
+    if(lseek(fd, SEEK_SET, 0) != 0) {
+        return -1;
+    }
+
+    return fd;
+}
+
+int write_tmp_file_bin(const char *s, int len)
+{
+    int fd = open_tmp_file();
+    if(fd < 0) {
+        return fd;
+    }
+
+    if(write_buf(fd, s, len) < 0) {
         return -1;
     }
 
