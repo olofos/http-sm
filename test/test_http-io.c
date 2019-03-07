@@ -1246,19 +1246,15 @@ static void test__http_ws_read_frame_header__can_read_header_with_8bit_length(vo
         .fd = fd,
     };
 
-    struct http_ws_frame_header header = { .opcode = 0, .length = 0, .mask = 0 };
+    http_ws_read_frame_header(&conn);
 
-    http_ws_read_frame_header(&conn, &header);
-
-    assert_int_equal(HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT, header.opcode);
-    assert_int_equal(3, header.length);
-    assert_non_null(header.mask);
-    assert_int_equal(0x05, header.mask[0]);
-    assert_int_equal(0x49, header.mask[1]);
-    assert_int_equal(0xb4, header.mask[2]);
-    assert_int_equal(0xb7, header.mask[3]);
-
-    free(header.mask);
+    assert_int_equal(HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT, conn.frame_opcode);
+    assert_int_equal(3, conn.frame_length);
+    assert_non_null(conn.frame_mask);
+    assert_int_equal(0x05, conn.frame_mask[0]);
+    assert_int_equal(0x49, conn.frame_mask[1]);
+    assert_int_equal(0xb4, conn.frame_mask[2]);
+    assert_int_equal(0xb7, conn.frame_mask[3]);
 }
 
 static void test__http_ws_read_frame_header__can_read_header_with_16bit_length(void **states)
@@ -1271,19 +1267,15 @@ static void test__http_ws_read_frame_header__can_read_header_with_16bit_length(v
         .fd = fd,
     };
 
-    struct http_ws_frame_header header = { .opcode = 0, .length = 0, .mask = 0 };
+    http_ws_read_frame_header(&conn);
 
-    http_ws_read_frame_header(&conn, &header);
-
-    assert_int_equal(HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT, header.opcode);
-    assert_int_equal(0x80, header.length);
-    assert_non_null(header.mask);
-    assert_int_equal(0x91, header.mask[0]);
-    assert_int_equal(0x4f, header.mask[1]);
-    assert_int_equal(0xc9, header.mask[2]);
-    assert_int_equal(0xd3, header.mask[3]);
-
-    free(header.mask);
+    assert_int_equal(HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT, conn.frame_opcode);
+    assert_int_equal(0x80, conn.frame_length);
+    assert_non_null(conn.frame_mask);
+    assert_int_equal(0x91, conn.frame_mask[0]);
+    assert_int_equal(0x4f, conn.frame_mask[1]);
+    assert_int_equal(0xc9, conn.frame_mask[2]);
+    assert_int_equal(0xd3, conn.frame_mask[3]);
 }
 
 static void test__http_ws_read_frame_header__can_read_header_with_64bit_length(void **states)
@@ -1296,19 +1288,15 @@ static void test__http_ws_read_frame_header__can_read_header_with_64bit_length(v
         .fd = fd,
     };
 
-    struct http_ws_frame_header header = { .opcode = 0, .length = 0, .mask = 0 };
+    http_ws_read_frame_header(&conn);
 
-    http_ws_read_frame_header(&conn, &header);
-
-    assert_int_equal(HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT, header.opcode);
-    assert_int_equal(0x10000, header.length);
-    assert_non_null(header.mask);
-    assert_int_equal(0x91, header.mask[0]);
-    assert_int_equal(0x4f, header.mask[1]);
-    assert_int_equal(0xc9, header.mask[2]);
-    assert_int_equal(0xd3, header.mask[3]);
-
-    free(header.mask);
+    assert_int_equal(HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT, conn.frame_opcode);
+    assert_int_equal(0x10000, conn.frame_length);
+    assert_non_null(conn.frame_mask);
+    assert_int_equal(0x91, conn.frame_mask[0]);
+    assert_int_equal(0x4f, conn.frame_mask[1]);
+    assert_int_equal(0xc9, conn.frame_mask[2]);
+    assert_int_equal(0xd3, conn.frame_mask[3]);
 }
 
 static void test__http_ws_read_frame_header__can_read_header_without_mask(void **states)
@@ -1319,17 +1307,17 @@ static void test__http_ws_read_frame_header__can_read_header_without_mask(void *
 
     struct http_ws_connection conn = {
         .fd = fd,
+        .frame_mask = { 1, 2, 3, 4 },
     };
 
-    struct http_ws_frame_header header = { .opcode = 0, .length = 0, .mask = 0 };
+    http_ws_read_frame_header(&conn);
 
-    http_ws_read_frame_header(&conn, &header);
-
-    assert_int_equal(HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT, header.opcode);
-    assert_int_equal(3, header.length);
-    assert_null(header.mask);
-
-    free(header.mask);
+    assert_int_equal(HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT, conn.frame_opcode);
+    assert_int_equal(3, conn.frame_length);
+    assert_int_equal(0, conn.frame_mask[0]);
+    assert_int_equal(0, conn.frame_mask[1]);
+    assert_int_equal(0, conn.frame_mask[2]);
+    assert_int_equal(0, conn.frame_mask[3]);
 }
 
 

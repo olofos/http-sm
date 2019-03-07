@@ -352,32 +352,36 @@ void http_ws_send_error_response(struct http_request *request)
     write_all(request->fd, response, strlen(response));
 }
 
-void http_ws_read_frame_header(struct http_ws_connection *conn, struct http_ws_frame_header *header)
+void http_ws_read_frame_header(struct http_ws_connection *conn)
 {
-    read(conn->fd, &header->opcode, 1);
+    read(conn->fd, &conn->frame_opcode, 1);
 
     uint8_t mask_len;
     read(conn->fd, &mask_len, 1);
 
-    header->length = mask_len & HTTP_WS_FRAME_LEN;
+    conn->frame_length = mask_len & HTTP_WS_FRAME_LEN;
 
-    if(header->length == HTTP_WS_FRAME_LEN_16BIT) {
+    if(conn->frame_length == HTTP_WS_FRAME_LEN_16BIT) {
         uint8_t hi;
         uint8_t lo;
         read(conn->fd, &hi, 1);
         read(conn->fd, &lo, 1);
-        header->length = (((uint16_t)hi << 8)) | lo;
-    } else if(header->length == HTTP_WS_FRAME_LEN_64BIT) {
-        header->length = 0;
+        conn->frame_length = (((uint16_t)hi << 8)) | lo;
+    } else if(conn->frame_length == HTTP_WS_FRAME_LEN_64BIT) {
+        conn->frame_length = 0;
         for(int i = 0; i < 8; i++) {
             uint8_t c;
             read(conn->fd, &c, 1);
-            header->length = (header->length << 8) | c;
+            conn->frame_length = (conn->frame_length << 8) | c;
         }
     }
 
     if(mask_len & HTTP_WS_FRAME_MASK) {
-        header->mask = malloc(4);
-        read(conn->fd, header->mask, 4);
+        read(conn->fd, conn->frame_mask, 4);
+    } else {
+        conn->frame_mask[0] = 0;
+        conn->frame_mask[1] = 0;
+        conn->frame_mask[2] = 0;
+        conn->frame_mask[3] = 0;
     }
 }

@@ -121,12 +121,15 @@ enum http_ws_frame_opcode
     HTTP_WS_FRAME_OPCODE_PONG  = 0x0a,
 };
 
-struct http_ws_frame_header
-{
-    uint64_t length;
-    uint8_t opcode;
-    uint8_t *mask;
+struct http_ws_connection {
+    int fd;
+
+    uint64_t frame_length;
+    uint8_t frame_opcode;
+    uint8_t frame_mask[4];
+
 };
+
 
 struct http_request;
 
