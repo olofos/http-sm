@@ -1329,6 +1329,150 @@ static void test__http_ws_read_frame_header__can_read_header_without_mask(void *
 }
 
 
+static void test__http_ws_read__can_read_without_mask(void **states)
+{
+    const char frame[] = { 0x81, 0x03, 'a', 'b', 'c' };
+
+    int fd = write_tmp_file_bin(frame, sizeof(frame));
+
+    struct http_ws_connection conn = {
+        .fd = fd,
+    };
+
+    http_ws_read_frame_header(&conn);
+
+    char buf[4];
+    int n = http_ws_read(&conn, buf, 3);
+    buf[3] = 0;
+
+    assert_int_equal(n, 3);
+    assert_string_equal(buf, "abc");
+
+    close(fd);
+}
+
+static void test__http_ws_read__can_read_with_mask(void **states)
+{
+    const char frame[] = { 0x81, 0x83, 'a', 'b', 'c', 'd', 0, 0, 0 };
+
+    int fd = write_tmp_file_bin(frame, sizeof(frame));
+
+    struct http_ws_connection conn = {
+        .fd = fd,
+    };
+
+    http_ws_read_frame_header(&conn);
+
+    char buf[4];
+    int n = http_ws_read(&conn, buf, 3);
+    buf[3] = 0;
+
+    assert_int_equal(n, 3);
+    assert_string_equal(buf, "abc");
+
+    close(fd);
+}
+
+static void test__http_ws_read__can_read_several_times(void **states)
+{
+    const char frame[] = { 0x81, 0x88, 'a', 'b', 'c', 'd', 0x00, 0x00, 0x00, 0x00, 0x04, 0x04, 0x04, 0x0C };
+
+    int fd = write_tmp_file_bin(frame, sizeof(frame));
+
+    struct http_ws_connection conn = {
+        .fd = fd,
+    };
+
+    http_ws_read_frame_header(&conn);
+
+    char buf[5];
+    int n;
+
+    n = http_ws_read(&conn, buf, 4);
+    buf[4] = 0;
+
+    assert_int_equal(n, 4);
+    assert_string_equal(buf, "abcd");
+
+    n = http_ws_read(&conn, buf, 4);
+    buf[4] = 0;
+
+    assert_int_equal(n, 4);
+    assert_string_equal(buf, "efgh");
+
+    close(fd);
+}
+
+static void test__http_ws_read__does_not_read_more_than_available(void **states)
+{
+    const char frame[] = { 0x81, 0x88, 'a', 'b', 'c', 'd', 0x00, 0x00, 0x00, 0x00, 0x04, 0x04, 0x04, 0x0C };
+
+    int fd = write_tmp_file_bin(frame, sizeof(frame));
+
+    struct http_ws_connection conn = {
+        .fd = fd,
+    };
+
+    http_ws_read_frame_header(&conn);
+
+    char buf[9];
+    int n;
+
+    n = http_ws_read(&conn, buf, 32);
+    buf[n] = 0;
+
+    assert_int_equal(n, 8);
+    assert_string_equal(buf, "abcdefgh");
+
+    close(fd);
+}
+
+
+static void test__http_ws_send__sends_a_simple_message(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(fd >= 0);
+
+    struct http_ws_connection conn = {
+        .fd = fd,
+    };
+
+    char str[] = "abcd";
+
+    int n = http_ws_send(&conn, str, strlen(str), HTTP_WS_FRAME_OPCODE_TEXT);
+    char expected[] = { 0x81, 0x04, 'a', 'b', 'c', 'd', 0 };
+
+    assert_int_equal(n, strlen(str));
+    assert_string_equal(expected, get_file_content(fd));
+
+    close(fd);
+}
+
+static void test__http_ws_send__sends_a_16bit_message(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(fd >= 0);
+
+    struct http_ws_connection conn = {
+        .fd = fd,
+    };
+
+    char str[] = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    int n = http_ws_send(&conn, str, strlen(str), HTTP_WS_FRAME_OPCODE_TEXT);
+    assert_int_equal(n, strlen(str));
+
+    lseek(conn.fd, 0, SEEK_SET);
+
+    http_ws_read_frame_header(&conn);
+
+    assert_int_equal(conn.frame_opcode, HTTP_WS_FRAME_OPCODE_TEXT | HTTP_WS_FRAME_FIN);
+    assert_int_equal(conn.frame_length, strlen(str));
+
+    close(fd);
+}
+
+
 // Main ////////////////////////////////////////////////////////////////////////
 
 const struct CMUnitTest tests_for_http_io[] = {
@@ -1406,6 +1550,14 @@ const struct CMUnitTest tests_for_http_io[] = {
     cmocka_unit_test(test__http_ws_read_frame_header__can_read_header_with_16bit_length),
     cmocka_unit_test(test__http_ws_read_frame_header__can_read_header_with_64bit_length),
     cmocka_unit_test(test__http_ws_read_frame_header__can_read_header_without_mask),
+
+    cmocka_unit_test(test__http_ws_read__can_read_without_mask),
+    cmocka_unit_test(test__http_ws_read__can_read_with_mask),
+    cmocka_unit_test(test__http_ws_read__can_read_several_times),
+    cmocka_unit_test(test__http_ws_read__does_not_read_more_than_available),
+
+    cmocka_unit_test(test__http_ws_send__sends_a_simple_message),
+    cmocka_unit_test(test__http_ws_send__sends_a_16bit_message),
 };
 
 int main(void)

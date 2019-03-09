@@ -384,4 +384,44 @@ void http_ws_read_frame_header(struct http_ws_connection *conn)
         conn->frame_mask[2] = 0;
         conn->frame_mask[3] = 0;
     }
+
+    conn->frame_index = 0;
+}
+
+int http_ws_read(struct http_ws_connection *conn, void *buf_, size_t count)
+{
+    char *buf = buf_;
+
+    if(count > conn->frame_length - conn->frame_index) {
+        count = conn->frame_length - conn->frame_index;
+    }
+
+    int n = read(conn->fd, buf, count);
+
+    for(int i = 0; i < n; i++) {
+        buf[i] ^= conn->frame_mask[(conn->frame_index++) % 4];
+    }
+
+    return n;
+}
+
+int http_ws_send(struct http_ws_connection *conn, void *buf, size_t count, enum http_ws_frame_opcode opcode)
+{
+    uint8_t op = opcode | HTTP_WS_FRAME_FIN;
+    write(conn->fd, &op, 1);
+
+    if(count < 0x7e) {
+        uint8_t c = count;
+        write(conn->fd, &c, sizeof(c));
+    } else if(count < 0x10000) {
+        uint8_t c[] = { 0x7e, (count >> 8) & 0xFF, count & 0xFF };
+        write(conn->fd, &c, sizeof(c));
+    } else {
+        uint8_t c[] = { 0x7f, (count >> 56) & 0xFF, (count >> 48) & 0xFF, (count >> 40) & 0xFF, (count >> 32) & 0xFF, (count >> 24) & 0xFF, (count >> 16) & 0xFF, (count >> 8) & 0xFF, count & 0xFF };
+        write(conn->fd, &c, sizeof(c));
+    }
+
+    int n = write(conn->fd, buf, count);
+
+    return n;
 }
