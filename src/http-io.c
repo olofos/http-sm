@@ -421,7 +421,5 @@ int http_ws_send(struct http_ws_connection *conn, void *buf, size_t count, enum 
         write(conn->fd, &c, sizeof(c));
     }
 
-    int n = write(conn->fd, buf, count);
-
-    return n;
+    return write_all(conn->fd, buf, count);
 }
