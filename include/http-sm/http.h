@@ -121,6 +121,8 @@ enum http_ws_frame_opcode
     HTTP_WS_FRAME_OPCODE_PONG  = 0x0a,
 };
 
+struct http_ws_url_handler;
+
 struct http_ws_connection {
     int fd;
 
@@ -129,6 +131,7 @@ struct http_ws_connection {
     uint8_t frame_opcode;
     uint8_t frame_mask[4];
 
+    struct http_ws_url_handler *handler;
 };
 
 
@@ -182,6 +185,20 @@ struct http_url_handler {
 };
 
 extern struct http_url_handler http_url_tab[];
+
+typedef int (*http_ws_url_handler_func_open)(struct http_ws_connection*, struct http_request*);
+typedef void (*http_ws_url_handler_func_close)(struct http_ws_connection*);
+typedef void (*http_ws_url_handler_func_message)(struct http_ws_connection*);
+
+struct http_ws_url_handler {
+    const char *url;
+    http_ws_url_handler_func_open open;
+    http_ws_url_handler_func_close close;
+    http_ws_url_handler_func_message message;
+    void *data;
+};
+
+extern struct http_ws_url_handler http_ws_url_tab[];
 
 int http_server_main(int port);
 int http_begin_response(struct http_request *request, int status, const char *content_type);
