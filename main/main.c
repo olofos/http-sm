@@ -456,8 +456,6 @@ int main(int argc, char *argv[])
 
             struct sigevent sev;
             struct itimerspec its;
-            long long freq_nanosecs;
-            sigset_t mask;
             struct sigaction sa;
 
             printf("Establishing handler for signal %d\n", SIG);
