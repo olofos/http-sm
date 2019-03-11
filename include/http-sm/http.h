@@ -219,6 +219,6 @@ unsigned http_base64_encode(char *dest, const char *src, unsigned len);
 unsigned http_base64_decode(char *dest, const char *src, unsigned len);
 
 int http_ws_read(struct http_ws_connection *conn, void *buf_, size_t count);
-int http_ws_send(struct http_ws_connection *conn, void *buf_, size_t count, enum http_ws_frame_opcode opcode);
+int http_ws_send(struct http_ws_connection *conn, const void *buf_, size_t count, enum http_ws_frame_opcode opcode);
 
 #endif

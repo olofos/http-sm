@@ -405,7 +405,7 @@ int http_ws_read(struct http_ws_connection *conn, void *buf_, size_t count)
     return n;
 }
 
-int http_ws_send(struct http_ws_connection *conn, void *buf, size_t count, enum http_ws_frame_opcode opcode)
+int http_ws_send(struct http_ws_connection *conn, const void *buf, size_t count, enum http_ws_frame_opcode opcode)
 {
     uint8_t op = opcode | HTTP_WS_FRAME_FIN;
     write(conn->fd, &op, 1);
