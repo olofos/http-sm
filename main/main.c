@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <time.h>
 #include <errno.h>
+#include <signal.h>
 
 #include <setjmp.h>
 #include <cmocka.h>
@@ -18,6 +19,10 @@
 #include "http-sm/http.h"
 #include "http-private.h"
 #include "log.h"
+
+#define CLOCKID CLOCK_REALTIME
+#define SIG SIGUSR1
+timer_t timerid;
 
 const char *simple_response = "This is a response from \'cgi_simple\'";
 const char *stream_response = "This is a response from \'cgi_stream\'";
@@ -169,6 +174,36 @@ enum http_cgi_state cgi_exit(struct http_request* request)
     exit(0);
 }
 
+struct http_ws_connection* ws_conn = 0;
+
+int ws_open(struct http_ws_connection* conn, struct http_request* request)
+{
+    if(ws_conn == NULL) {
+        LOG("WS: new connection %d", request->fd);
+        ws_conn = conn;
+        return 1;
+    } else {
+        LOG("WS: only supports one connection");
+        return 0;
+    }
+}
+
+void ws_close(struct http_ws_connection* conn)
+{
+    ws_conn = 0;
+    LOG("WS: closing %d", conn->fd);
+}
+
+void ws_message(struct http_ws_connection* conn)
+{
+    char *str = malloc(conn->frame_length+1);
+    http_ws_read(conn, str, conn->frame_length);
+    http_ws_send(conn, str, conn->frame_length, HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT);
+    str[conn->frame_length] = 0;
+    LOG("%s", str);
+    free(str);
+}
+
 struct http_url_handler http_url_tab[] = {
     {"/simple", cgi_simple, NULL},
     {"/stream", cgi_stream, NULL},
@@ -177,6 +212,11 @@ struct http_url_handler http_url_tab[] = {
     {"/wildcard/*", cgi_simple, NULL},
     {"/exit", cgi_exit, NULL},
     {NULL, NULL, NULL}
+};
+
+struct http_ws_url_handler http_ws_url_tab[] = {
+    {"/ws", ws_open, ws_close, ws_message, NULL},
+    {NULL, NULL, NULL, NULL, NULL}
 };
 
 extern const char *log_system;
@@ -392,6 +432,19 @@ const struct CMUnitTest tests[] = {
     cmocka_unit_test(test_that_server_can_handle_a_timeout),
 };
 
+static void sig_handler(int sig, siginfo_t *si, void *uc)
+{
+    if(si->si_value.sival_ptr != &timerid){
+        printf("Stray signal\n");
+    } else {
+        if(ws_conn) {
+            time_t t = time(0);
+            const char *s = asctime(localtime(&t));
+            http_ws_send(ws_conn, s, strlen(s), HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT);
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if(argc > 1) {
@@ -400,6 +453,32 @@ int main(int argc, char *argv[])
             if(argc > 2) {
                 port = strtol(argv[2], NULL, 10);
             }
+
+            struct sigevent sev;
+            struct itimerspec its;
+            long long freq_nanosecs;
+            sigset_t mask;
+            struct sigaction sa;
+
+            printf("Establishing handler for signal %d\n", SIG);
+            sa.sa_flags = SA_SIGINFO;
+            sa.sa_sigaction = sig_handler;
+            sigemptyset(&sa.sa_mask);
+            sigaction(SIG, &sa, NULL);
+
+            sev.sigev_notify = SIGEV_SIGNAL;
+            sev.sigev_signo = SIG;
+            sev.sigev_value.sival_ptr = &timerid;
+            timer_create(CLOCKID, &sev, &timerid);
+            /* Start the timer */
+
+            its.it_value.tv_sec = 10;
+            its.it_value.tv_nsec = 0;
+            its.it_interval.tv_sec = its.it_value.tv_sec;
+            its.it_interval.tv_nsec = its.it_value.tv_nsec;
+
+            timer_settime(timerid, 0, &its, NULL);
+
             http_server_main(port);
         }
     } else {

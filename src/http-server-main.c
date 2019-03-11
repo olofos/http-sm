@@ -17,6 +17,7 @@
 #include <netdb.h>
 #include <signal.h>
 #include <time.h>
+#include <errno.h>
 #endif
 
 #include "http-sm/http.h"
@@ -174,7 +175,7 @@ static int http_server_main_loop(struct http_server *server)
     // and does not set errno...
 #ifndef __XTENSA__
     if(n < 0) {
-        LOG("select failed");
+        LOG("select failed with %s", strerror(errno));
         return -1;
     }
 #endif
@@ -329,7 +330,13 @@ int http_server_main(int port)
 
     for(;;) {
         if(http_server_main_loop(&server) < 0) {
+#ifndef __XTENSA__
+            if(errno != EINTR) {
+                return -1;
+            }
+#else
             return -1;
+#endif
         }
     }
 }

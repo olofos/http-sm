@@ -66,7 +66,7 @@ $(TSTBINDIR)test_http-sha1: $(TSTOBJDIR)http-sha1.o $(TSTOBJDIR)test-util.o
 
 $(BINDIR)$(TARGET): build_dirs $(BINOBJ) $(LIBDIR)$(LIBTARGET)
 	@echo LD $@
-	$(V)$(CC) $(CFLAGS) $(BINOBJ) -o $@ -lcmocka -L$(LIBDIR) -lhttp-sm
+	$(V)$(CC) $(CFLAGS) $(BINOBJ) -o $@ -lcmocka -lrt -L$(LIBDIR) -lhttp-sm
 
 $(LIBDIR)$(LIBTARGET): build_dirs $(LIBOBJ)
 	@echo AR $@
