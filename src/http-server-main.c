@@ -223,6 +223,7 @@ static int http_server_main_loop(struct http_server *server)
                 http_ws_read_frame_header(conn);
 
                 switch(conn->frame_opcode & HTTP_WS_FRAME_OPCODE) {
+                case HTTP_WS_FRAME_OPCODE_BIN:
                 case HTTP_WS_FRAME_OPCODE_TEXT:
                 {
                     if(conn->handler->message) {
