@@ -388,6 +388,22 @@ void http_ws_read_frame_header(struct http_ws_connection *conn)
     conn->frame_index = 0;
 }
 
+static int read_all(int fd, void *buf_, size_t count)
+{
+    char *buf = buf_;
+    size_t num = 0;
+    while(num < count) {
+        size_t to_read = count - num;
+        ssize_t ret = read(fd, buf, to_read);
+        if(ret <= 0) {
+            break;
+        }
+        num += ret;
+        buf += ret;
+    }
+    return num;
+}
+
 int http_ws_read(struct http_ws_connection *conn, void *buf_, size_t count)
 {
     char *buf = buf_;
@@ -396,7 +412,7 @@ int http_ws_read(struct http_ws_connection *conn, void *buf_, size_t count)
         count = conn->frame_length - conn->frame_index;
     }
 
-    int n = read(conn->fd, buf, count);
+    int n = read_all(conn->fd, buf, count);
 
     for(int i = 0; i < n; i++) {
         buf[i] ^= conn->frame_mask[(conn->frame_index++) % 4];
