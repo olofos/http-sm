@@ -9,7 +9,7 @@
 static char *cmp_str_prefix(char *str, const char *prefix)
 {
     int len = strlen(prefix);
-    if(strncmp(str, prefix, len) == 0) {
+    if(strncasecmp(str, prefix, len) == 0) {
         return str + len;
     } else {
         return 0;
