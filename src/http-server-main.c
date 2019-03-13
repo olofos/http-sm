@@ -247,8 +247,8 @@ static int http_server_main_loop(struct http_server *server)
                     case WEBSOCKET_FRAME_OPCODE_BIN:
                     case WEBSOCKET_FRAME_OPCODE_TEXT:
                     {
-                        if(conn->handler->message) {
-                            conn->handler->message(conn);
+                        if(conn->handler->cb_message) {
+                            conn->handler->cb_message(conn);
                         }
                         break;
                     }
@@ -258,8 +258,8 @@ static int http_server_main_loop(struct http_server *server)
                         websocket_read(conn, str, conn->frame_length);
                         websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
 
-                        if(conn->handler->close) {
-                            conn->handler->close(conn);
+                        if(conn->handler->cb_close) {
+                            conn->handler->cb_close(conn);
                         }
 
                         close(conn->fd);
@@ -299,7 +299,7 @@ int websocket_init(struct http_server *server, struct http_request *request)
         for(struct websocket_url_handler *handler = &websocket_url_tab[0]; handler->url != NULL; handler++) {
             if(http_server_match_url(handler->url, request->path)) {
                 LOG("WS: %s matches", handler->url);
-                if(handler->open(connection, request)) {
+                if(handler->cb_open(connection, request)) {
                     websocket_send_response(request);
                     connection->fd = request->fd;
                     connection->handler = handler;

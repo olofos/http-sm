@@ -41,9 +41,9 @@ typedef void (*websocket_url_handler_func_message)(struct websocket_connection*)
 
 struct websocket_url_handler {
     const char *url;
-    websocket_url_handler_func_open open;
-    websocket_url_handler_func_close close;
-    websocket_url_handler_func_message message;
+    websocket_url_handler_func_open cb_open;
+    websocket_url_handler_func_close cb_close;
+    websocket_url_handler_func_message cb_message;
     void *data;
 };
 
