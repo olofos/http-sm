@@ -35,7 +35,7 @@ SOURCES_TST = $(wildcard $(TSTDIR)*.c)
 
 AR = ar
 CC = gcc
-CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer -I$(SRCDIR) -I$(BINSRCDIR)
+CFLAGS = -Wall -g -O2 -fsanitize=address -fno-omit-frame-pointer -I$(SRCDIR) -I$(BINSRCDIR)
 
 INCLUDES=-Iinclude/
 
