@@ -12,7 +12,7 @@
 
 struct http_server {
     struct http_request request[HTTP_SERVER_MAX_CONNECTIONS];
-    struct http_ws_connection ws_connection[HTTP_SERVER_MAX_WS_CONNECTIONS];
+    struct websocket_connection websocket_connection[WEBSOCKET_SERVER_MAX_CONNECTIONS];
     int fd;
 };
 
@@ -42,9 +42,9 @@ void http_free(struct http_request *request);
 int http_write_all(int fd, const char *str, int len);
 int http_read_all(int fd, void *buf_, size_t count);
 
-int http_ws_init(struct http_server *server, struct http_request *request);
-void http_ws_send_response(struct http_request *request);
-void http_ws_send_error_response(struct http_request *request);
-void http_ws_read_frame_header(struct http_ws_connection *conn);
+int websocket_init(struct http_server *server, struct http_request *request);
+void websocket_send_response(struct http_request *request);
+void websocket_send_error_response(struct http_request *request);
+void websocket_read_frame_header(struct websocket_connection *conn);
 
 #endif

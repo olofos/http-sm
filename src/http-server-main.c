@@ -222,7 +222,7 @@ static int http_server_main_loop(struct http_server *server)
                         http_server_read_headers(request);
 
                         if(request->state == HTTP_STATE_SERVER_UPGRADE_WEBSOCKET) {
-                            if(http_ws_init(server, request)) {
+                            if(websocket_init(server, request)) {
                                 FD_CLR(request->fd, &set_read);
                                 http_free(request);
                                 request->fd = -1;
@@ -237,26 +237,26 @@ static int http_server_main_loop(struct http_server *server)
             }
         }
 
-        for(int i = 0; i < HTTP_SERVER_MAX_WS_CONNECTIONS; i++) {
-            if(server->ws_connection[i].fd >= 0) {
-                if(FD_ISSET(server->ws_connection[i].fd, &set_read)) {
-                    struct http_ws_connection *conn = &server->ws_connection[i];
-                    http_ws_read_frame_header(conn);
+        for(int i = 0; i < WEBSOCKET_SERVER_MAX_CONNECTIONS; i++) {
+            if(server->websocket_connection[i].fd >= 0) {
+                if(FD_ISSET(server->websocket_connection[i].fd, &set_read)) {
+                    struct websocket_connection *conn = &server->websocket_connection[i];
+                    websocket_read_frame_header(conn);
 
-                    switch(conn->frame_opcode & HTTP_WS_FRAME_OPCODE) {
-                    case HTTP_WS_FRAME_OPCODE_BIN:
-                    case HTTP_WS_FRAME_OPCODE_TEXT:
+                    switch(conn->frame_opcode & WEBSOCKET_FRAME_OPCODE) {
+                    case WEBSOCKET_FRAME_OPCODE_BIN:
+                    case WEBSOCKET_FRAME_OPCODE_TEXT:
                     {
                         if(conn->handler->message) {
                             conn->handler->message(conn);
                         }
                         break;
                     }
-                    case HTTP_WS_FRAME_OPCODE_CLOSE:
+                    case WEBSOCKET_FRAME_OPCODE_CLOSE:
                     {
                         char *str = malloc(conn->frame_length);
-                        http_ws_read(conn, str, conn->frame_length);
-                        http_ws_send(conn, str, conn->frame_length, HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_CLOSE);
+                        websocket_read(conn, str, conn->frame_length);
+                        websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
 
                         if(conn->handler->close) {
                             conn->handler->close(conn);
@@ -268,12 +268,12 @@ static int http_server_main_loop(struct http_server *server)
                         free(str);
                         break;
                     }
-                    case HTTP_WS_FRAME_OPCODE_PING:
+                    case WEBSOCKET_FRAME_OPCODE_PING:
                     {
                         LOG("WS: ping %d", conn->fd);
                         char *str = malloc(conn->frame_length);
-                        http_ws_read(conn, str, conn->frame_length);
-                        http_ws_send(conn, str, conn->frame_length, HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_PONG);
+                        websocket_read(conn, str, conn->frame_length);
+                        websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_PONG);
                         free(str);
                         break;
                     }
@@ -286,21 +286,21 @@ static int http_server_main_loop(struct http_server *server)
     return 0;
 }
 
-int http_ws_init(struct http_server *server, struct http_request *request)
+int websocket_init(struct http_server *server, struct http_request *request)
 {
-    struct http_ws_connection *connection = 0;
-    for(int i = 0; i < HTTP_SERVER_MAX_WS_CONNECTIONS; i++) {
-        if(server->ws_connection[i].fd == -1) {
-            connection = &server->ws_connection[i];
+    struct websocket_connection *connection = 0;
+    for(int i = 0; i < WEBSOCKET_SERVER_MAX_CONNECTIONS; i++) {
+        if(server->websocket_connection[i].fd == -1) {
+            connection = &server->websocket_connection[i];
             break;
         }
     }
     if(connection) {
-        for(struct http_ws_url_handler *handler = &http_ws_url_tab[0]; handler->url != NULL; handler++) {
+        for(struct websocket_url_handler *handler = &websocket_url_tab[0]; handler->url != NULL; handler++) {
             if(http_server_match_url(handler->url, request->path)) {
                 LOG("WS: %s matches", handler->url);
                 if(handler->open(connection, request)) {
-                    http_ws_send_response(request);
+                    websocket_send_response(request);
                     connection->fd = request->fd;
                     connection->handler = handler;
                     return 1;
@@ -310,11 +310,11 @@ int http_ws_init(struct http_server *server, struct http_request *request)
             }
         }
         // TODO: Send 404 instead
-        http_ws_send_error_response(request);
+        websocket_send_error_response(request);
         LOG("WS: connection %d not accepted", request->fd);
         return 0;
     } else {
-        http_ws_send_error_response(request);
+        websocket_send_error_response(request);
         LOG("WS: no room for new connection %d", request->fd);
         return 0;
     }
@@ -336,8 +336,8 @@ static int http_server_start(struct http_server *server, int port)
         server->request[i].state = HTTP_STATE_IDLE;
     }
 
-    for(int i = 0; i < HTTP_SERVER_MAX_WS_CONNECTIONS; i++) {
-        server->ws_connection[i].fd = -1;
+    for(int i = 0; i < WEBSOCKET_SERVER_MAX_CONNECTIONS; i++) {
+        server->websocket_connection[i].fd = -1;
     }
 
     return 0;

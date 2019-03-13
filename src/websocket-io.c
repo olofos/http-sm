@@ -6,7 +6,7 @@
 #include "http-private.h"
 #include "log.h"
 
-void http_ws_send_response(struct http_request *request)
+void websocket_send_response(struct http_request *request)
 {
     const char *response = "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n";
     http_write_all(request->fd, response, strlen(response));
@@ -33,28 +33,28 @@ void http_ws_send_response(struct http_request *request)
     http_write_all(request->fd, "\r\n", 2);
 }
 
-void http_ws_send_error_response(struct http_request *request)
+void websocket_send_error_response(struct http_request *request)
 {
     const char *response = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n";
     http_write_all(request->fd, response, strlen(response));
 }
 
-void http_ws_read_frame_header(struct http_ws_connection *conn)
+void websocket_read_frame_header(struct websocket_connection *conn)
 {
     read(conn->fd, &conn->frame_opcode, 1);
 
     uint8_t mask_len;
     read(conn->fd, &mask_len, 1);
 
-    conn->frame_length = mask_len & HTTP_WS_FRAME_LEN;
+    conn->frame_length = mask_len & WEBSOCKET_FRAME_LEN;
 
-    if(conn->frame_length == HTTP_WS_FRAME_LEN_16BIT) {
+    if(conn->frame_length == WEBSOCKET_FRAME_LEN_16BIT) {
         uint8_t hi;
         uint8_t lo;
         read(conn->fd, &hi, 1);
         read(conn->fd, &lo, 1);
         conn->frame_length = (((uint16_t)hi << 8)) | lo;
-    } else if(conn->frame_length == HTTP_WS_FRAME_LEN_64BIT) {
+    } else if(conn->frame_length == WEBSOCKET_FRAME_LEN_64BIT) {
         conn->frame_length = 0;
         for(int i = 0; i < 8; i++) {
             uint8_t c;
@@ -63,7 +63,7 @@ void http_ws_read_frame_header(struct http_ws_connection *conn)
         }
     }
 
-    if(mask_len & HTTP_WS_FRAME_MASK) {
+    if(mask_len & WEBSOCKET_FRAME_MASK) {
         read(conn->fd, conn->frame_mask, 4);
     } else {
         conn->frame_mask[0] = 0;
@@ -75,7 +75,7 @@ void http_ws_read_frame_header(struct http_ws_connection *conn)
     conn->frame_index = 0;
 }
 
-int http_ws_read(struct http_ws_connection *conn, void *buf_, size_t count)
+int websocket_read(struct websocket_connection *conn, void *buf_, size_t count)
 {
     char *buf = buf_;
 
@@ -92,9 +92,9 @@ int http_ws_read(struct http_ws_connection *conn, void *buf_, size_t count)
     return n;
 }
 
-int http_ws_send(struct http_ws_connection *conn, const void *buf, size_t count, enum http_ws_frame_opcode opcode)
+int websocket_send(struct websocket_connection *conn, const void *buf, size_t count, enum websocket_frame_opcode opcode)
 {
-    uint8_t op = opcode | HTTP_WS_FRAME_FIN;
+    uint8_t op = opcode | WEBSOCKET_FRAME_FIN;
     write(conn->fd, &op, 1);
 
     if(count < 0x7e) {

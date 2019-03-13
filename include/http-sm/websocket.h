@@ -1,30 +1,30 @@
 #ifndef HTTP_SM_WEBSOCKET_H_
 #define HTTP_SM_WEBSOCKET_H_
 
-enum http_ws_frame_bits
+enum websocket_frame_bits
 {
-    HTTP_WS_FRAME_FIN  = 0x80,
-    HTTP_WS_FRAME_MASK = 0x80,
-    HTTP_WS_FRAME_LEN  = 0x7F,
-    HTTP_WS_FRAME_LEN_16BIT  = 0x7E,
-    HTTP_WS_FRAME_LEN_64BIT  = 0x7F,
-    HTTP_WS_FRAME_OPCODE = 0x0F,
+    WEBSOCKET_FRAME_FIN  = 0x80,
+    WEBSOCKET_FRAME_MASK = 0x80,
+    WEBSOCKET_FRAME_LEN  = 0x7F,
+    WEBSOCKET_FRAME_LEN_16BIT  = 0x7E,
+    WEBSOCKET_FRAME_LEN_64BIT  = 0x7F,
+    WEBSOCKET_FRAME_OPCODE = 0x0F,
 };
 
-enum http_ws_frame_opcode
+enum websocket_frame_opcode
 {
-    HTTP_WS_FRAME_OPCODE_CONT = 0x00,
-    HTTP_WS_FRAME_OPCODE_TEXT = 0x01,
-    HTTP_WS_FRAME_OPCODE_BIN  = 0x02,
+    WEBSOCKET_FRAME_OPCODE_CONT = 0x00,
+    WEBSOCKET_FRAME_OPCODE_TEXT = 0x01,
+    WEBSOCKET_FRAME_OPCODE_BIN  = 0x02,
 
-    HTTP_WS_FRAME_OPCODE_CLOSE = 0x08,
-    HTTP_WS_FRAME_OPCODE_PING  = 0x09,
-    HTTP_WS_FRAME_OPCODE_PONG  = 0x0a,
+    WEBSOCKET_FRAME_OPCODE_CLOSE = 0x08,
+    WEBSOCKET_FRAME_OPCODE_PING  = 0x09,
+    WEBSOCKET_FRAME_OPCODE_PONG  = 0x0a,
 };
 
-struct http_ws_url_handler;
+struct websocket_url_handler;
 
-struct http_ws_connection {
+struct websocket_connection {
     int fd;
 
     uint64_t frame_length;
@@ -32,24 +32,24 @@ struct http_ws_connection {
     uint8_t frame_opcode;
     uint8_t frame_mask[4];
 
-    struct http_ws_url_handler *handler;
+    struct websocket_url_handler *handler;
 };
 
-typedef int (*http_ws_url_handler_func_open)(struct http_ws_connection*, struct http_request*);
-typedef void (*http_ws_url_handler_func_close)(struct http_ws_connection*);
-typedef void (*http_ws_url_handler_func_message)(struct http_ws_connection*);
+typedef int (*websocket_url_handler_func_open)(struct websocket_connection*, struct http_request*);
+typedef void (*websocket_url_handler_func_close)(struct websocket_connection*);
+typedef void (*websocket_url_handler_func_message)(struct websocket_connection*);
 
-struct http_ws_url_handler {
+struct websocket_url_handler {
     const char *url;
-    http_ws_url_handler_func_open open;
-    http_ws_url_handler_func_close close;
-    http_ws_url_handler_func_message message;
+    websocket_url_handler_func_open open;
+    websocket_url_handler_func_close close;
+    websocket_url_handler_func_message message;
     void *data;
 };
 
-extern struct http_ws_url_handler http_ws_url_tab[];
+extern struct websocket_url_handler websocket_url_tab[];
 
-int http_ws_read(struct http_ws_connection *conn, void *buf_, size_t count);
-int http_ws_send(struct http_ws_connection *conn, const void *buf_, size_t count, enum http_ws_frame_opcode opcode);
+int websocket_read(struct websocket_connection *conn, void *buf_, size_t count);
+int websocket_send(struct websocket_connection *conn, const void *buf_, size_t count, enum websocket_frame_opcode opcode);
 
 #endif

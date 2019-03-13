@@ -179,8 +179,8 @@ int http_create_select_sets(struct http_server *server, fd_set *set_read,
         }
     };
 
-    for(int i = 0; i < HTTP_SERVER_MAX_WS_CONNECTIONS; i++) {
-        int fd = server->ws_connection[i].fd;
+    for(int i = 0; i < WEBSOCKET_SERVER_MAX_CONNECTIONS; i++) {
+        int fd = server->websocket_connection[i].fd;
         if(fd >= 0) {
             FD_SET(fd, set_read);
             if(fd > *maxfd) {

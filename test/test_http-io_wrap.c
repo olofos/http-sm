@@ -192,9 +192,9 @@ static void test__http_write_string__returns_minus_one_if_write_fails_with_te_id
     assert_int_equal(-1, ret);
 }
 
-static void test__http_ws_read__reads_everything(void **states)
+static void test__websocket_read__reads_everything(void **states)
 {
-    struct http_ws_connection conn = {
+    struct websocket_connection conn = {
         .fd = 3,
         .frame_length = 3,
         .frame_index = 0,
@@ -214,7 +214,7 @@ static void test__http_ws_read__reads_everything(void **states)
     expect_value(__wrap_read, count, 1);
     will_return(__wrap_read, 1);
 
-    int ret = http_ws_read(&conn, buf, 3);
+    int ret = websocket_read(&conn, buf, 3);
     buf[ret] = 0;
 
     assert_int_equal(3, ret);
@@ -271,7 +271,7 @@ const struct CMUnitTest tests_for_http_io_read_mock[] = {
     cmocka_unit_test(test__http_getc__returns_minus_one_if_read_fails_with_te_chunked),
     cmocka_unit_test(test__http_getc__returns_minus_one_if_read_fails_in_beginning_of_chunk_header),
     cmocka_unit_test(test__http_getc__returns_minus_one_if_read_fails_at_end_of_chunk_header),
-    cmocka_unit_test(test__http_ws_read__reads_everything),
+    cmocka_unit_test(test__websocket_read__reads_everything),
 };
 
 const struct CMUnitTest tests_for_http_io_write_mock[] = {

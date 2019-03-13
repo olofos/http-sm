@@ -174,9 +174,9 @@ enum http_cgi_state cgi_exit(struct http_request* request)
     exit(0);
 }
 
-struct http_ws_connection* ws_time_conn = 0;
+struct websocket_connection* ws_time_conn = 0;
 
-int ws_time_open(struct http_ws_connection* conn, struct http_request* request)
+int ws_time_open(struct websocket_connection* conn, struct http_request* request)
 {
     if(ws_time_conn == NULL) {
         LOG("WS: new connection %d", request->fd);
@@ -188,7 +188,7 @@ int ws_time_open(struct http_ws_connection* conn, struct http_request* request)
     }
 }
 
-void ws_time_close(struct http_ws_connection* conn)
+void ws_time_close(struct websocket_connection* conn)
 {
     ws_time_conn = 0;
     LOG("WS: closing %d", conn->fd);
@@ -196,18 +196,18 @@ void ws_time_close(struct http_ws_connection* conn)
 
 
 
-int ws_echo_open(struct http_ws_connection* conn, struct http_request* request)
+int ws_echo_open(struct websocket_connection* conn, struct http_request* request)
 {
     return 1;
 }
 
-void ws_echo_message(struct http_ws_connection* conn)
+void ws_echo_message(struct websocket_connection* conn)
 {
     char *str = malloc(conn->frame_length+1);
-    http_ws_read(conn, str, conn->frame_length);
-    http_ws_send(conn, str, conn->frame_length, conn->frame_opcode);
+    websocket_read(conn, str, conn->frame_length);
+    websocket_send(conn, str, conn->frame_length, conn->frame_opcode);
     str[conn->frame_length] = 0;
-    if((conn->frame_opcode & HTTP_WS_FRAME_OPCODE) == HTTP_WS_FRAME_OPCODE_TEXT) {
+    if((conn->frame_opcode & WEBSOCKET_FRAME_OPCODE) == WEBSOCKET_FRAME_OPCODE_TEXT) {
         LOG("%s", str);
     }
     free(str);
@@ -223,7 +223,7 @@ struct http_url_handler http_url_tab[] = {
     {NULL, NULL, NULL}
 };
 
-struct http_ws_url_handler http_ws_url_tab[] = {
+struct websocket_url_handler websocket_url_tab[] = {
     {"/ws-echo", ws_echo_open, NULL, ws_echo_message, NULL},
     {"/ws-time", ws_time_open, ws_time_close, NULL, NULL},
     {NULL, NULL, NULL, NULL, NULL}
@@ -450,7 +450,7 @@ static void sig_handler(int sig, siginfo_t *si, void *uc)
         if(ws_time_conn) {
             time_t t = time(0);
             const char *s = asctime(localtime(&t));
-            http_ws_send(ws_time_conn, s, strlen(s), HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_TEXT);
+            websocket_send(ws_time_conn, s, strlen(s), WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_TEXT);
         }
     }
 }

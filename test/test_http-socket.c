@@ -96,8 +96,8 @@ static void init_server(struct http_server *server)
     for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
         server->request[i].fd = -1;
     }
-    for(int i = 0; i < HTTP_SERVER_MAX_WS_CONNECTIONS; i++) {
-        server->ws_connection[i].fd = -1;
+    for(int i = 0; i < WEBSOCKET_SERVER_MAX_CONNECTIONS; i++) {
+        server->websocket_connection[i].fd = -1;
     }
     server->fd = 3;
 }
