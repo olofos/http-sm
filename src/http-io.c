@@ -109,21 +109,19 @@ int http_read(struct http_request *request, void *buf_, size_t count)
     } else if(request->read_content_length == 0) {
         request->state = HTTP_STATE_IDLE | (request->state & HTTP_STATE_CLIENT);
     } else {
-        while((count > 0) && (request->read_content_length > 0)) {
+        if((count > 0) && (request->read_content_length > 0)) {
             int num_to_read = (count < request->read_content_length) ? count : request->read_content_length;
-            int n = read(request->fd, buf, num_to_read);
+            int n = http_read_all(request->fd, buf, num_to_read);
 
             if(n < 0) {
                 ERROR("Read failed in reading body");
                 return -1;
             } else if(n == 0) {
                 request->state = HTTP_STATE_IDLE | (request->state & HTTP_STATE_CLIENT);
-                break;
+                return 0;
             } else {
-                num += n;
-                count -= n;
                 request->read_content_length -= n;
-                buf += n;
+                return n;
             }
         }
     }
