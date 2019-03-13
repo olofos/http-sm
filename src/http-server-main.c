@@ -238,44 +238,46 @@ static int http_server_main_loop(struct http_server *server)
         }
 
         for(int i = 0; i < HTTP_SERVER_MAX_WS_CONNECTIONS; i++) {
-            if(FD_ISSET(server->ws_connection[i].fd, &set_read)) {
-                struct http_ws_connection *conn = &server->ws_connection[i];
-                http_ws_read_frame_header(conn);
+            if(server->ws_connection[i].fd >= 0) {
+                if(FD_ISSET(server->ws_connection[i].fd, &set_read)) {
+                    struct http_ws_connection *conn = &server->ws_connection[i];
+                    http_ws_read_frame_header(conn);
 
-                switch(conn->frame_opcode & HTTP_WS_FRAME_OPCODE) {
-                case HTTP_WS_FRAME_OPCODE_BIN:
-                case HTTP_WS_FRAME_OPCODE_TEXT:
-                {
-                    if(conn->handler->message) {
-                        conn->handler->message(conn);
+                    switch(conn->frame_opcode & HTTP_WS_FRAME_OPCODE) {
+                    case HTTP_WS_FRAME_OPCODE_BIN:
+                    case HTTP_WS_FRAME_OPCODE_TEXT:
+                    {
+                        if(conn->handler->message) {
+                            conn->handler->message(conn);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case HTTP_WS_FRAME_OPCODE_CLOSE:
-                {
-                    char *str = malloc(conn->frame_length);
-                    http_ws_read(conn, str, conn->frame_length);
-                    http_ws_send(conn, str, conn->frame_length, HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_CLOSE);
+                    case HTTP_WS_FRAME_OPCODE_CLOSE:
+                    {
+                        char *str = malloc(conn->frame_length);
+                        http_ws_read(conn, str, conn->frame_length);
+                        http_ws_send(conn, str, conn->frame_length, HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_CLOSE);
 
-                    if(conn->handler->close) {
-                        conn->handler->close(conn);
+                        if(conn->handler->close) {
+                            conn->handler->close(conn);
+                        }
+
+                        close(conn->fd);
+                        conn->fd = -1;
+
+                        free(str);
+                        break;
                     }
-
-                    close(conn->fd);
-                    conn->fd = -1;
-
-                    free(str);
-                    break;
-                }
-                case HTTP_WS_FRAME_OPCODE_PING:
-                {
-                    LOG("WS: ping %d", conn->fd);
-                    char *str = malloc(conn->frame_length);
-                    http_ws_read(conn, str, conn->frame_length);
-                    http_ws_send(conn, str, conn->frame_length, HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_PONG);
-                    free(str);
-                    break;
-                }
+                    case HTTP_WS_FRAME_OPCODE_PING:
+                    {
+                        LOG("WS: ping %d", conn->fd);
+                        char *str = malloc(conn->frame_length);
+                        http_ws_read(conn, str, conn->frame_length);
+                        http_ws_send(conn, str, conn->frame_length, HTTP_WS_FRAME_FIN | HTTP_WS_FRAME_OPCODE_PONG);
+                        free(str);
+                        break;
+                    }
+                    }
                 }
             }
         }
