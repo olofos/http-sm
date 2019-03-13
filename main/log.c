@@ -16,6 +16,7 @@ void LOG(const char *fmt, ...)
     vprintf(fmt, va);
     va_end(va);
     printf("\n");
+    fflush(stdout);
 }
 
 void ERROR(const char* str)
@@ -24,6 +25,7 @@ void ERROR(const char* str)
         printf("[%s] ", log_system);
     }
     perror(str);
+    fflush(stdout);
 }
 
 const char *escaped_string(const char *in)
