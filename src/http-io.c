@@ -47,7 +47,7 @@ static int read_chunk_header(struct http_request *request)
 static int read_chunk_footer(struct http_request *request)
 {
     char buf[2];
-    int ret = read(request->fd, buf, 2);
+    int ret = http_read_all(request->fd, buf, 2);
     if(ret < 0) {
         ERROR("Read failed while reading chunk footer");
         return -1;
@@ -56,7 +56,7 @@ static int read_chunk_footer(struct http_request *request)
         return 0;
     }
 
-    if(buf[0] != '\r' || buf[1] != '\n') {
+    if((ret < 2) || (buf[0] != '\r') || (buf[1] != '\n')) {
         return -1;
     }
     return 1;
