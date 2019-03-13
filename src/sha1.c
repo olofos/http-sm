@@ -30,6 +30,17 @@ A million repetitions of "a"
 
 /* blk0() and blk() perform the initial expand. */
 /* I got the idea of expanding during the round function from SSLeay */
+
+#if !defined(BYTE_ORDER) && defined(__BYTE_ORDER__)
+#define BYTE_ORDER __BYTE_ORDER__
+#endif
+#if !defined(LITTLE_ENDIAN) && defined(__ORDER_LITTLE_ENDIAN__)
+#define LITTLE_ENDIAN __ORDER_LITTLE_ENDIAN__
+#endif
+#if !defined(BIG_ENDIAN) && defined(__ORDER_BIG_ENDIAN__)
+#define BIG_ENDIAN __ORDER_BIG_ENDIAN__
+#endif
+
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) | (rol(block->l[i],8)&0x00FF00FF))
 #elif BYTE_ORDER == BIG_ENDIAN
