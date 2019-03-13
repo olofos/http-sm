@@ -5,7 +5,7 @@
 
 #include <cmocka.h>
 
-#include "http-sm/http-sha1.h"
+#include "http-sm/sha1.h"
 
 // Tests from https://www.di-mgt.com.au/sha_testvectors.html
 
