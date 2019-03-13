@@ -5,3 +5,4 @@ lib/
 .deps/
 test/results
 gcov/
+test/integration/node_modules
