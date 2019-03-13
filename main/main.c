@@ -16,6 +16,7 @@
 #include <cmocka.h>
 
 #include "http-sm/http.h"
+#include "http-sm/websocket.h"
 #include "http-private.h"
 #include "log.h"
 

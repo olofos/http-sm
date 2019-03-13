@@ -8,6 +8,7 @@
 #endif
 
 #include "http-sm/http.h"
+#include "http-sm/websocket.h"
 
 struct http_server {
     struct http_request request[HTTP_SERVER_MAX_CONNECTIONS];
