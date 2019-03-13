@@ -1,7 +1,8 @@
 # For a verbose build set V to an empty string when calling make: "V= make ..."
 V?=@
 
-LIBSOURCES := http-parser.c http-io.c http-socket.c http-util.c http-server.c http-server-main.c http-client.c http-sha1.c
+LIBSOURCES := http-parser.c http-io.c http-socket.c http-util.c http-server.c http-server-main.c http-client.c http-sha1.c \
+	websocket-io.c
 
 BINSOURCES := main.c log.c
 
@@ -51,8 +52,8 @@ TST_DEPS = $(TSTDEPDIR)*.d
 
 all: $(BINDIR)$(TARGET)
 
-$(TSTBINDIR)test_http-io: $(TSTOBJDIR)http-io.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)http-sha1.o $(TSTOBJDIR)test-util.o
-$(TSTBINDIR)test_http-io_wrap: $(TSTOBJDIR)http-io.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)http-sha1.o $(TSTOBJDIR)test-util.o
+$(TSTBINDIR)test_http-io: $(TSTOBJDIR)http-io.o $(TSTOBJDIR)websocket-io.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)http-sha1.o $(TSTOBJDIR)test-util.o
+$(TSTBINDIR)test_http-io_wrap: $(TSTOBJDIR)http-io.o $(TSTOBJDIR)websocket-io.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)http-sha1.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-parser: $(TSTOBJDIR)http-parser.o $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-util: $(TSTOBJDIR)http-util.o $(TSTOBJDIR)test-util.o
 $(TSTBINDIR)test_http-socket: $(TSTOBJDIR)http-socket.o $(TSTOBJDIR)test-util.o
