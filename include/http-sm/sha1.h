@@ -1,5 +1,5 @@
-#ifndef HTTP_SHA1_H_
-#define HTTP_SHA1_H_
+#ifndef HTTP_SM_SHA1_H_
+#define HTTP_SM_SHA1_H_
 
 /*
   SHA-1 in C

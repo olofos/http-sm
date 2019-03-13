@@ -2,7 +2,7 @@
 #include <unistd.h>
 
 #include "http-sm/http.h"
-#include "http-sm/http-sha1.h"
+#include "http-sm/sha1.h"
 #include "http-private.h"
 #include "log.h"
 
