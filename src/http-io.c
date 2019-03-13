@@ -163,7 +163,25 @@ int http_peek(struct http_request *request)
     return request->poke;
 }
 
-static int write_all(int fd, const char *str, int len)
+int http_read_all(int fd, void *buf_, size_t count)
+{
+    char *buf = buf_;
+    size_t num = 0;
+    while(num < count) {
+        size_t to_read = count - num;
+        ssize_t ret = read(fd, buf, to_read);
+        if(ret < 0) {
+            return -1;
+        } else if(ret == 0) {
+            break;
+        }
+        num += ret;
+        buf += ret;
+    }
+    return num;
+}
+
+int http_write_all(int fd, const char *str, int len)
 {
     int num = 0;
     while(num < len) {
@@ -182,13 +200,13 @@ static int write_chunk(int fd, const char *data, int len)
     char buf[16];
     int n = snprintf(buf, sizeof(buf), "%X\r\n", len);
 
-    if(write_all(fd, buf, n) < 0) {
+    if(http_write_all(fd, buf, n) < 0) {
         return -1;
     }
 
-    int num = write_all(fd, data, len);
+    int num = http_write_all(fd, data, len);
 
-    write_all(fd, "\r\n", 2);
+    http_write_all(fd, "\r\n", 2);
 
     return num;
 }
@@ -217,7 +235,7 @@ int http_write_bytes(struct http_request *request, const char *data, int len)
                 }
             }
         } else {
-            return write_all(request->fd, data, len);
+            return http_write_all(request->fd, data, len);
         }
     }
     return 0;
@@ -288,7 +306,7 @@ void http_end_header(struct http_request *request)
         request->state = HTTP_STATE_SERVER_WRITE_BODY;
     }
 
-    write_all(request->fd, "\r\n", 2);
+    http_write_all(request->fd, "\r\n", 2);
 }
 
 int http_end_body(struct http_request *request)
@@ -300,7 +318,7 @@ int http_end_body(struct http_request *request)
         }
 
         const char *final_chunk = "0\r\n\r\n";
-        write_all(request->fd, final_chunk, strlen(final_chunk));
+        http_write_all(request->fd, final_chunk, strlen(final_chunk));
         free(request->line);
     }
     return 0;
@@ -322,7 +340,7 @@ void http_set_content_length(struct http_request *request, int length)
 void http_ws_send_response(struct http_request *request)
 {
     const char *response = "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n";
-    write_all(request->fd, response, strlen(response));
+    http_write_all(request->fd, response, strlen(response));
 
     if(request->websocket_key) {
         const char *guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -338,18 +356,18 @@ void http_ws_send_response(struct http_request *request)
         hash_base64[28] = 0;
 
         const char *header = "Sec-WebSocket-Accept: ";
-        write_all(request->fd, header, strlen(header));
-        write_all(request->fd, hash_base64, strlen(hash_base64));
-        write_all(request->fd, "\r\n", 2);
+        http_write_all(request->fd, header, strlen(header));
+        http_write_all(request->fd, hash_base64, strlen(hash_base64));
+        http_write_all(request->fd, "\r\n", 2);
     }
 
-    write_all(request->fd, "\r\n", 2);
+    http_write_all(request->fd, "\r\n", 2);
 }
 
 void http_ws_send_error_response(struct http_request *request)
 {
     const char *response = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n";
-    write_all(request->fd, response, strlen(response));
+    http_write_all(request->fd, response, strlen(response));
 }
 
 void http_ws_read_frame_header(struct http_ws_connection *conn)
@@ -388,22 +406,6 @@ void http_ws_read_frame_header(struct http_ws_connection *conn)
     conn->frame_index = 0;
 }
 
-static int read_all(int fd, void *buf_, size_t count)
-{
-    char *buf = buf_;
-    size_t num = 0;
-    while(num < count) {
-        size_t to_read = count - num;
-        ssize_t ret = read(fd, buf, to_read);
-        if(ret <= 0) {
-            break;
-        }
-        num += ret;
-        buf += ret;
-    }
-    return num;
-}
-
 int http_ws_read(struct http_ws_connection *conn, void *buf_, size_t count)
 {
     char *buf = buf_;
@@ -412,7 +414,7 @@ int http_ws_read(struct http_ws_connection *conn, void *buf_, size_t count)
         count = conn->frame_length - conn->frame_index;
     }
 
-    int n = read_all(conn->fd, buf, count);
+    int n = http_read_all(conn->fd, buf, count);
 
     for(int i = 0; i < n; i++) {
         buf[i] ^= conn->frame_mask[(conn->frame_index++) % 4];
@@ -437,5 +439,5 @@ int http_ws_send(struct http_ws_connection *conn, const void *buf, size_t count,
         write(conn->fd, &c, sizeof(c));
     }
 
-    return write_all(conn->fd, buf, count);
+    return http_write_all(conn->fd, buf, count);
 }

@@ -38,6 +38,9 @@ void http_free(struct http_request *request);
 #define http_is_server(request) (!((request)->state & HTTP_STATE_CLIENT))
 #define http_is_client(request)   ((request)->state & HTTP_STATE_CLIENT)
 
+int http_write_all(int fd, const char *str, int len);
+int http_read_all(int fd, void *buf_, size_t count);
+
 int http_ws_init(struct http_server *server, struct http_request *request);
 void http_ws_send_response(struct http_request *request);
 void http_ws_send_error_response(struct http_request *request);
