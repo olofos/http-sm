@@ -108,5 +108,9 @@ int websocket_send(struct websocket_connection *conn, const void *buf, size_t co
         write(conn->fd, &c, sizeof(c));
     }
 
-    return http_write_all(conn->fd, buf, count);
+    int ret = http_write_all(conn->fd, buf, count);
+
+    websocket_flush(conn);
+
+    return ret;
 }

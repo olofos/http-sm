@@ -16,6 +16,7 @@
 static int enable_malloc_mock = 0;
 static int enable_write_mock = 0;
 static int enable_read_mock = 0;
+static int enable_websocket_flush_mock = 0;
 
 static char *wrap_read_buf;
 
@@ -69,6 +70,12 @@ ssize_t __wrap_read(int fd, void *buf, size_t count)
     }
 }
 
+void websocket_flush(struct websocket_connection *conn)
+{
+    if(enable_websocket_flush_mock) {
+        check_expected(conn);
+    }
+}
 
 // Tests ///////////////////////////////////////////////////////////////////////
 
@@ -221,6 +228,22 @@ static void test__websocket_read__reads_everything(void **states)
     assert_string_equal(buf, "abc");
 }
 
+static void test__websocket_write__flushes_socket(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(0 <= fd);
+
+    struct websocket_connection conn = {
+        .fd = fd,
+    };
+
+    const char *str = "abc";
+
+    expect_value(websocket_flush, conn, &conn);
+
+    websocket_send(&conn, str, strlen(str), WEBSOCKET_FRAME_OPCODE_TEXT | WEBSOCKET_FRAME_FIN);
+}
+
 // Setup & Teardown ////////////////////////////////////////////////////////////
 
 static int gr_setup_malloc_mock(void **state)
@@ -259,6 +282,19 @@ static int gr_teardown_write_mock(void **state)
     return 0;
 }
 
+static int gr_setup_websocket_flush_mock(void **state)
+{
+    enable_websocket_flush_mock = 1;
+    return 0;
+}
+
+static int gr_teardown_websocket_flush_mock(void **state)
+{
+    enable_websocket_flush_mock = 0;
+    return 0;
+}
+
+
 
 // Main ////////////////////////////////////////////////////////////////////////
 
@@ -278,6 +314,10 @@ const struct CMUnitTest tests_for_http_io_write_mock[] = {
     cmocka_unit_test(test__http_write_string__returns_minus_one_if_write_fails_with_te_identity),
 };
 
+const struct CMUnitTest tests_for_http_io_websocket_flush_mock[] = {
+    cmocka_unit_test(test__websocket_write__flushes_socket),
+};
+
 int main(void)
 {
     int fails = 0;
@@ -285,6 +325,7 @@ int main(void)
     fails += cmocka_run_group_tests(tests_for_http_io_malloc_mock, gr_setup_malloc_mock, gr_teardown_malloc_mock);
     fails += cmocka_run_group_tests(tests_for_http_io_read_mock, gr_setup_read_mock, gr_teardown_read_mock);
     fails += cmocka_run_group_tests(tests_for_http_io_write_mock, gr_setup_write_mock, gr_teardown_write_mock);
+    fails += cmocka_run_group_tests(tests_for_http_io_websocket_flush_mock, gr_setup_websocket_flush_mock, gr_teardown_websocket_flush_mock);
 
     return fails;
 }

@@ -5,6 +5,7 @@
 #include <stdarg.h>
 
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -85,6 +86,17 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
     addr_in->sin_family = AF_INET;
     addr_in->sin_port = 1234;
     addr_in->sin_addr.s_addr = (4 << 24) | (1 << 16) | (168 << 8) | (192 << 0);
+
+    return mock();
+}
+
+int setsockopt(int fd, int level, int optname, const void *optval, socklen_t optlen)
+{
+    check_expected(fd);
+    check_expected(level);
+    check_expected(optname);
+    check_expected(optval);
+    check_expected(optlen);
 
     return mock();
 }
@@ -860,6 +872,33 @@ static void test__http_request_init__initialises_the_request(void **states)
     assert_false(http_is_error(&request));
 }
 
+static void test__websocket_flush__flushes_the_socket(void **states)
+{
+    struct websocket_connection conn = {
+        .fd = 3,
+    };
+
+    int val_zero = 0;
+    int val_one = 1;
+
+    expect_value(setsockopt, fd, 3);
+    expect_value(setsockopt, level, IPPROTO_TCP);
+    expect_value(setsockopt, optname, TCP_NODELAY);
+    expect_memory(setsockopt, optval, &val_one, sizeof(val_one));
+    expect_value(setsockopt, optlen, sizeof(val_one));
+
+    will_return(setsockopt, 0);
+
+    expect_value(setsockopt, fd, 3);
+    expect_value(setsockopt, level, IPPROTO_TCP);
+    expect_value(setsockopt, optname, TCP_NODELAY);
+    expect_memory(setsockopt, optval, &val_zero, sizeof(val_zero));
+    expect_value(setsockopt, optlen, sizeof(val_zero));
+    will_return(setsockopt, 0);
+
+    websocket_flush(&conn);
+}
+
 
 // Main ////////////////////////////////////////////////////////////////////////
 
@@ -897,6 +936,8 @@ const struct CMUnitTest tests_for_http_socket[] = {
 
     cmocka_unit_test(test__http_response_init__initialises_the_request),
     cmocka_unit_test(test__http_request_init__initialises_the_request),
+
+    cmocka_unit_test(test__websocket_flush__flushes_the_socket),
 };
 
 int main(void)

@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #endif
@@ -279,4 +280,12 @@ void http_request_init(struct http_request *request)
 {
     http_request_init_common(request);
     request->state = HTTP_STATE_CLIENT_IDLE;
+}
+
+void websocket_flush(struct websocket_connection *conn)
+{
+    int flag = 1;
+    setsockopt(conn->fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
+    flag = 0;
+    setsockopt(conn->fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
 }

@@ -22,6 +22,12 @@ static void init_server_request(struct http_request *request, int fd);
 static void init_server_request_write_chunked(struct http_request *request, int fd);
 static void init_client_request(struct http_request *request, int fd);
 
+// Mocks ///////////////////////////////////////////////////////////////////////
+
+void websocket_flush(struct websocket_connection *conn)
+{
+}
+
 // Tests ///////////////////////////////////////////////////////////////////////
 
 static void test__http_getc__can_read_correctly_with_te_identity(void **states)
