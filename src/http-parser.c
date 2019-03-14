@@ -256,12 +256,12 @@ int http_urldecode(char *dest, const char* src, int max_len)
                 }
             }
         } else if(esc == 1) {
-            c = http_hex_to_int(*src);
+            c = http_hex_to_int(*src) << 4;
             esc = 2;
         } else if(esc == 2) {
             if(dest) {
                 if(len < max_len) {
-                    dest[len++] = (c << 4) | http_hex_to_int(*src);
+                    dest[len++] = c | http_hex_to_int(*src);
                 } else {
                     break;
                 }
