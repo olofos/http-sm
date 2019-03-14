@@ -339,7 +339,7 @@ int http_urlencode(char *dest, const char* src, int max_len)
         if(('0' <= c && c <= '9') || ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z')
            || c == '-' || c == '.' || c == '_' || c == '~') {
             if(dest) {
-                if(len > max_len) {
+                if(len >= max_len) {
                     break;
                 }
 
@@ -349,7 +349,7 @@ int http_urlencode(char *dest, const char* src, int max_len)
             len++;
         } else {
             if(dest) {
-                if(len > max_len - 2) {
+                if(len >= max_len - 2) {
                     break;
                 }
 

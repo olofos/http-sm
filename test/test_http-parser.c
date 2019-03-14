@@ -463,6 +463,45 @@ static void test__http_urlencode__copies_up_to_given_number_of_characters(void *
     assert_string_equal("%40", buf);
 }
 
+static void test__http_urlencode__does_not_copy_too_many_characters(void **state)
+{
+    char buf[5];
+    buf[3] = 0x0E;
+    buf[4] = 0x0F;
+
+    int ret;
+
+    ret = http_urlencode(buf, "ABCDEF", 3);
+    assert_int_equal(ret, 3);
+    assert_int_equal(buf[0], 'A');
+    assert_int_equal(buf[1], 'B');
+    assert_int_equal(buf[2], 'C');
+    assert_int_equal(buf[3], 0x0E);
+
+    ret = http_urlencode(buf, "A CDEF", 3);
+    assert_int_equal(ret, 1);
+    assert_int_equal(buf[0], 'A');
+    assert_int_equal(buf[1], 0);
+    assert_int_equal(buf[2], 'C');
+    assert_int_equal(buf[3], 0x0E);
+
+    ret = http_urlencode(buf, " BCDEF", 3);
+    assert_int_equal(ret, 3);
+    assert_int_equal(buf[0], '%');
+    assert_int_equal(buf[1], '2');
+    assert_int_equal(buf[2], '0');
+    assert_int_equal(buf[3], 0x0E);
+
+    ret = http_urlencode(buf, " BCDEF", 4);
+    assert_int_equal(ret, 4);
+    assert_int_equal(buf[0], '%');
+    assert_int_equal(buf[1], '2');
+    assert_int_equal(buf[2], '0');
+    assert_int_equal(buf[3], 'B');
+    assert_int_equal(buf[4], 0x0F);
+
+}
+
 
 static void test__http_get_query_arg__can_find_args(void **states)
 {
@@ -572,6 +611,7 @@ const struct CMUnitTest tests_for_http_urldecode[] = {
 const struct CMUnitTest tests_for_http_urlencode[] = {
     cmocka_unit_test(test__http_urlencode__returns_the_length_of_the_encoded_string),
     cmocka_unit_test(test__http_urlencode__copies_up_to_given_number_of_characters),
+    cmocka_unit_test(test__http_urlencode__does_not_copy_too_many_characters),
 };
 
 const struct CMUnitTest tests_for_http_get_query_arg[] = {
