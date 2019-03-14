@@ -1445,6 +1445,8 @@ static void test__websocket_send__sends_a_simple_message(void **states)
 
     char str[] = "abcd";
 
+    assert_in_range(strlen(str), 1, 126);
+
     int n = websocket_send(&conn, str, strlen(str), WEBSOCKET_FRAME_OPCODE_TEXT);
     char expected[] = { 0x81, 0x04, 'a', 'b', 'c', 'd', 0 };
 
@@ -1463,7 +1465,9 @@ static void test__websocket_send__sends_a_16bit_message(void **states)
         .fd = fd,
     };
 
-    char str[] = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    char str[] = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    assert_in_range(strlen(str), 127, 65535);
 
     int n = websocket_send(&conn, str, strlen(str), WEBSOCKET_FRAME_OPCODE_TEXT);
     assert_int_equal(n, strlen(str));
@@ -1475,6 +1479,56 @@ static void test__websocket_send__sends_a_16bit_message(void **states)
     assert_int_equal(conn.frame_opcode, WEBSOCKET_FRAME_OPCODE_TEXT | WEBSOCKET_FRAME_FIN);
     assert_int_equal(conn.frame_length, strlen(str));
 
+    char *buf = malloc(conn.frame_length+1);
+    buf[conn.frame_length] = 0;
+
+    websocket_read(&conn, buf, conn.frame_length);
+
+    assert_string_equal(buf, str);
+
+    free(buf);
+    close(fd);
+}
+
+static void test__websocket_send__sends_a_64bit_message(void **states)
+{
+    int fd = open_tmp_file();
+    assert_true(fd >= 0);
+
+    struct websocket_connection conn = {
+        .fd = fd,
+    };
+
+    const int size = 131052;
+
+    char *str = malloc(size + 1);
+
+    for(int i = 0; i < size; i++) {
+        str[i] = 'A' + (i % 26);
+    }
+    str[size] = 0;
+
+    assert_true(strlen(str) > 65535);
+
+    int n = websocket_send(&conn, str, strlen(str), WEBSOCKET_FRAME_OPCODE_TEXT);
+    assert_int_equal(n, strlen(str));
+
+    lseek(conn.fd, 0, SEEK_SET);
+
+    websocket_read_frame_header(&conn);
+
+    assert_int_equal(conn.frame_opcode, WEBSOCKET_FRAME_OPCODE_TEXT | WEBSOCKET_FRAME_FIN);
+    assert_int_equal(conn.frame_length, strlen(str));
+
+    char *buf = malloc(conn.frame_length+1);
+    buf[conn.frame_length] = 0;
+
+    websocket_read(&conn, buf, conn.frame_length);
+
+    assert_string_equal(buf, str);
+
+    free(str);
+    free(buf);
     close(fd);
 }
 
@@ -1564,6 +1618,7 @@ const struct CMUnitTest tests_for_http_io[] = {
 
     cmocka_unit_test(test__websocket_send__sends_a_simple_message),
     cmocka_unit_test(test__websocket_send__sends_a_16bit_message),
+    cmocka_unit_test(test__websocket_send__sends_a_64bit_message),
 };
 
 int main(void)
