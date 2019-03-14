@@ -48,7 +48,7 @@ TST_RESULTS = $(patsubst $(TSTDIR)test_%.c,$(RESULTDIR)test_%.txt,$(SOURCES_TST)
 TST_DEPS = $(TSTDEPDIR)*.d
 
 
-.PHONY: all bin clean erase test build_dirs coverage
+.PHONY: all bin clean erase test test-int test-all build_dirs coverage
 
 all: $(BINDIR)$(TARGET)
 
@@ -97,6 +97,11 @@ test: build_dirs $(TST_RESULTS)
 	@echo "-----------------------"
 	@echo
 	@! grep -s '\[  FAILED  \]' $(RESULTDIR)*.txt 2>&1 1>/dev/null
+
+test-int: $(BINDIR)$(TARGET)
+	@npm test --prefix test/integration
+
+test-all: test test-int
 
 build_dirs:
 	$(V)mkdir -p $(BUILD_DIRS)
