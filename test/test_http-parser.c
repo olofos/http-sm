@@ -361,7 +361,7 @@ static void test__http_parse_header__returns_error_when_in_an_unkown_state(void 
 
     parse_header_helper(&request, "X");
 
-    assert_int_equal(HTTP_STATUS_BAD_REQUEST, request.error);
+    assert_int_equal(HTTP_STATUS_INTERNAL_SERVER_ERROR, request.error);
     free_request(&request);
 }
 

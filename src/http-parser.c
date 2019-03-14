@@ -219,7 +219,7 @@ void http_parse_header(struct http_request *request, char c)
 
     default:
         LOG("Unhandled state 0x%02X", request->state);
-        request->error = HTTP_STATUS_BAD_REQUEST;
+        request->error = HTTP_STATUS_INTERNAL_SERVER_ERROR;
         http_parse_header_next_state(request, HTTP_STATE_ERROR);
         return;
     }
