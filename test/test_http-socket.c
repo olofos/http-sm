@@ -822,9 +822,9 @@ static void test__http_response_init__initialises_the_request(void **states)
     assert_int_equal(request.write_content_length, -1);
     assert_int_equal(request.poke, -1);
     assert_int_equal(request.chunk_length, 0);
-    assert_int_equal(request.method, HTTP_METHOD_UNKNOWN);
     assert_int_equal(request.status, 0);
     assert_int_equal(request.error, 0);
+    assert_int_equal(request.method, HTTP_METHOD_UNKNOWN);
     assert_null(request.handler);
     assert_null(request.cgi_data);
     assert_null(request.cgi_arg);
@@ -833,6 +833,33 @@ static void test__http_response_init__initialises_the_request(void **states)
     assert_false(http_is_client(&request));
     assert_false(http_is_error(&request));
 }
+
+static void test__http_request_init__initialises_the_request(void **states)
+{
+    struct http_request request;
+    memset(&request, 0x55, sizeof(request));
+    request.fd = 3;
+
+    http_request_init(&request);
+
+    assert_int_equal(request.fd, 3);
+    assert_int_equal(request.state, HTTP_STATE_CLIENT_IDLE);
+    assert_int_equal(request.flags, 0);
+    assert_null(request.path);
+    assert_null(request.query);
+    assert_null(request.host);
+    assert_null(request.line);
+    assert_int_equal(request.line_length, 0);
+    assert_null(request.query_list);
+    assert_int_equal(request.read_content_length, -1);
+    assert_int_equal(request.write_content_length, -1);
+    assert_int_equal(request.poke, -1);
+    assert_int_equal(request.chunk_length, 0);
+    assert_false(http_is_server(&request));
+    assert_true(http_is_client(&request));
+    assert_false(http_is_error(&request));
+}
+
 
 // Main ////////////////////////////////////////////////////////////////////////
 
@@ -869,6 +896,7 @@ const struct CMUnitTest tests_for_http_socket[] = {
     cmocka_unit_test(test__http_accept_new_connection__initialises_the_new_request),
 
     cmocka_unit_test(test__http_response_init__initialises_the_request),
+    cmocka_unit_test(test__http_request_init__initialises_the_request),
 };
 
 int main(void)
