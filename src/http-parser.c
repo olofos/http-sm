@@ -64,6 +64,13 @@ void http_parse_header(struct http_request *request, char c)
         if(c == ' ' || c == '?') {
             request->line[request->line_index] = 0;
             request->path = malloc(strlen(request->line)+1);
+
+            if(!request->path) {
+                http_parse_header_next_state(request, HTTP_STATE_ERROR);
+                request->error = HTTP_STATUS_INTERNAL_SERVER_ERROR;
+                return;
+            }
+
             strcpy(request->path, request->line);
 
             if(c == '?') {
@@ -79,6 +86,13 @@ void http_parse_header(struct http_request *request, char c)
         if(c == ' ') {
             request->line[request->line_index] = 0;
             request->query = malloc(strlen(request->line)+1);
+
+            if(!request->query) {
+                http_parse_header_next_state(request, HTTP_STATE_ERROR);
+                request->error = HTTP_STATUS_INTERNAL_SERVER_ERROR;
+                return;
+            }
+
             strcpy(request->query, request->line);
 
             http_parse_header_next_state(request, HTTP_STATE_SERVER_READ_VERSION);
@@ -135,6 +149,13 @@ void http_parse_header(struct http_request *request, char c)
                 if(http_is_server(request)) {
                     if((val = cmp_str_prefix(request->line, "Host: ")) != 0) {
                         request->host = malloc(strlen(val) + 1);
+
+                        if(!request->host) {
+                            http_parse_header_next_state(request, HTTP_STATE_ERROR);
+                            request->error = HTTP_STATUS_INTERNAL_SERVER_ERROR;
+                            return;
+                        }
+
                         strcpy(request->host, val);
                     } else if((val = cmp_str_prefix(request->line, "Accept-Encoding: ")) != 0) {
                         if(strstr(val, "gzip") != 0) {
@@ -146,11 +167,25 @@ void http_parse_header(struct http_request *request, char c)
                         }
                     } else if((val = cmp_str_prefix(request->line, "Sec-WebSocket-Key: ")) != 0) {
                         request->websocket_key = malloc(strlen(val) + 1);
+
+                        if(!request->websocket_key) {
+                            http_parse_header_next_state(request, HTTP_STATE_ERROR);
+                            request->error = HTTP_STATUS_INTERNAL_SERVER_ERROR;
+                            return;
+                        }
+
                         strcpy(request->websocket_key, val);
                     }
                 } else {
                     if((val = cmp_str_prefix(request->line, "Content-Type: ")) != 0) {
                         request->content_type = malloc(strlen(val) + 1);
+
+                        if(!request->content_type) {
+                            http_parse_header_next_state(request, HTTP_STATE_ERROR);
+                            request->error = HTTP_STATUS_INTERNAL_SERVER_ERROR;
+                            return;
+                        }
+
                         strcpy(request->content_type, val);
                     }
                 }
@@ -226,6 +261,11 @@ void http_parse_header(struct http_request *request, char c)
 
     if(request->line_index < request->line_length - 1) {
         request->line[request->line_index++] = c;
+    } else if(http_is_server(request)) {
+        if((request->state == HTTP_STATE_SERVER_READ_PATH) || (request->state == HTTP_STATE_SERVER_READ_QUERY)) {
+            request->error = HTTP_STATUS_URI_TOO_LONG;
+            http_parse_header_next_state(request, HTTP_STATE_ERROR);
+        }
     }
 }
 
@@ -283,7 +323,7 @@ int http_urldecode(char *dest, const char* src, int max_len)
 
 
 
-static void parse_query_string(struct http_request *request)
+static int parse_query_string(struct http_request *request)
 {
     int n = 0;
     if(request->query && *request->query) {
@@ -297,6 +337,10 @@ static void parse_query_string(struct http_request *request)
     }
 
     request->query_list = malloc(sizeof(char*) * (n+1));
+
+    if(!request->query_list) {
+        return -1;
+    }
 
     char *name = request->query;
 
@@ -328,6 +372,7 @@ static void parse_query_string(struct http_request *request)
         name = delim + 1;
     }
 
+    return n;
 }
 
 int http_urlencode(char *dest, const char* src, int max_len)
@@ -377,7 +422,9 @@ const char *http_get_query_arg(struct http_request *request, const char *name)
 {
     if(name && request->query) {
         if(!request->query_list) {
-            parse_query_string(request);
+            if(parse_query_string(request) < 0) {
+                return 0;
+            }
         }
 
         int name_len = strlen(name);

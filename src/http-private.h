@@ -44,7 +44,6 @@ int http_read_all(int fd, void *buf_, size_t count);
 
 int websocket_init(struct http_server *server, struct http_request *request);
 void websocket_send_response(struct http_request *request);
-void websocket_send_error_response(struct http_request *request);
 void websocket_read_frame_header(struct websocket_connection *conn);
 void websocket_flush(struct websocket_connection *conn);
 

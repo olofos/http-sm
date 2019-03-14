@@ -33,12 +33,6 @@ void websocket_send_response(struct http_request *request)
     http_write_all(request->fd, "\r\n", 2);
 }
 
-void websocket_send_error_response(struct http_request *request)
-{
-    const char *response = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n";
-    http_write_all(request->fd, response, strlen(response));
-}
-
 void websocket_read_frame_header(struct websocket_connection *conn)
 {
     read(conn->fd, &conn->frame_opcode, 1);

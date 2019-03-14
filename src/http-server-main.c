@@ -56,11 +56,17 @@ static int http_server_read_headers(struct http_request *request)
         http_close(request);
     } else {
         if(request->state == HTTP_STATE_SERVER_READ_BEGIN) {
-            request->state = HTTP_STATE_SERVER_READ_METHOD;
-            const int line_length = HTTP_LINE_LEN;
-            request->line = malloc(line_length);
-            request->line_length = line_length;
+            request->line = malloc(HTTP_LINE_LEN);
+            if(!request->line) {
+                request->state = HTTP_STATE_ERROR;
+                request->error = HTTP_STATUS_INTERNAL_SERVER_ERROR;
+                return -1;
+            }
+
+            request->line_length = HTTP_LINE_LEN;
             request->line_index = 0;
+
+            request->state = HTTP_STATE_SERVER_READ_METHOD;
         }
 
         char c;
@@ -68,34 +74,16 @@ static int http_server_read_headers(struct http_request *request)
         if(n < 0) {
             ERROR("read failed in header");
             request->state = HTTP_STATE_ERROR;
-
-            free(request->line);
-            request->line = 0;
-            request->line_length = 0;
-
-            http_close(request);
+            request->error = HTTP_STATUS_ERROR;
             return -1;
         } else if(n==0) {
             LOG("Unexpected EOF");
             request->state = HTTP_STATE_ERROR;
-
-            free(request->line);
-            request->line = 0;
-            request->line_length = 0;
-
-            http_close(request);
+            request->error = HTTP_STATUS_ERROR;
             return -1;
         } else {
             http_parse_header(request, c);
-            if(request->state == HTTP_STATE_ERROR) {
-                free(request->line);
-                request->line = 0;
-                request->line_length = 0;
-
-                http_write_error_response(request);
-
-                http_close(request);
-            } else if(request->state == HTTP_STATE_SERVER_IDLE) {
+            if(request->state == HTTP_STATE_SERVER_IDLE) {
                 free(request->line);
                 request->line = 0;
                 request->line_length = 0;
@@ -222,14 +210,24 @@ static int http_server_main_loop(struct http_server *server)
                         http_server_read_headers(request);
 
                         if(request->state == HTTP_STATE_SERVER_UPGRADE_WEBSOCKET) {
-                            if(websocket_init(server, request)) {
+                            if(websocket_init(server, request) >= 0) {
                                 FD_CLR(request->fd, &set_read);
                                 http_free(request);
                                 request->fd = -1;
-                            } else {
-                                http_close(request);
                             }
                         }
+                    }
+
+                    if(http_is_error(request)) {
+                        free(request->line);
+                        request->line = 0;
+                        request->line_length = 0;
+
+                        if(request->error > 0) {
+                            http_write_error_response(request);
+                        }
+
+                        http_close(request);
                     }
                 } else if(FD_ISSET(server->request[i].fd, &set_write)) {
                     http_server_call_handler(&server->request[i]);
@@ -312,20 +310,20 @@ int websocket_init(struct http_server *server, struct http_request *request)
                     websocket_send_response(request);
                     connection->fd = request->fd;
                     connection->handler = handler;
-                    return 1;
+                    return request->fd;
                 } else {
                     break;
                 }
             }
         }
-        // TODO: Send 404 instead
-        websocket_send_error_response(request);
-        LOG("WS: connection %d not accepted", request->fd);
-        return 0;
+        request->state = HTTP_STATE_ERROR;
+        request->error = HTTP_STATUS_NOT_FOUND;
+        return -1;
     } else {
-        websocket_send_error_response(request);
+        request->state = HTTP_STATE_ERROR;
+        request->error = HTTP_STATUS_SERVICE_UNAVAILABLE;
         LOG("WS: no room for new connection %d", request->fd);
-        return 0;
+        return -1;
     }
 }
 

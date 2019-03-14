@@ -267,6 +267,40 @@ describe('HTTP server', () => {
                 });
         });
 
+        it('returns 414 for an url that is too long', async () => {
+            let path = '/0123456789';
+
+            for (let i = 0; i < 7; i++) {
+                path += path;
+            }
+
+            expect(path.length).to.be.greaterThan(1000);
+
+            await request('GET', path)
+                .catch((error) => {
+                    expect(serverRunning).to.be.true;
+                    expect(error.response.statusCode).to.equal(414);
+                });
+        });
+
+        it('returns 414 for a query that is too long', async () => {
+            const queryList = [];
+
+            for (let i = 0; i < 150; i++) {
+                queryList.push(`a${i}=${i}`);
+            }
+
+            const query = queryList.join('&');
+
+            expect(query.length).to.be.greaterThan(1000);
+
+            await request('GET', `/query?${query}`)
+                .catch((error) => {
+                    expect(serverRunning).to.be.true;
+                    expect(error.response.statusCode).to.equal(414);
+                });
+        });
+
         it('can handle an unkown method', async () => {
             await request('ABC', '/simple')
                 .catch((error) => {
