@@ -255,8 +255,14 @@ static int http_server_main_loop(struct http_server *server)
                     case WEBSOCKET_FRAME_OPCODE_CLOSE:
                     {
                         char *str = malloc(conn->frame_length);
-                        websocket_read(conn, str, conn->frame_length);
-                        websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
+
+                        if(str) {
+                            websocket_read(conn, str, conn->frame_length);
+                            websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
+                            free(str);
+                        } else {
+                            websocket_send(conn, "", 0, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
+                        }
 
                         if(conn->handler->cb_close) {
                             conn->handler->cb_close(conn);
@@ -265,16 +271,19 @@ static int http_server_main_loop(struct http_server *server)
                         close(conn->fd);
                         conn->fd = -1;
 
-                        free(str);
                         break;
                     }
                     case WEBSOCKET_FRAME_OPCODE_PING:
                     {
                         LOG("WS: ping %d", conn->fd);
                         char *str = malloc(conn->frame_length);
-                        websocket_read(conn, str, conn->frame_length);
-                        websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_PONG);
-                        free(str);
+                        if(str) {
+                            websocket_read(conn, str, conn->frame_length);
+                            websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_PONG);
+                            free(str);
+                        } else {
+                            websocket_send(conn, "", 0, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_PONG);
+                        }
                         break;
                     }
                     }
