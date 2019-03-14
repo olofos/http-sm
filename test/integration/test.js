@@ -318,7 +318,7 @@ describe('HTTP server', () => {
 
         it('can echo a binary message', (done) => {
             const ws = new WebSocket(`ws://${host}:${port}/ws-echo`);
-            const array = new Uint8Array(128);
+            const array = new Uint8Array(64);
 
             for (let i = 0; i < array.length; i++) {
                 array[i] = Math.floor(Math.random() * 256);
