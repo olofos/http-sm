@@ -702,6 +702,54 @@ static void test__http_create_select_sets__does_not_add_nonready_socket_to_sets(
     assert_memory_equal(&set_test, &set_write, sizeof(set_test));
 }
 
+static void test__http_create_select_sets__can_add_websocket_fd_less_than_listen_fd_to_read_set(void **states)
+{
+    struct http_server server;
+    int maxfd;
+    fd_set set_read, set_write, set_test;
+
+    init_server(&server);
+
+    server.websocket_connection[0].fd = 2;
+
+    int n = http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+
+    assert_int_equal(3, maxfd);
+    assert_int_equal(0, n);
+
+    FD_ZERO(&set_test);
+    FD_SET(2, &set_test);
+    FD_SET(3, &set_test);
+    assert_memory_equal(&set_test, &set_read, sizeof(set_test));
+
+    FD_ZERO(&set_test);
+    assert_memory_equal(&set_test, &set_write, sizeof(set_test));
+}
+
+static void test__http_create_select_sets__can_add_websocket_fd_greater_than_listen_fd_to_read_set(void **states)
+{
+    struct http_server server;
+    int maxfd;
+    fd_set set_read, set_write, set_test;
+
+    init_server(&server);
+
+    server.websocket_connection[0].fd = 5;
+
+    int n = http_create_select_sets(&server, &set_read, &set_write, &maxfd);
+
+    assert_int_equal(5, maxfd);
+    assert_int_equal(0, n);
+
+    FD_ZERO(&set_test);
+    FD_SET(5, &set_test);
+    FD_SET(3, &set_test);
+    assert_memory_equal(&set_test, &set_read, sizeof(set_test));
+
+    FD_ZERO(&set_test);
+    assert_memory_equal(&set_test, &set_write, sizeof(set_test));
+}
+
 
 static void test__http_accept_new_connection__accepts_new_connection_when_not_all_slots_are_empty(void **states)
 {
@@ -927,6 +975,8 @@ const struct CMUnitTest tests_for_http_socket[] = {
     cmocka_unit_test(test__http_create_select_sets__does_not_add_listen_fd_if_full),
     cmocka_unit_test(test__http_create_select_sets__can_add_request_fd_to_read_and_write_set),
     cmocka_unit_test(test__http_create_select_sets__does_not_add_nonready_socket_to_sets),
+    cmocka_unit_test(test__http_create_select_sets__can_add_websocket_fd_less_than_listen_fd_to_read_set),
+    cmocka_unit_test(test__http_create_select_sets__can_add_websocket_fd_greater_than_listen_fd_to_read_set),
 
     cmocka_unit_test(test__http_accept_new_connection__fails_if_there_are_no_empty_slot),
     cmocka_unit_test(test__http_accept_new_connection__accepts_new_connection_when_all_slots_are_empty),
