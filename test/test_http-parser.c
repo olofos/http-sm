@@ -10,6 +10,23 @@
 
 #include "test-util.h"
 
+// Mocks ///////////////////////////////////////////////////////////////////////
+
+static int enable_malloc_mock = 0;
+
+void *__real_malloc(size_t size);
+
+void *__wrap_malloc(size_t size)
+{
+    if(enable_malloc_mock) {
+        check_expected(size);
+        return (void *)mock();
+    } else {
+        return __real_malloc(size);
+    }
+}
+
+
 // Tests ///////////////////////////////////////////////////////////////////////
 
 static void init_request(struct http_request *request)
@@ -134,6 +151,7 @@ static void test__http_parse_header__unsupported_method_gives_error(void **state
 
     parse_header_helper(&request, "UNKOWN / HTTP/1.1\r\n");
 
+    assert_true(http_is_error(&request));
     assert_int_equal(HTTP_METHOD_UNSUPPORTED, request.method);
     assert_int_equal(HTTP_STATUS_METHOD_NOT_ALLOWED, request.error);
 
@@ -147,6 +165,7 @@ static void test__http_parse_header__http_version_10_gives_error(void **state)
 
     parse_header_helper(&request, "GET / HTTP/1.0\r\n");
 
+    assert_true(http_is_error(&request));
     assert_int_equal(HTTP_STATUS_VERSION_NOT_SUPPORTED, request.error);
     free_request(&request);
 }
@@ -158,6 +177,7 @@ static void test__http_parse_header__unknown_http_version_gives_error(void **sta
 
     parse_header_helper(&request, "GET / XX\r\n");
 
+    assert_true(http_is_error(&request));
     assert_int_equal(HTTP_STATUS_BAD_REQUEST, request.error);
     free_request(&request);
 }
@@ -169,6 +189,7 @@ static void test__http_parse_header__missing_newline_gives_error(void **state)
 
     parse_header_helper(&request, "GET / HTTP/1.1\rX");
 
+    assert_true(http_is_error(&request));
     assert_int_equal(HTTP_STATUS_BAD_REQUEST, request.error);
     free_request(&request);
 }
@@ -287,6 +308,7 @@ static void test__http_parse_header__unparseable_content_length_gives_error(void
 
     parse_header_helper(&request, "GET / HTTP/1.1\r\nContent-Length: ZZ\r\n");
 
+    assert_true(http_is_error(&request));
     assert_int_equal(HTTP_STATUS_BAD_REQUEST, request.error);
 
     free_request(&request);
@@ -312,6 +334,7 @@ static void test__http_parse_header__missing_newline_in_header_gives_error(void 
 
     parse_header_helper(&request, "GET / HTTP/1.1\r\nHost: www.example.com\rX");
 
+    assert_true(http_is_error(&request));
     assert_int_equal(HTTP_STATUS_BAD_REQUEST, request.error);
     free_request(&request);
 }
@@ -361,8 +384,220 @@ static void test__http_parse_header__returns_error_when_in_an_unkown_state(void 
 
     parse_header_helper(&request, "X");
 
+    assert_true(http_is_error(&request));
     assert_int_equal(HTTP_STATUS_INTERNAL_SERVER_ERROR, request.error);
     free_request(&request);
+}
+
+static void test__http_parse_header__returns_error_when_path_is_too_long(void **state)
+{
+    struct http_request request;
+    create_server_request(&request);
+
+    const int path_len = 2 * HTTP_LINE_LEN;
+
+    char *path = malloc(path_len + 1);
+
+    path[0] = '/';
+    for(int i = 1; i < path_len; i++) {
+        path[i] = 'a';
+    }
+    path[path_len] = 0;
+
+    parse_header_helper(&request, "GET ");
+    parse_header_helper(&request, path);
+
+    assert_true(http_is_error(&request));
+    assert_int_equal(HTTP_STATUS_URI_TOO_LONG, request.error);
+
+    free(path);
+    free_request(&request);
+}
+
+static void test__http_parse_header__returns_error_when_query_is_too_long(void **state)
+{
+    struct http_request request;
+    create_server_request(&request);
+
+    const int query_len = 2 * HTTP_LINE_LEN;
+
+    char *query = malloc(query_len + 1);
+
+    query[0] = '/';
+    for(int i = 1; i < query_len; i++) {
+        query[i] = 'a';
+    }
+    query[query_len] = 0;
+
+    parse_header_helper(&request, "GET /query?");
+    parse_header_helper(&request, query);
+
+    assert_true(http_is_error(&request));
+    assert_int_equal(HTTP_STATUS_URI_TOO_LONG, request.error);
+
+    free(query);
+    free_request(&request);
+}
+
+static void test__http_parse_header__returns_error_when_malloc_fails_when_allocating_path(void **state)
+{
+    char buf[HTTP_LINE_LEN];
+    const char *path = "/path ";
+
+    struct http_request request = {
+        .method = HTTP_METHOD_UNKNOWN,
+        .state = HTTP_STATE_SERVER_READ_PATH,
+        .line = buf,
+        .line_length = HTTP_LINE_LEN,
+        .line_index = 0,
+        .path = (void *)0xBADBAD,
+        .query = 0,
+        .host = 0,
+        .flags = 0,
+        .status = 0,
+        .error = 0,
+        .content_type = 0,
+        .read_content_length = -1,
+        .write_content_length = -1,
+        .websocket_key = 0,
+    };
+
+    expect_value(__wrap_malloc, size, strlen(path));
+    will_return(__wrap_malloc, NULL);
+
+    parse_header_helper(&request, path);
+
+    assert_null(request.path);
+    assert_true(http_is_error(&request));
+    assert_int_equal(HTTP_STATUS_INTERNAL_SERVER_ERROR, request.error);
+}
+
+static void test__http_parse_header__returns_error_when_malloc_fails_when_allocating_query(void **state)
+{
+    char buf[HTTP_LINE_LEN];
+    const char *query = "a=1 ";
+
+    struct http_request request = {
+        .method = HTTP_METHOD_UNKNOWN,
+        .state = HTTP_STATE_SERVER_READ_QUERY,
+        .line = buf,
+        .line_length = HTTP_LINE_LEN,
+        .line_index = 0,
+        .path = "/path",
+        .query = (void*) 0xBADBAD,
+        .host = 0,
+        .flags = 0,
+        .status = 0,
+        .error = 0,
+        .content_type = 0,
+        .read_content_length = -1,
+        .write_content_length = -1,
+        .websocket_key = 0,
+    };
+
+    expect_value(__wrap_malloc, size, strlen(query));
+    will_return(__wrap_malloc, NULL);
+
+    parse_header_helper(&request, query);
+
+    assert_null(request.query);
+    assert_true(http_is_error(&request));
+    assert_int_equal(HTTP_STATUS_INTERNAL_SERVER_ERROR, request.error);
+}
+
+static void test__http_parse_header__returns_error_when_malloc_fails_when_allocating_host(void **state)
+{
+    char buf[HTTP_LINE_LEN];
+    const char *header = "Host: test\r\n";
+
+    struct http_request request = {
+        .method = HTTP_METHOD_UNKNOWN,
+        .state = HTTP_STATE_SERVER_READ_HEADER,
+        .line = buf,
+        .line_length = HTTP_LINE_LEN,
+        .line_index = 0,
+        .path = "/path",
+        .query = 0,
+        .host = (void*) 0xBADBAD,
+        .flags = 0,
+        .status = 0,
+        .error = 0,
+        .content_type = 0,
+        .read_content_length = -1,
+        .write_content_length = -1,
+        .websocket_key = 0,
+    };
+
+    expect_any(__wrap_malloc, size);
+    will_return(__wrap_malloc, NULL);
+
+    parse_header_helper(&request, header);
+
+    assert_null(request.host);
+    assert_true(http_is_error(&request));
+    assert_int_equal(HTTP_STATUS_INTERNAL_SERVER_ERROR, request.error);
+}
+
+static void test__http_parse_header__returns_error_when_malloc_fails_when_allocating_websocket_key(void **state)
+{
+    char buf[HTTP_LINE_LEN];
+    const char *header = "Sec-WebSocket-Key: test\r\n";
+
+    struct http_request request = {
+        .method = HTTP_METHOD_UNKNOWN,
+        .state = HTTP_STATE_SERVER_READ_HEADER,
+        .line = buf,
+        .line_length = HTTP_LINE_LEN,
+        .line_index = 0,
+        .path = "/path",
+        .query = 0,
+        .host = 0,
+        .flags = 0,
+        .status = 0,
+        .error = 0,
+        .content_type = 0,
+        .read_content_length = -1,
+        .write_content_length = -1,
+        .websocket_key = (void*) 0xBADBAD,
+    };
+
+    expect_any(__wrap_malloc, size);
+    will_return(__wrap_malloc, NULL);
+
+    parse_header_helper(&request, header);
+
+    assert_null(request.websocket_key);
+    assert_true(http_is_error(&request));
+    assert_int_equal(HTTP_STATUS_INTERNAL_SERVER_ERROR, request.error);
+}
+
+static void test__http_parse_header__returns_error_when_malloc_fails_when_allocating_content_type(void **state)
+{
+    char buf[HTTP_LINE_LEN];
+    const char *header = "Content-Type: test\r\n";
+
+    struct http_request request = {
+        .method = HTTP_METHOD_UNKNOWN,
+        .state = HTTP_STATE_CLIENT_READ_HEADER,
+        .line = buf,
+        .line_length = HTTP_LINE_LEN,
+        .line_index = 0,
+        .flags = 0,
+        .status = 0,
+        .error = 0,
+        .content_type = (void*) 0xBADABAD,
+        .read_content_length = -1,
+        .write_content_length = -1,
+    };
+
+    expect_any(__wrap_malloc, size);
+    will_return(__wrap_malloc, NULL);
+
+    parse_header_helper(&request, header);
+
+    assert_null(request.content_type);
+    assert_true(http_is_error(&request));
+    assert_int_equal(HTTP_STATUS_INTERNAL_SERVER_ERROR, request.error);
 }
 
 
@@ -574,6 +809,37 @@ static void test__http_get_query_arg__can_handle_missing_value(void **states)
     free(request.query_list);
 }
 
+static void test__http_get_query_arg__returns_null_when_malloc_fails(void **states)
+{
+    char buf[] = "a=1&b=2";
+    struct http_request request = {
+        .query = buf,
+    };
+
+    expect_any(__wrap_malloc, size);
+    will_return(__wrap_malloc, NULL);
+
+    const char *a = http_get_query_arg(&request, "c");
+
+    assert_null(a);
+}
+
+
+// Setup & Teardown ////////////////////////////////////////////////////////////
+
+static int gr_setup_malloc_mock(void **state)
+{
+    enable_malloc_mock = 1;
+    return 0;
+}
+
+static int gr_teardown_malloc_mock(void **state)
+{
+    enable_malloc_mock = 0;
+    return 0;
+}
+
+
 // Main ////////////////////////////////////////////////////////////////////////
 
 const struct CMUnitTest tests_for_http_parse_header[] = {
@@ -601,6 +867,16 @@ const struct CMUnitTest tests_for_http_parse_header[] = {
     cmocka_unit_test(test__http_parse_header__client_can_read_response_with_unknown_http_method),
     cmocka_unit_test(test__http_parse_header__client_can_read_response_with_unparseable_status),
     cmocka_unit_test(test__http_parse_header__returns_error_when_in_an_unkown_state),
+    cmocka_unit_test(test__http_parse_header__returns_error_when_path_is_too_long),
+    cmocka_unit_test(test__http_parse_header__returns_error_when_query_is_too_long),
+};
+
+const struct CMUnitTest tests_for_http_parse_header_mock_malloc[] = {
+    cmocka_unit_test(test__http_parse_header__returns_error_when_malloc_fails_when_allocating_path),
+    cmocka_unit_test(test__http_parse_header__returns_error_when_malloc_fails_when_allocating_query),
+    cmocka_unit_test(test__http_parse_header__returns_error_when_malloc_fails_when_allocating_host),
+    cmocka_unit_test(test__http_parse_header__returns_error_when_malloc_fails_when_allocating_websocket_key),
+    cmocka_unit_test(test__http_parse_header__returns_error_when_malloc_fails_when_allocating_content_type),
 };
 
 const struct CMUnitTest tests_for_http_urldecode[] = {
@@ -622,12 +898,18 @@ const struct CMUnitTest tests_for_http_get_query_arg[] = {
     cmocka_unit_test(test__http_get_query_arg__can_handle_missing_value),
 };
 
+const struct CMUnitTest tests_for_http_get_query_arg_mock_malloc[] = {
+    cmocka_unit_test(test__http_get_query_arg__returns_null_when_malloc_fails),
+};
+
 int main(void)
 {
     int fails = 0;
     fails += cmocka_run_group_tests(tests_for_http_parse_header, NULL, NULL);
+    fails += cmocka_run_group_tests(tests_for_http_parse_header_mock_malloc, gr_setup_malloc_mock, gr_teardown_malloc_mock);
     fails += cmocka_run_group_tests(tests_for_http_urldecode, NULL, NULL);
     fails += cmocka_run_group_tests(tests_for_http_urlencode, NULL, NULL);
     fails += cmocka_run_group_tests(tests_for_http_get_query_arg, NULL, NULL);
+    fails += cmocka_run_group_tests(tests_for_http_get_query_arg_mock_malloc, gr_setup_malloc_mock, gr_teardown_malloc_mock);
     return fails;
 }
