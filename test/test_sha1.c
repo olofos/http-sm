@@ -90,20 +90,60 @@ static void test__http_sha1__can_calculate_hash4_in_steps(void **state)
     assert_string_equal(hash_to_ascii(hash), expected);
 }
 
-static void test__http_sha1__can_calculate_hash5_in_steps(void **state)
+static void test__http_sha1__can_calculate_hash5_in_small_steps(void **state)
 {
     uint8_t hash[21];
     const char *expected = "34aa973c d4c4daa4 f61eeb2b dbad2731 6534016f";
+    const int total_len = 1000000;
+
+    const int str_len = 1;
+    uint8_t *str = malloc(str_len + 1);
+    for(int i = 0; i < str_len; i++) {
+        str[i] = 'a';
+    }
+    str[str_len] = 0;
+
+    assert_int_equal(total_len % str_len, 0);
 
     struct http_sha1_ctx ctx;
 
     http_sha1_init(&ctx);
-    for(int i = 0; i < 1000000; i++) {
-        http_sha1_update(&ctx, (const uint8_t*)"a", 1);
+    for(int i = 0; i < total_len / str_len; i++) {
+        http_sha1_update(&ctx, str, str_len);
     }
     http_sha1_final(hash, &ctx);
 
     assert_string_equal(hash_to_ascii(hash), expected);
+
+    free(str);
+}
+
+static void test__http_sha1__can_calculate_hash5_in_large_steps(void **state)
+{
+    uint8_t hash[21];
+    const char *expected = "34aa973c d4c4daa4 f61eeb2b dbad2731 6534016f";
+    const int total_len = 1000000;
+
+    const int str_len = 10000;
+    uint8_t *str = malloc(str_len + 1);
+    for(int i = 0; i < str_len; i++) {
+        str[i] = 'a';
+    }
+    str[str_len] = 0;
+
+    assert_int_equal(total_len % str_len, 0);
+
+    struct http_sha1_ctx ctx;
+
+    http_sha1_init(&ctx);
+    for(int i = 0; i < total_len / str_len; i++) {
+        http_sha1_update(&ctx, str, str_len);
+    }
+    http_sha1_final(hash, &ctx);
+
+    assert_string_equal(hash_to_ascii(hash), expected);
+
+    free(str);
 }
 
 #ifdef TEST_SLOW
@@ -132,7 +172,8 @@ const struct CMUnitTest tests_for_http_sha1[] = {
     cmocka_unit_test(test__http_sha1__can_calculate_hash4),
 
     cmocka_unit_test(test__http_sha1__can_calculate_hash4_in_steps),
-    cmocka_unit_test(test__http_sha1__can_calculate_hash5_in_steps),
+    cmocka_unit_test(test__http_sha1__can_calculate_hash5_in_small_steps),
+    cmocka_unit_test(test__http_sha1__can_calculate_hash5_in_large_steps),
 
 #ifdef TEST_SLOW
     cmocka_unit_test(test__http_sha1__can_calculate_hash6_in_steps),
