@@ -164,6 +164,55 @@ describe('HTTP server', () => {
             expect(statusLine).to.equal('HTTP/1.1 400 Bad Request');
         });
 
+        it('can handle an early socket close', async () => {
+            await socket.write(''
+                + 'GET /simple HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`);
+            await socket.end();
+
+            socket = new PromiseSocket(new net.Socket());
+            socket.setTimeout(25);
+            await socket.connect({ host, port });
+            await socket.write(''
+                + 'GET /simple HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + 'Connection: close\r\n'
+                + '\r\n');
+
+            const statusLine = await readLine(socket);
+            expect(server.isRunning).to.be.true;
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+        });
+
+        it('can handle two simultaneous connections', async () => {
+            await socket.write(''
+                + 'GET /simple HTTP/1.1\r\n'
+                + `Host: ${host}:`);
+
+            const anotherSocket = new PromiseSocket(new net.Socket());
+            anotherSocket.setTimeout(25);
+            await anotherSocket.connect({ host, port });
+            await anotherSocket.write(''
+                + 'GET /simple HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + 'Connection: close\r\n'
+                + '\r\n');
+
+            await socket.write(''
+                + `${port}\r\n`
+                + 'Connection: close\r\n'
+                + '\r\n');
+
+            const statusLine = await readLine(socket);
+            const anotherStatusLine = await readLine(anotherSocket);
+
+            await anotherSocket.end();
+
+            expect(server.isRunning).to.be.true;
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+            expect(anotherStatusLine).to.equal('HTTP/1.1 200 OK');
+        });
+
         it('performs websocket handshake without key', async () => {
             await socket.write(''
                 + 'GET /ws-echo HTTP/1.1\r\n'
