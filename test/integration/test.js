@@ -224,6 +224,7 @@ describe('HTTP server', () => {
             const statusLine = await readLine(socket);
             const headers = await readHeaders(socket);
 
+            expect(server.isRunning).to.be.true;
             expect(statusLine).to.equal('HTTP/1.1 101 Switching Protocols');
             expect(headers).to.include('Upgrade: websocket');
             expect(headers).to.include('Connection: Upgrade');
@@ -242,10 +243,37 @@ describe('HTTP server', () => {
             const statusLine = await readLine(socket);
             const headers = await readHeaders(socket);
 
+            expect(server.isRunning).to.be.true;
             expect(statusLine).to.equal('HTTP/1.1 101 Switching Protocols');
             expect(headers).to.include('Upgrade: websocket');
             expect(headers).to.include('Connection: Upgrade');
             expect(headers).to.include('Sec-WebSocket-Accept: AHbBmP6erNg7nxW8CJ+V7AHhT3Y=');
+        });
+
+        it('can echo a text message through websocket', async () => {
+            await socket.write(''
+                + 'GET /ws-echo HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + 'Connection: Upgrade\r\n'
+                + 'Upgrade: websocket\r\n'
+                + '\r\n');
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            expect(statusLine).to.equal('HTTP/1.1 101 Switching Protocols');
+            expect(headers).to.include('Upgrade: websocket');
+            expect(headers).to.include('Connection: Upgrade');
+            expect(headers.join()).to.not.contain('Sec-WebSocket-Accept:');
+
+            const message = [0x81, 0x05, 0x41, 0x42, 0x43, 0x44, 0x45];
+            await socket.write(Buffer.from(message));
+
+            const response = await socket.read(message.length);
+            const array = Array.from(response);
+
+            expect(server.isRunning).to.be.true;
+            expect(array).to.deep.equal(message);
         });
     });
 
