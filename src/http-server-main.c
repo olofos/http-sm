@@ -247,6 +247,16 @@ static int http_server_main_loop(struct http_server *server)
                     {
                         if(conn->handler->cb_message) {
                             conn->handler->cb_message(conn);
+                        } else {
+                            for(uint64_t len = conn->frame_length; len > 0; ) {
+                                char buf[32];
+                                int to_read = (sizeof(buf) < len) ? sizeof(buf) : len;
+                                int ret = http_read_all(conn->fd, buf, to_read);
+                                if(ret <= 0) {
+                                    break;
+                                }
+                                len -= ret;
+                            }
                         }
                         break;
                     }
