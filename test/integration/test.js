@@ -5,17 +5,39 @@ const childProcess = require('child_process');
 const requestPromise = require('request-promise');
 const WebSocket = require('ws');
 
-function startServer(port) {
-    const server = childProcess.spawn('../../bin/http-test', ['-s', `${port}`]);
+class Server {
+    constructor(port) {
+        this.port = port;
+        this.output = '';
+        this.process = null;
+        this.isRunning = false;
+    }
 
-    return new Promise((resolve, reject) => {
-        server.stdout.on('data', (data) => {
-            if (data.toString().startsWith(`Listening on port ${port}`)) {
-                resolve(server);
-            }
+    async start() {
+        this.process = childProcess.spawn('../../bin/http-test', ['-s', `${this.port}`]);
+
+        return new Promise((resolve, reject) => {
+            this.process.stdout.on('data', (data) => {
+                if (data.toString().startsWith(`Listening on port ${this.port}`)) {
+                    this.isRunning = true;
+                    resolve();
+                } else {
+                    reject(new Error(`server couldn't be started on port ${this.port}`));
+                }
+            });
+            this.process.stdout.on('data', (data) => {
+                this.output += data.toString();
+            });
+            this.process.stdout.on('close', () => reject(new Error(`server couldn't be started on port ${this.port}`)));
         });
-        server.stdout.on('close', () => reject(new Error(`server couldn't be started on port ${port}`)));
-    });
+    }
+
+    async stop() {
+        return new Promise((resolve) => {
+            this.process.on('exit', () => resolve());
+            this.process.kill();
+        });
+    }
 }
 
 async function readLine(socket) {
@@ -49,21 +71,23 @@ async function readHeaders(socket) {
 }
 
 describe('HTTP server', () => {
-    let serverRunning = false;
     let server;
     let port = 4000 + Math.floor(Math.random() * 4000);
     const host = 'localhost';
 
     beforeEach(async () => {
-        server = await startServer(port);
-        serverRunning = true;
-        server.on('exit', () => { serverRunning = true; });
+        server = new Server(port);
+        await server.start();
     });
 
-    afterEach(() => {
-        if (server) {
-            server.kill();
+    afterEach(async () => {
+        if (server.isRunning) {
+            await server.stop();
+        } else {
+            console.error('Server is not running:');
+            process.stdout.write(server.output);
         }
+
         port += 1;
     });
 
@@ -91,7 +115,7 @@ describe('HTTP server', () => {
                 + 'Connection: close\r\n'
                 + '\r\n');
             const response = await socket.readAll();
-            expect(serverRunning).to.be.true;
+            expect(server.isRunning).to.be.true;
             expect(response).to.exist;
         });
 
@@ -102,7 +126,7 @@ describe('HTTP server', () => {
                 + 'Connection: close\r\n'
                 + '\r\n');
             const statusLine = await readLine(socket);
-            expect(serverRunning).to.be.true;
+            expect(server.isRunning).to.be.true;
             expect(statusLine).to.equal('HTTP/1.1 200 OK');
         });
 
@@ -113,7 +137,7 @@ describe('HTTP server', () => {
                 + 'Connection: close\r\n'
                 + '\r\n');
             const statusLine = await readLine(socket);
-            expect(serverRunning).to.be.true;
+            expect(server.isRunning).to.be.true;
             expect(statusLine).to.equal('HTTP/1.1 505 HTTP Version Not Supported');
         });
 
@@ -124,7 +148,7 @@ describe('HTTP server', () => {
                 + 'Connection: close\r\n'
                 + '\r\n');
             const statusLine = await readLine(socket);
-            expect(serverRunning).to.be.true;
+            expect(server.isRunning).to.be.true;
             expect(statusLine).to.equal('HTTP/1.1 400 Bad Request');
         });
 
@@ -136,7 +160,7 @@ describe('HTTP server', () => {
                 + 'Content-Length: 12a\r\n'
                 + '\r\n');
             const statusLine = await readLine(socket);
-            expect(serverRunning).to.be.true;
+            expect(server.isRunning).to.be.true;
             expect(statusLine).to.equal('HTTP/1.1 400 Bad Request');
         });
 
@@ -193,7 +217,7 @@ describe('HTTP server', () => {
         it('can GET a simple url', async () => {
             await request('GET', '/simple')
                 .then((response) => {
-                    expect(serverRunning).to.be.true;
+                    expect(server.isRunning).to.be.true;
                     expect(response.statusCode).to.equal(200);
                     expect(response.body).to.equal('This is a response from \'cgi_simple\'');
                 });
@@ -202,7 +226,7 @@ describe('HTTP server', () => {
         it('can GET an url with chunked transfer encoding', async () => {
             await request('GET', '/stream')
                 .then((response) => {
-                    expect(serverRunning).to.be.true;
+                    expect(server.isRunning).to.be.true;
                     expect(response.statusCode).to.equal(200);
                     expect(response.body).to.equal('This is a response from \'cgi_stream\'');
                 });
@@ -211,7 +235,7 @@ describe('HTTP server', () => {
         it('can GET a wildcard url', async () => {
             await request('GET', '/wildcard/xyz')
                 .then((response) => {
-                    expect(serverRunning).to.be.true;
+                    expect(server.isRunning).to.be.true;
                     expect(response.statusCode).to.equal(200);
                     expect(response.body).to.equal('This is a response from \'cgi_simple\'');
                 });
@@ -220,7 +244,7 @@ describe('HTTP server', () => {
         it('can GET an url with no query', async () => {
             await request('GET', '/query')
                 .then((response) => {
-                    expect(serverRunning).to.be.true;
+                    expect(server.isRunning).to.be.true;
                     expect(response.statusCode).to.equal(200);
                     expect(response.body).to.contain('\'cgi_query\'');
                     expect(response.body).not.to.contain('=');
@@ -230,7 +254,7 @@ describe('HTTP server', () => {
         it('can GET an url with a query', async () => {
             await request('GET', '/query?a=142&b=271')
                 .then((response) => {
-                    expect(serverRunning).to.be.true;
+                    expect(server.isRunning).to.be.true;
                     expect(response.statusCode).to.equal(200);
                     expect(response.body).to.contain('\'cgi_query\'');
                     expect(response.body).to.contain('a = 142');
@@ -241,7 +265,7 @@ describe('HTTP server', () => {
         it('can GET an url with misformed query containing double ??', async () => {
             await request('GET', '/query??a=1')
                 .then((response) => {
-                    expect(serverRunning).to.be.true;
+                    expect(server.isRunning).to.be.true;
                     expect(response.statusCode).to.equal(200);
                     expect(response.body).to.contain('\'cgi_query\'');
                     expect(response.body).not.to.contain('=');
@@ -251,7 +275,7 @@ describe('HTTP server', () => {
         it('can GET an url with an urlencoded query', async () => {
             await request('GET', '/query?a="1+2%203%2B4%20%35b%3DX"')
                 .then((response) => {
-                    expect(serverRunning).to.be.true;
+                    expect(server.isRunning).to.be.true;
                     expect(response.statusCode).to.equal(200);
                     expect(response.body).to.contain('\'cgi_query\'');
                     expect(response.body).to.contain('a = "1 2 3+4 5b=X"');
@@ -262,7 +286,7 @@ describe('HTTP server', () => {
         it('returns 404 for an unknown url', async () => {
             await request('GET', '/unkown')
                 .catch((error) => {
-                    expect(serverRunning).to.be.true;
+                    expect(server.isRunning).to.be.true;
                     expect(error.response.statusCode).to.equal(404);
                 });
         });
@@ -278,7 +302,7 @@ describe('HTTP server', () => {
 
             await request('GET', path)
                 .catch((error) => {
-                    expect(serverRunning).to.be.true;
+                    expect(server.isRunning).to.be.true;
                     expect(error.response.statusCode).to.equal(414);
                 });
         });
@@ -296,7 +320,7 @@ describe('HTTP server', () => {
 
             await request('GET', `/query?${query}`)
                 .catch((error) => {
-                    expect(serverRunning).to.be.true;
+                    expect(server.isRunning).to.be.true;
                     expect(error.response.statusCode).to.equal(414);
                 });
         });
@@ -304,7 +328,7 @@ describe('HTTP server', () => {
         it('can handle an unkown method', async () => {
             await request('ABC', '/simple')
                 .catch((error) => {
-                    expect(serverRunning).to.be.true;
+                    expect(server.isRunning).to.be.true;
                     expect(error.response).to.exist;
                     expect(error.response.statusCode).to.equal(405);
                 });
@@ -313,7 +337,7 @@ describe('HTTP server', () => {
         it('can handle a POST request', async () => {
             await request('POST', '/post', 'test')
                 .then((response) => {
-                    expect(serverRunning).to.be.true;
+                    expect(server.isRunning).to.be.true;
                     expect(response.statusCode).to.equal(200);
                     expect(response.body).to.contain('\'cgi_post\'');
                     expect(response.body).to.contain('You posted: "test"');
@@ -338,14 +362,14 @@ describe('HTTP server', () => {
             });
 
             ws.on('close', (closeReason) => {
-                expect(serverRunning).to.be.true;
+                expect(server.isRunning).to.be.true;
                 expect(closeReason).to.equal(1000);
                 expect(dataReceived).to.equal(text);
                 done();
             });
 
             ws.on('error', (error) => {
-                expect(serverRunning).to.be.true;
+                expect(server.isRunning).to.be.true;
                 done(new Error(error));
             });
         });
@@ -370,7 +394,7 @@ describe('HTTP server', () => {
             });
 
             ws.on('close', (closeReason) => {
-                expect(serverRunning).to.be.true;
+                expect(server.isRunning).to.be.true;
                 expect(closeReason).to.equal(1000);
                 expect(dataReceived).to.have.lengthOf(array.length);
                 expect(dataReceived).to.deep.equal(array);
@@ -378,7 +402,7 @@ describe('HTTP server', () => {
             });
 
             ws.on('error', (error) => {
-                expect(serverRunning).to.be.true;
+                expect(server.isRunning).to.be.true;
                 done(new Error(error));
             });
         });
@@ -403,14 +427,14 @@ describe('HTTP server', () => {
             });
 
             ws.on('close', () => {
-                expect(serverRunning).to.be.true;
+                expect(server.isRunning).to.be.true;
                 expect(dataReceived).to.have.lengthOf(array.length);
                 expect(dataReceived).to.deep.equal(array);
                 done();
             });
 
             ws.on('error', (error) => {
-                expect(serverRunning).to.be.true;
+                expect(server.isRunning).to.be.true;
                 done(new Error(error));
             });
         });
@@ -435,14 +459,14 @@ describe('HTTP server', () => {
             });
 
             ws.on('close', () => {
-                expect(serverRunning).to.be.true;
+                expect(server.isRunning).to.be.true;
                 expect(dataReceived).to.have.lengthOf(array.length);
                 expect(dataReceived).to.deep.equal(array);
                 done();
             });
 
             ws.on('error', (error) => {
-                expect(serverRunning).to.be.true;
+                expect(server.isRunning).to.be.true;
                 done(new Error(error));
             });
         });
@@ -461,13 +485,13 @@ describe('HTTP server', () => {
                 ws.close();
             });
             ws.on('close', () => {
-                expect(serverRunning).to.be.true;
+                expect(server.isRunning).to.be.true;
                 expect(pingReceived).to.be.true;
                 expect(dataReceived).to.be.empty;
                 done();
             });
             ws.on('error', (error) => {
-                expect(serverRunning).to.be.true;
+                expect(server.isRunning).to.be.true;
                 done(new Error(error));
             });
         });
@@ -485,12 +509,12 @@ describe('HTTP server', () => {
                 ws.close();
             });
             ws.on('close', () => {
-                expect(serverRunning).to.be.true;
+                expect(server.isRunning).to.be.true;
                 expect(messageReceived).to.equal(message);
                 done();
             });
             ws.on('error', (error) => {
-                expect(serverRunning).to.be.true;
+                expect(server.isRunning).to.be.true;
                 done(new Error(error));
             });
         });
