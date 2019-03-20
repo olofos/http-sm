@@ -457,6 +457,7 @@ static void sig_handler(int sig, siginfo_t *si, void *uc)
 
 int main(int argc, char *argv[])
 {
+    signal(SIGPIPE, SIG_IGN);
     if(argc > 1) {
         if(strcmp(argv[1], "-s") == 0) {
             int port = 8080;
