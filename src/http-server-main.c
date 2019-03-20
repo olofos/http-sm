@@ -161,6 +161,82 @@ static int http_server_call_handler(struct http_request *request)
     return 0;
 }
 
+static void websocket_handle_connection(struct websocket_connection *conn)
+{
+    websocket_read_frame_header(conn);
+
+    switch(conn->frame_opcode & WEBSOCKET_FRAME_OPCODE) {
+    case WEBSOCKET_FRAME_OPCODE_BIN:
+    case WEBSOCKET_FRAME_OPCODE_TEXT:
+    {
+        if(conn->handler->cb_message) {
+            conn->handler->cb_message(conn);
+        } else {
+            for(uint64_t len = conn->frame_length; len > 0; ) {
+                char buf[32];
+                int to_read = (sizeof(buf) < len) ? sizeof(buf) : len;
+                int ret = http_read_all(conn->fd, buf, to_read);
+                if(ret <= 0) {
+                    break;
+                }
+                len -= ret;
+            }
+        }
+        break;
+    }
+    case WEBSOCKET_FRAME_OPCODE_CLOSE:
+    {
+        char *str = malloc(conn->frame_length);
+
+        if(str) {
+            websocket_read(conn, str, conn->frame_length);
+            websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
+            free(str);
+        } else {
+            websocket_send(conn, "", 0, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
+        }
+
+        if(conn->handler->cb_close) {
+            conn->handler->cb_close(conn);
+        }
+
+        close(conn->fd);
+        conn->fd = -1;
+
+        break;
+    }
+    case WEBSOCKET_FRAME_OPCODE_PING:
+    {
+        LOG("WS: ping %d", conn->fd);
+        char *str = malloc(conn->frame_length);
+        if(str) {
+            websocket_read(conn, str, conn->frame_length);
+            websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_PONG);
+            free(str);
+        } else {
+            websocket_send(conn, "", 0, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_PONG);
+        }
+        break;
+    }
+    }
+}
+
+static void http_handle_request_read(struct http_request *request, struct http_server *server)
+{
+    if(request->state == HTTP_STATE_SERVER_READ_BODY) {
+        http_server_call_handler(request);
+    } else {
+        http_server_read_headers(request);
+
+        if(request->state == HTTP_STATE_SERVER_UPGRADE_WEBSOCKET) {
+            if(websocket_init(server, request) >= 0) {
+                http_free(request);
+                request->fd = -1;
+            }
+        }
+    }
+}
+
 static int http_server_main_loop(struct http_server *server)
 {
     fd_set set_read, set_write;
@@ -203,99 +279,29 @@ static int http_server_main_loop(struct http_server *server)
         for(int i = 0; i < WEBSOCKET_SERVER_MAX_CONNECTIONS; i++) {
             if(server->websocket_connection[i].fd >= 0) {
                 if(FD_ISSET(server->websocket_connection[i].fd, &set_read)) {
-                    struct websocket_connection *conn = &server->websocket_connection[i];
-                    websocket_read_frame_header(conn);
-
-                    switch(conn->frame_opcode & WEBSOCKET_FRAME_OPCODE) {
-                    case WEBSOCKET_FRAME_OPCODE_BIN:
-                    case WEBSOCKET_FRAME_OPCODE_TEXT:
-                    {
-                        if(conn->handler->cb_message) {
-                            conn->handler->cb_message(conn);
-                        } else {
-                            for(uint64_t len = conn->frame_length; len > 0; ) {
-                                char buf[32];
-                                int to_read = (sizeof(buf) < len) ? sizeof(buf) : len;
-                                int ret = http_read_all(conn->fd, buf, to_read);
-                                if(ret <= 0) {
-                                    break;
-                                }
-                                len -= ret;
-                            }
-                        }
-                        break;
-                    }
-                    case WEBSOCKET_FRAME_OPCODE_CLOSE:
-                    {
-                        char *str = malloc(conn->frame_length);
-
-                        if(str) {
-                            websocket_read(conn, str, conn->frame_length);
-                            websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
-                            free(str);
-                        } else {
-                            websocket_send(conn, "", 0, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
-                        }
-
-                        if(conn->handler->cb_close) {
-                            conn->handler->cb_close(conn);
-                        }
-
-                        close(conn->fd);
-                        conn->fd = -1;
-
-                        break;
-                    }
-                    case WEBSOCKET_FRAME_OPCODE_PING:
-                    {
-                        LOG("WS: ping %d", conn->fd);
-                        char *str = malloc(conn->frame_length);
-                        if(str) {
-                            websocket_read(conn, str, conn->frame_length);
-                            websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_PONG);
-                            free(str);
-                        } else {
-                            websocket_send(conn, "", 0, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_PONG);
-                        }
-                        break;
-                    }
-                    }
+                    websocket_handle_connection(&server->websocket_connection[i]);
                 }
             }
         }
-
 
         for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
             struct http_request *request = &server->request[i];
             if(request->fd >= 0) {
                 if(FD_ISSET(request->fd, &set_read)) {
-                    if(request->state == HTTP_STATE_SERVER_READ_BODY) {
-                        http_server_call_handler(request);
-                    } else {
-                        http_server_read_headers(request);
-
-                        if(request->state == HTTP_STATE_SERVER_UPGRADE_WEBSOCKET) {
-                            if(websocket_init(server, request) >= 0) {
-                                FD_CLR(request->fd, &set_read);
-                                http_free(request);
-                                request->fd = -1;
-                            }
-                        }
-                    }
-
-                    if(http_is_error(request)) {
-                        free(request->line);
-                        request->line = 0;
-                        request->line_length = 0;
-
-                        if(request->error > 0) {
-                            http_write_error_response(request);
-                        }
-
-                        http_close(request);
-                    }
+                    http_handle_request_read(&server->request[i], server);
                 } else if(FD_ISSET(server->request[i].fd, &set_write)) {
                     http_server_call_handler(&server->request[i]);
+                }
+                if(http_is_error(request)) {
+                    free(request->line);
+                    request->line = 0;
+                    request->line_length = 0;
+
+                    if(request->error > 0) {
+                        http_write_error_response(request);
+                    }
+
+                    http_close(request);
                 }
             }
         }
