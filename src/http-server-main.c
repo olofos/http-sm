@@ -200,7 +200,7 @@ static int http_server_main_loop(struct http_server *server)
             http_accept_new_connection(server);
         }
 
-                for(int i = 0; i < WEBSOCKET_SERVER_MAX_CONNECTIONS; i++) {
+        for(int i = 0; i < WEBSOCKET_SERVER_MAX_CONNECTIONS; i++) {
             if(server->websocket_connection[i].fd >= 0) {
                 if(FD_ISSET(server->websocket_connection[i].fd, &set_read)) {
                     struct websocket_connection *conn = &server->websocket_connection[i];
