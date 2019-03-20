@@ -33,6 +33,103 @@ void websocket_send_response(struct http_request *request)
     http_write_all(request->fd, "\r\n", 2);
 }
 
+#define websocket_next_state(conn,newstate) ((conn)->state = (newstate) | ((conn->state) & WEBSOCKET_STATE_MASK))
+
+int websocket_parse_frame_header(struct websocket_connection *conn, uint8_t c)
+{
+    switch(conn->state & ~WEBSOCKET_STATE_MASK) {
+    case WEBSOCKET_STATE_OPCODE:
+        conn->frame_opcode = c;
+        conn->state = WEBSOCKET_STATE_LEN8;
+        break;
+
+    case WEBSOCKET_STATE_LEN8:
+    {
+        uint8_t len = c & ~WEBSOCKET_STATE_MASK;
+        conn->state |= c & WEBSOCKET_STATE_MASK;
+
+        if(len == WEBSOCKET_FRAME_LEN_16BIT) {
+            websocket_next_state(conn, WEBSOCKET_STATE_LEN16_0);
+        } else if(len == WEBSOCKET_FRAME_LEN_64BIT) {
+            conn->frame_length = 0;
+            websocket_next_state(conn, WEBSOCKET_STATE_LEN64_0);
+        } else {
+            conn->frame_length = len;
+            if(conn->state & WEBSOCKET_STATE_MASK) {
+                conn->state = WEBSOCKET_STATE_MASK_0;
+            } else {
+                memset(conn->frame_mask, 0, 4);
+                conn->state = WEBSOCKET_STATE_DONE;
+            }
+        }
+
+        break;
+    }
+
+    case WEBSOCKET_STATE_LEN16_1:
+    case WEBSOCKET_STATE_LEN64_7:
+    {
+        conn->frame_length = (conn->frame_length << 8) | c;
+        if(conn->state & WEBSOCKET_STATE_MASK) {
+            conn->state = WEBSOCKET_STATE_MASK_0;
+        } else {
+            memset(conn->frame_mask, 0, 4);
+            conn->state = WEBSOCKET_STATE_DONE;
+        }
+        break;
+    }
+
+    case WEBSOCKET_STATE_LEN16_0:
+    case WEBSOCKET_STATE_LEN64_0:
+    case WEBSOCKET_STATE_LEN64_1:
+    case WEBSOCKET_STATE_LEN64_2:
+    case WEBSOCKET_STATE_LEN64_3:
+    case WEBSOCKET_STATE_LEN64_4:
+    case WEBSOCKET_STATE_LEN64_5:
+    case WEBSOCKET_STATE_LEN64_6:
+    {
+        conn->frame_length = (conn->frame_length << 8) | c;
+        conn->state++;
+        break;
+    }
+
+
+    case WEBSOCKET_STATE_MASK_0:
+    {
+        conn->frame_mask[0] = c;
+        conn->state++;
+        break;
+    }
+
+    case WEBSOCKET_STATE_MASK_1:
+    {
+        conn->frame_mask[1] = c;
+        conn->state++;
+        break;
+    }
+
+    case WEBSOCKET_STATE_MASK_2:
+    {
+        conn->frame_mask[2] = c;
+        conn->state++;
+        break;
+    }
+
+    case WEBSOCKET_STATE_MASK_3:
+    {
+        conn->frame_mask[3] = c;
+        conn->state = WEBSOCKET_STATE_DONE;
+        break;
+    }
+
+    case WEBSOCKET_STATE_DONE:
+    case WEBSOCKET_STATE_ERROR:
+        break;
+    }
+
+    return 0;
+}
+
 void websocket_read_frame_header(struct websocket_connection *conn)
 {
     read(conn->fd, &conn->frame_opcode, 1);

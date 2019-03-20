@@ -22,6 +22,34 @@ enum websocket_frame_opcode
     WEBSOCKET_FRAME_OPCODE_PONG  = 0x0a,
 };
 
+enum websocket_state
+{
+    WEBSOCKET_STATE_OPCODE  = 0x00,
+    WEBSOCKET_STATE_LEN8,
+
+    WEBSOCKET_STATE_LEN16_0,
+    WEBSOCKET_STATE_LEN16_1,
+
+    WEBSOCKET_STATE_LEN64_0,
+    WEBSOCKET_STATE_LEN64_1,
+    WEBSOCKET_STATE_LEN64_2,
+    WEBSOCKET_STATE_LEN64_3,
+    WEBSOCKET_STATE_LEN64_4,
+    WEBSOCKET_STATE_LEN64_5,
+    WEBSOCKET_STATE_LEN64_6,
+    WEBSOCKET_STATE_LEN64_7,
+
+    WEBSOCKET_STATE_MASK_0,
+    WEBSOCKET_STATE_MASK_1,
+    WEBSOCKET_STATE_MASK_2,
+    WEBSOCKET_STATE_MASK_3,
+
+    WEBSOCKET_STATE_DONE,
+    WEBSOCKET_STATE_ERROR,
+
+    WEBSOCKET_STATE_MASK = 0x80,
+};
+
 struct websocket_url_handler;
 
 struct websocket_connection {
@@ -31,6 +59,7 @@ struct websocket_connection {
     uint64_t frame_index;
     uint8_t frame_opcode;
     uint8_t frame_mask[4];
+    enum websocket_state state;
 
     struct websocket_url_handler *handler;
 };
