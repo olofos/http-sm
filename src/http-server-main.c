@@ -200,42 +200,7 @@ static int http_server_main_loop(struct http_server *server)
             http_accept_new_connection(server);
         }
 
-        for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
-            struct http_request *request = &server->request[i];
-            if(request->fd >= 0) {
-                if(FD_ISSET(request->fd, &set_read)) {
-                    if(request->state == HTTP_STATE_SERVER_READ_BODY) {
-                        http_server_call_handler(request);
-                    } else {
-                        http_server_read_headers(request);
-
-                        if(request->state == HTTP_STATE_SERVER_UPGRADE_WEBSOCKET) {
-                            if(websocket_init(server, request) >= 0) {
-                                FD_CLR(request->fd, &set_read);
-                                http_free(request);
-                                request->fd = -1;
-                            }
-                        }
-                    }
-
-                    if(http_is_error(request)) {
-                        free(request->line);
-                        request->line = 0;
-                        request->line_length = 0;
-
-                        if(request->error > 0) {
-                            http_write_error_response(request);
-                        }
-
-                        http_close(request);
-                    }
-                } else if(FD_ISSET(server->request[i].fd, &set_write)) {
-                    http_server_call_handler(&server->request[i]);
-                }
-            }
-        }
-
-        for(int i = 0; i < WEBSOCKET_SERVER_MAX_CONNECTIONS; i++) {
+                for(int i = 0; i < WEBSOCKET_SERVER_MAX_CONNECTIONS; i++) {
             if(server->websocket_connection[i].fd >= 0) {
                 if(FD_ISSET(server->websocket_connection[i].fd, &set_read)) {
                     struct websocket_connection *conn = &server->websocket_connection[i];
@@ -295,6 +260,42 @@ static int http_server_main_loop(struct http_server *server)
                         break;
                     }
                     }
+                }
+            }
+        }
+
+
+        for(int i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++) {
+            struct http_request *request = &server->request[i];
+            if(request->fd >= 0) {
+                if(FD_ISSET(request->fd, &set_read)) {
+                    if(request->state == HTTP_STATE_SERVER_READ_BODY) {
+                        http_server_call_handler(request);
+                    } else {
+                        http_server_read_headers(request);
+
+                        if(request->state == HTTP_STATE_SERVER_UPGRADE_WEBSOCKET) {
+                            if(websocket_init(server, request) >= 0) {
+                                FD_CLR(request->fd, &set_read);
+                                http_free(request);
+                                request->fd = -1;
+                            }
+                        }
+                    }
+
+                    if(http_is_error(request)) {
+                        free(request->line);
+                        request->line = 0;
+                        request->line_length = 0;
+
+                        if(request->error > 0) {
+                            http_write_error_response(request);
+                        }
+
+                        http_close(request);
+                    }
+                } else if(FD_ISSET(server->request[i].fd, &set_write)) {
+                    http_server_call_handler(&server->request[i]);
                 }
             }
         }
