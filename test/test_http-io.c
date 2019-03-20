@@ -1606,9 +1606,8 @@ static void test__websocket_parse_frame_header__can_read_opcode(void **states)
         .state = WEBSOCKET_STATE_OPCODE,
     };
 
-    int ret = websocket_parse_frame_header(&conn, 0x81);
+    websocket_parse_frame_header(&conn, 0x81);
 
-    assert_int_equal(ret, 0);
     assert_int_equal(conn.frame_opcode, 0x81);
     assert_int_equal(conn.state, WEBSOCKET_STATE_LEN8);
 }
@@ -1728,6 +1727,23 @@ static void test__websocket_parse_frame_header__can_read_len64_mask(void **state
     assert_int_equal(conn.frame_mask[3], 0x04);
 }
 
+static void test__websocket_parse_frame_header__sets_error_for_unknown_opcode(void **states)
+{
+    struct websocket_connection conn;
+
+    const uint8_t opcode[] = {
+        0x03, 0x04, 0x05, 0x06, 0x07, 0x0b, 0x0c, 0x0d,
+        0x0e, 0x0f, 0x11, 0x12, 0x21, 0x30, 0x41, 0x52,
+        0x61, 0x77, 0x84, 0x8f, 0x90, 0xa2, 0xb3, 0xc1,
+        0xd0, 0xe4, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
+    };
+
+    for(int i = 0; i < sizeof(opcode); i++) {
+        conn.state = WEBSOCKET_STATE_OPCODE;
+        websocket_parse_frame_header(&conn, opcode[i]);
+        assert_int_equal(conn.state, WEBSOCKET_STATE_ERROR);
+    }
+}
 
 
 // Main ////////////////////////////////////////////////////////////////////////
@@ -1826,6 +1842,7 @@ const struct CMUnitTest tests_for_http_io[] = {
     cmocka_unit_test(test__websocket_parse_frame_header__can_read_len16_mask),
     cmocka_unit_test(test__websocket_parse_frame_header__can_read_len64_no_mask),
     cmocka_unit_test(test__websocket_parse_frame_header__can_read_len64_mask),
+    cmocka_unit_test(test__websocket_parse_frame_header__sets_error_for_unknown_opcode),
 };
 
 int main(void)

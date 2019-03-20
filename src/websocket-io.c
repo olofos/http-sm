@@ -33,22 +33,29 @@ void websocket_send_response(struct http_request *request)
     http_write_all(request->fd, "\r\n", 2);
 }
 
-#define websocket_next_state(conn,newstate) ((conn)->state = (newstate) | ((conn->state) & WEBSOCKET_STATE_MASK))
+#define websocket_next_state(conn,newstate) ((conn)->state = (newstate) | ((conn)->state & WEBSOCKET_STATE_MASK))
 
-int websocket_parse_frame_header(struct websocket_connection *conn, uint8_t c)
+void websocket_parse_frame_header(struct websocket_connection *conn, uint8_t c)
 {
     switch(conn->state & ~WEBSOCKET_STATE_MASK) {
     case WEBSOCKET_STATE_OPCODE:
-        conn->frame_opcode = c;
-        conn->state = WEBSOCKET_STATE_LEN8;
+        if((c & ~(WEBSOCKET_FRAME_OPCODE | WEBSOCKET_FRAME_MASK)) || ((c & 0x07) > 2)) {
+            LOG("Unkown websocket opcode: %02X", c);
+            conn->state = WEBSOCKET_STATE_ERROR;
+        } else {
+            conn->frame_opcode = c;
+            conn->state = WEBSOCKET_STATE_LEN8;
+        }
         break;
 
     case WEBSOCKET_STATE_LEN8:
     {
-        conn->state |= c & WEBSOCKET_STATE_MASK;
+        if(c & WEBSOCKET_FRAME_MASK) {
+            conn->state |= WEBSOCKET_STATE_MASK;
+        }
         conn->frame_length = 0;
 
-        c &= ~WEBSOCKET_STATE_MASK;
+        c &= ~WEBSOCKET_FRAME_MASK;
 
         if(c == WEBSOCKET_FRAME_LEN_16BIT) {
             websocket_next_state(conn, WEBSOCKET_STATE_LEN16_0);
