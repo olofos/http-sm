@@ -205,6 +205,7 @@ static void test__websocket_read__reads_everything(void **states)
         .fd = 3,
         .frame_length = 3,
         .frame_index = 0,
+        .state = WEBSOCKET_STATE_BODY,
     };
 
     wrap_read_buf = "abc";

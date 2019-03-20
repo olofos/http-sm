@@ -45,36 +45,30 @@ int websocket_parse_frame_header(struct websocket_connection *conn, uint8_t c)
 
     case WEBSOCKET_STATE_LEN8:
     {
-        uint8_t len = c & ~WEBSOCKET_STATE_MASK;
         conn->state |= c & WEBSOCKET_STATE_MASK;
+        conn->frame_length = 0;
 
-        if(len == WEBSOCKET_FRAME_LEN_16BIT) {
+        c &= ~WEBSOCKET_STATE_MASK;
+
+        if(c == WEBSOCKET_FRAME_LEN_16BIT) {
             websocket_next_state(conn, WEBSOCKET_STATE_LEN16_0);
-        } else if(len == WEBSOCKET_FRAME_LEN_64BIT) {
-            conn->frame_length = 0;
+            break;
+        } else if(c == WEBSOCKET_FRAME_LEN_64BIT) {
             websocket_next_state(conn, WEBSOCKET_STATE_LEN64_0);
-        } else {
-            conn->frame_length = len;
-            if(conn->state & WEBSOCKET_STATE_MASK) {
-                conn->state = WEBSOCKET_STATE_MASK_0;
-            } else {
-                memset(conn->frame_mask, 0, 4);
-                conn->state = WEBSOCKET_STATE_DONE;
-            }
+            break;
         }
-
-        break;
+        // Intentional fall through to read 8 bit length
     }
 
     case WEBSOCKET_STATE_LEN16_1:
     case WEBSOCKET_STATE_LEN64_7:
     {
-        conn->frame_length = (conn->frame_length << 8) | c;
+        conn->frame_length |= c;
         if(conn->state & WEBSOCKET_STATE_MASK) {
             conn->state = WEBSOCKET_STATE_MASK_0;
         } else {
             memset(conn->frame_mask, 0, 4);
-            conn->state = WEBSOCKET_STATE_DONE;
+            conn->state = WEBSOCKET_STATE_BODY;
         }
         break;
     }
@@ -88,7 +82,7 @@ int websocket_parse_frame_header(struct websocket_connection *conn, uint8_t c)
     case WEBSOCKET_STATE_LEN64_5:
     case WEBSOCKET_STATE_LEN64_6:
     {
-        conn->frame_length = (conn->frame_length << 8) | c;
+        conn->frame_length = (conn->frame_length | c) << 8;
         conn->state++;
         break;
     }
@@ -118,12 +112,14 @@ int websocket_parse_frame_header(struct websocket_connection *conn, uint8_t c)
     case WEBSOCKET_STATE_MASK_3:
     {
         conn->frame_mask[3] = c;
-        conn->state = WEBSOCKET_STATE_DONE;
+        conn->state = WEBSOCKET_STATE_BODY;
         break;
     }
 
+    case WEBSOCKET_STATE_BODY:
     case WEBSOCKET_STATE_DONE:
     case WEBSOCKET_STATE_ERROR:
+        LOG("Unexpected call to websocket_parse_frame_header in state %02F", conn->state);
         break;
     }
 
@@ -164,10 +160,15 @@ void websocket_read_frame_header(struct websocket_connection *conn)
     }
 
     conn->frame_index = 0;
+    conn->state = WEBSOCKET_STATE_BODY;
 }
 
 int websocket_read(struct websocket_connection *conn, void *buf_, size_t count)
 {
+    if(conn->state != WEBSOCKET_STATE_BODY) {
+        return -1;
+    }
+
     char *buf = buf_;
 
     if(count > conn->frame_length - conn->frame_index) {
@@ -178,6 +179,10 @@ int websocket_read(struct websocket_connection *conn, void *buf_, size_t count)
 
     for(int i = 0; i < n; i++) {
         buf[i] ^= conn->frame_mask[(conn->frame_index++) % 4];
+    }
+
+    if(conn->frame_length == conn->frame_index) {
+        conn->state = WEBSOCKET_STATE_DONE;
     }
 
     return n;
