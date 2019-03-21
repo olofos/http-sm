@@ -338,6 +338,34 @@ describe('HTTP server', () => {
             expect(array1).to.deep.equal(message1);
             expect(array2).to.deep.equal(message2);
         });
+
+        it('can handle an early close of the websocket socket', async () => {
+            await connectWebsocket(socket, '/ws-echo');
+
+            const message = [0x81, 0x05, 0x41, 0x42, 0x43];
+            await socket.write(Buffer.from(message));
+            await socket.end();
+
+            expect(server.isRunning).to.be.true;
+        });
+
+        it('can write to one websocket and read from another', async () => {
+            const anotherSocket = createSocket();
+            await anotherSocket.connect({ host, port });
+
+            await connectWebsocket(socket, '/ws-in');
+            await connectWebsocket(anotherSocket, '/ws-out');
+
+            const message = [0x81, 0x02, 0x68, 0x69];
+
+            await socket.write(Buffer.from(message));
+
+            const response = await anotherSocket.read(message.length);
+            const array = Array.from(response);
+
+            expect(server.isRunning).to.be.true;
+            expect(array).to.deep.equal(message);
+        });
     });
 
 
