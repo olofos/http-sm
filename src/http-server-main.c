@@ -218,26 +218,50 @@ static void websocket_handle_ping(struct websocket_connection *conn)
 
 static void websocket_handle_connection(struct websocket_connection *conn)
 {
-    websocket_read_frame_header(conn);
+    if(conn->state != WEBSOCKET_STATE_BODY) {
+        char c;
+        int ret = read(conn->fd, &c, 1);
 
-    switch(conn->frame_opcode & WEBSOCKET_FRAME_OPCODE) {
-    case WEBSOCKET_FRAME_OPCODE_CONT:
-    case WEBSOCKET_FRAME_OPCODE_BIN:
-    case WEBSOCKET_FRAME_OPCODE_TEXT:
-    {
-        websocket_handle_message(conn);
-        break;
+        if(ret < 0) {
+            ERROR("Reading websocket");
+            conn->state = WEBSOCKET_STATE_ERROR;
+        } else if(ret == 0) {
+            LOG("Unexpected EOF");
+            conn->state = WEBSOCKET_STATE_ERROR;
+        } else {
+            websocket_parse_frame_header(conn, c);
+        }
     }
-    case WEBSOCKET_FRAME_OPCODE_CLOSE:
-    {
-        websocket_handle_close(conn);
-        break;
+
+    if(conn->state == WEBSOCKET_STATE_BODY) {
+        switch(conn->frame_opcode & WEBSOCKET_FRAME_OPCODE) {
+        case WEBSOCKET_FRAME_OPCODE_CONT:
+        case WEBSOCKET_FRAME_OPCODE_BIN:
+        case WEBSOCKET_FRAME_OPCODE_TEXT:
+        {
+            websocket_handle_message(conn);
+            break;
+        }
+        case WEBSOCKET_FRAME_OPCODE_CLOSE:
+        {
+            websocket_handle_close(conn);
+            break;
+        }
+        case WEBSOCKET_FRAME_OPCODE_PING:
+        {
+            websocket_handle_ping(conn);
+            break;
+        }
+        }
+
+        if(conn->state == WEBSOCKET_STATE_DONE) {
+            conn->state = WEBSOCKET_STATE_OPCODE;
+        }
     }
-    case WEBSOCKET_FRAME_OPCODE_PING:
-    {
-        websocket_handle_ping(conn);
-        break;
-    }
+
+    if(conn->state == WEBSOCKET_STATE_ERROR) {
+        uint8_t error_code[] = { 0x03, 0xEA };
+        websocket_close(conn, error_code, sizeof(error_code));
     }
 }
 
@@ -347,6 +371,7 @@ int websocket_init(struct http_server *server, struct http_request *request)
                     websocket_send_response(request);
                     connection->fd = request->fd;
                     connection->handler = handler;
+                    connection->state = WEBSOCKET_STATE_OPCODE;
                     return request->fd;
                 } else {
                     break;
