@@ -161,61 +161,74 @@ static int http_server_call_handler(struct http_request *request)
     return 0;
 }
 
+static void websocket_handle_message(struct websocket_connection *conn)
+{
+    if(conn->handler->cb_message) {
+        conn->handler->cb_message(conn);
+    } else {
+        int len = conn->frame_length - conn->frame_index;
+        int ret;
+        do {
+            char buf[32];
+            int to_read = (sizeof(buf) < len) ? sizeof(buf) : len;
+            ret = websocket_read(conn, buf, to_read);
+        } while(ret > 0);
+    }
+}
+
+static void websocket_handle_close(struct websocket_connection *conn)
+{
+    char *str = malloc(conn->frame_length);
+
+    if(str) {
+        websocket_read(conn, str, conn->frame_length);
+        websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
+        free(str);
+    } else {
+        websocket_send(conn, "", 0, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
+    }
+
+    if(conn->handler->cb_close) {
+        conn->handler->cb_close(conn);
+    }
+
+    close(conn->fd);
+    conn->fd = -1;
+}
+
+static void websocket_handle_ping(struct websocket_connection *conn)
+{
+    LOG("WS: ping %d", conn->fd);
+    char *str = malloc(conn->frame_length);
+    if(str) {
+        websocket_read(conn, str, conn->frame_length);
+        websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_PONG);
+        free(str);
+    } else {
+        websocket_send(conn, "", 0, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_PONG);
+    }
+}
+
 static void websocket_handle_connection(struct websocket_connection *conn)
 {
     websocket_read_frame_header(conn);
 
     switch(conn->frame_opcode & WEBSOCKET_FRAME_OPCODE) {
+    case WEBSOCKET_FRAME_OPCODE_CONT:
     case WEBSOCKET_FRAME_OPCODE_BIN:
     case WEBSOCKET_FRAME_OPCODE_TEXT:
     {
-        if(conn->handler->cb_message) {
-            conn->handler->cb_message(conn);
-        } else {
-            for(uint64_t len = conn->frame_length; len > 0; ) {
-                char buf[32];
-                int to_read = (sizeof(buf) < len) ? sizeof(buf) : len;
-                int ret = http_read_all(conn->fd, buf, to_read);
-                if(ret <= 0) {
-                    break;
-                }
-                len -= ret;
-            }
-        }
+        websocket_handle_message(conn);
         break;
     }
     case WEBSOCKET_FRAME_OPCODE_CLOSE:
     {
-        char *str = malloc(conn->frame_length);
-
-        if(str) {
-            websocket_read(conn, str, conn->frame_length);
-            websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
-            free(str);
-        } else {
-            websocket_send(conn, "", 0, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
-        }
-
-        if(conn->handler->cb_close) {
-            conn->handler->cb_close(conn);
-        }
-
-        close(conn->fd);
-        conn->fd = -1;
-
+        websocket_handle_close(conn);
         break;
     }
     case WEBSOCKET_FRAME_OPCODE_PING:
     {
-        LOG("WS: ping %d", conn->fd);
-        char *str = malloc(conn->frame_length);
-        if(str) {
-            websocket_read(conn, str, conn->frame_length);
-            websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_PONG);
-            free(str);
-        } else {
-            websocket_send(conn, "", 0, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_PONG);
-        }
+        websocket_handle_ping(conn);
         break;
     }
     }
