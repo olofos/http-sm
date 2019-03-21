@@ -47,6 +47,7 @@ enum websocket_state
     WEBSOCKET_STATE_BODY,
     WEBSOCKET_STATE_DONE,
     WEBSOCKET_STATE_ERROR,
+    WEBSOCKET_STATE_CLOSED,
 
     WEBSOCKET_STATE_MASK = 0x80,
 };
@@ -81,5 +82,6 @@ extern struct websocket_url_handler websocket_url_tab[];
 
 int websocket_read(struct websocket_connection *conn, void *buf_, size_t count);
 int websocket_send(struct websocket_connection *conn, const void *buf_, size_t count, enum websocket_frame_opcode opcode);
+void websocket_close(struct websocket_connection *conn, uint8_t *buf, int len);
 
 #endif

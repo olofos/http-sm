@@ -176,17 +176,11 @@ static void websocket_handle_message(struct websocket_connection *conn)
     }
 }
 
-static void websocket_handle_close(struct websocket_connection *conn)
+void websocket_close(struct websocket_connection *conn, uint8_t *buf, int len)
 {
-    char *str = malloc(conn->frame_length);
+    websocket_send(conn, buf, len, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
 
-    if(str) {
-        websocket_read(conn, str, conn->frame_length);
-        websocket_send(conn, str, conn->frame_length, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
-        free(str);
-    } else {
-        websocket_send(conn, "", 0, WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_CLOSE);
-    }
+    conn->state = WEBSOCKET_STATE_CLOSED;
 
     if(conn->handler->cb_close) {
         conn->handler->cb_close(conn);
@@ -194,6 +188,19 @@ static void websocket_handle_close(struct websocket_connection *conn)
 
     close(conn->fd);
     conn->fd = -1;
+}
+
+static void websocket_handle_close(struct websocket_connection *conn)
+{
+    uint8_t *str = malloc(conn->frame_length);
+
+    if(str) {
+        websocket_read(conn, str, conn->frame_length);
+        websocket_close(conn, str, conn->frame_length);
+        free(str);
+    } else {
+        websocket_close(conn, NULL, 0);
+    }
 }
 
 static void websocket_handle_ping(struct websocket_connection *conn)
