@@ -37,6 +37,18 @@ static void parse_header_helper(struct websocket_connection *conn, const uint8_t
     }
 }
 
+void parse_header_fd_helper(struct websocket_connection *conn)
+{
+    while(conn->state != WEBSOCKET_STATE_BODY) {
+        char c;
+        int ret = read(conn->fd, &c, 1);
+        if(ret <= 0) {
+            break;
+        }
+        websocket_parse_frame_header(conn, c);
+    }
+}
+
 // Tests ///////////////////////////////////////////////////////////////////////
 
 static void test__http_getc__can_read_correctly_with_te_identity(void **states)
@@ -1251,99 +1263,6 @@ static void test__websocket_send_response__writes_response_with_sec_websocket_ke
 }
 
 
-static void test__websocket_read_frame_header__can_read_header_with_8bit_length(void **states)
-{
-    const char frame[] = { 0x81, 0x83, 0x05, 0x49, 0xb4, 0xb7, 0x34, 0x7b, 0x87 };
-
-    int fd = write_tmp_file_bin(frame, sizeof(frame));
-
-    struct websocket_connection conn = {
-        .fd = fd,
-    };
-
-    websocket_read_frame_header(&conn);
-
-    assert_int_equal(WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_TEXT, conn.frame_opcode);
-    assert_int_equal(3, conn.frame_length);
-    assert_non_null(conn.frame_mask);
-    assert_int_equal(0x05, conn.frame_mask[0]);
-    assert_int_equal(0x49, conn.frame_mask[1]);
-    assert_int_equal(0xb4, conn.frame_mask[2]);
-    assert_int_equal(0xb7, conn.frame_mask[3]);
-
-    close(fd);
-}
-
-static void test__websocket_read_frame_header__can_read_header_with_16bit_length(void **states)
-{
-    const char frame[] = { 0x81, 0xfe, 0x00, 0x80, 0x91, 0x4f, 0xc9, 0xd3 };
-
-    int fd = write_tmp_file_bin(frame, sizeof(frame));
-
-    struct websocket_connection conn = {
-        .fd = fd,
-    };
-
-    websocket_read_frame_header(&conn);
-
-    assert_int_equal(WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_TEXT, conn.frame_opcode);
-    assert_int_equal(0x80, conn.frame_length);
-    assert_non_null(conn.frame_mask);
-    assert_int_equal(0x91, conn.frame_mask[0]);
-    assert_int_equal(0x4f, conn.frame_mask[1]);
-    assert_int_equal(0xc9, conn.frame_mask[2]);
-    assert_int_equal(0xd3, conn.frame_mask[3]);
-
-    close(fd);
-}
-
-static void test__websocket_read_frame_header__can_read_header_with_64bit_length(void **states)
-{
-    const char frame[] = { 0x81, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x91, 0x4f, 0xc9, 0xd3 };
-
-    int fd = write_tmp_file_bin(frame, sizeof(frame));
-
-    struct websocket_connection conn = {
-        .fd = fd,
-    };
-
-    websocket_read_frame_header(&conn);
-
-    assert_int_equal(WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_TEXT, conn.frame_opcode);
-    assert_int_equal(0x10000, conn.frame_length);
-    assert_non_null(conn.frame_mask);
-    assert_int_equal(0x91, conn.frame_mask[0]);
-    assert_int_equal(0x4f, conn.frame_mask[1]);
-    assert_int_equal(0xc9, conn.frame_mask[2]);
-    assert_int_equal(0xd3, conn.frame_mask[3]);
-
-    close(fd);
-}
-
-static void test__websocket_read_frame_header__can_read_header_without_mask(void **states)
-{
-    const char frame[] = { 0x81, 0x03 };
-
-    int fd = write_tmp_file_bin(frame, sizeof(frame));
-
-    struct websocket_connection conn = {
-        .fd = fd,
-        .frame_mask = { 1, 2, 3, 4 },
-    };
-
-    websocket_read_frame_header(&conn);
-
-    assert_int_equal(WEBSOCKET_FRAME_FIN | WEBSOCKET_FRAME_OPCODE_TEXT, conn.frame_opcode);
-    assert_int_equal(3, conn.frame_length);
-    assert_int_equal(0, conn.frame_mask[0]);
-    assert_int_equal(0, conn.frame_mask[1]);
-    assert_int_equal(0, conn.frame_mask[2]);
-    assert_int_equal(0, conn.frame_mask[3]);
-
-    close(fd);
-}
-
-
 static void test__websocket_read__can_read_without_mask(void **states)
 {
     const char frame[] = { 0x81, 0x03, 'a', 'b', 'c' };
@@ -1354,7 +1273,7 @@ static void test__websocket_read__can_read_without_mask(void **states)
         .fd = fd,
     };
 
-    websocket_read_frame_header(&conn);
+    parse_header_fd_helper(&conn);
 
     char buf[4];
     int n = websocket_read(&conn, buf, 3);
@@ -1377,7 +1296,7 @@ static void test__websocket_read__can_read_with_mask(void **states)
         .fd = fd,
     };
 
-    websocket_read_frame_header(&conn);
+    parse_header_fd_helper(&conn);
 
     char buf[4];
     int n = websocket_read(&conn, buf, 3);
@@ -1400,7 +1319,7 @@ static void test__websocket_read__can_read_several_times(void **states)
         .fd = fd,
     };
 
-    websocket_read_frame_header(&conn);
+    parse_header_fd_helper(&conn);
 
     char buf[5];
     int n;
@@ -1432,7 +1351,7 @@ static void test__websocket_read__does_not_read_more_than_available(void **state
         .fd = fd,
     };
 
-    websocket_read_frame_header(&conn);
+    parse_header_fd_helper(&conn);
 
     char buf[9];
     int n;
@@ -1458,7 +1377,7 @@ static void test__websocket_read__does_not_read_more_than_frame_length(void **st
         .fd = fd,
     };
 
-    websocket_read_frame_header(&conn);
+    parse_header_fd_helper(&conn);
 
     char buf[9];
     int n;
@@ -1542,7 +1461,7 @@ static void test__websocket_send__sends_a_16bit_message(void **states)
 
     lseek(conn.fd, 0, SEEK_SET);
 
-    websocket_read_frame_header(&conn);
+    parse_header_fd_helper(&conn);
 
     assert_int_equal(conn.frame_opcode, WEBSOCKET_FRAME_OPCODE_TEXT | WEBSOCKET_FRAME_FIN);
     assert_int_equal(conn.frame_length, strlen(str));
@@ -1583,7 +1502,7 @@ static void test__websocket_send__sends_a_64bit_message(void **states)
 
     lseek(conn.fd, 0, SEEK_SET);
 
-    websocket_read_frame_header(&conn);
+    parse_header_fd_helper(&conn);
 
     assert_int_equal(conn.frame_opcode, WEBSOCKET_FRAME_OPCODE_TEXT | WEBSOCKET_FRAME_FIN);
     assert_int_equal(conn.frame_length, strlen(str));
@@ -1818,11 +1737,6 @@ const struct CMUnitTest tests_for_http_io[] = {
 
     cmocka_unit_test(test__websocket_send_response__writes_response_without_sec_websocket_key),
     cmocka_unit_test(test__websocket_send_response__writes_response_with_sec_websocket_key),
-
-    cmocka_unit_test(test__websocket_read_frame_header__can_read_header_with_8bit_length),
-    cmocka_unit_test(test__websocket_read_frame_header__can_read_header_with_16bit_length),
-    cmocka_unit_test(test__websocket_read_frame_header__can_read_header_with_64bit_length),
-    cmocka_unit_test(test__websocket_read_frame_header__can_read_header_without_mask),
 
     cmocka_unit_test(test__websocket_read__can_read_without_mask),
     cmocka_unit_test(test__websocket_read__can_read_with_mask),
