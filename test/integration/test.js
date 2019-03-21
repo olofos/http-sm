@@ -284,6 +284,36 @@ describe('HTTP server', () => {
             expect(server.isRunning).to.be.true;
             expect(array).to.deep.equal(message);
         });
+
+        it('can handle two interleaved websockets', async () => {
+            const anotherSocket = createSocket();
+            await anotherSocket.connect({ host, port });
+
+            await connectWebsocket(socket);
+            await connectWebsocket(anotherSocket);
+
+            const message1 = [0x81, 0x05, 0x41, 0x42, 0x43, 0x44, 0x45];
+            const message2 = [0x82, 0x04, 0x01, 0x02, 0x03, 0x04];
+
+            for (let i = 0; i < Math.max(message1.length, message2.length); i++) {
+                if (i < message1.length) {
+                    await socket.write(Buffer.from(message1.slice(i, i + 1)));
+                }
+                if (i < message2.length) {
+                    await anotherSocket.write(Buffer.from(message2.slice(i, i + 1)));
+                }
+            }
+
+            const response1 = await socket.read(message1.length);
+            const array1 = Array.from(response1);
+
+            const response2 = await anotherSocket.read(message2.length);
+            const array2 = Array.from(response2);
+
+            expect(server.isRunning).to.be.true;
+            expect(array1).to.deep.equal(message1);
+            expect(array2).to.deep.equal(message2);
+        });
     });
 
 
