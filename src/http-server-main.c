@@ -238,6 +238,7 @@ static void websocket_handle_connection(struct websocket_connection *conn)
         case WEBSOCKET_FRAME_OPCODE_CONT:
         case WEBSOCKET_FRAME_OPCODE_BIN:
         case WEBSOCKET_FRAME_OPCODE_TEXT:
+        case WEBSOCKET_FRAME_OPCODE_PONG:
         {
             websocket_handle_message(conn);
             break;
