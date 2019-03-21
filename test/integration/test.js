@@ -94,10 +94,17 @@ describe('HTTP server', () => {
     describe('requests through raw sockets', () => {
         let socket;
 
+        function createSocket() {
+            const s = new net.Socket();
+            s.setNoDelay(true);
+            const ps = new PromiseSocket(s);
+            ps.setTimeout(25);
+            return ps;
+        }
+
         beforeEach(async () => {
-            socket = new PromiseSocket(new net.Socket());
+            socket = createSocket();
             await socket.connect({ host, port });
-            socket.setTimeout(25);
         });
 
         afterEach(async () => {
@@ -170,8 +177,7 @@ describe('HTTP server', () => {
                 + `Host: ${host}:${port}\r\n`);
             await socket.end();
 
-            socket = new PromiseSocket(new net.Socket());
-            socket.setTimeout(25);
+            socket = createSocket();
             await socket.connect({ host, port });
             await socket.write(''
                 + 'GET /simple HTTP/1.1\r\n'
@@ -189,8 +195,7 @@ describe('HTTP server', () => {
                 + 'GET /simple HTTP/1.1\r\n'
                 + `Host: ${host}:`);
 
-            const anotherSocket = new PromiseSocket(new net.Socket());
-            anotherSocket.setTimeout(25);
+            const anotherSocket = createSocket();
             await anotherSocket.connect({ host, port });
             await anotherSocket.write(''
                 + 'GET /simple HTTP/1.1\r\n'
@@ -250,21 +255,25 @@ describe('HTTP server', () => {
             expect(headers).to.include('Sec-WebSocket-Accept: AHbBmP6erNg7nxW8CJ+V7AHhT3Y=');
         });
 
-        it('can echo a text message through websocket', async () => {
-            await socket.write(''
+        async function connectWebsocket(sock) {
+            await sock.write(''
                 + 'GET /ws-echo HTTP/1.1\r\n'
                 + `Host: ${host}:${port}\r\n`
                 + 'Connection: Upgrade\r\n'
                 + 'Upgrade: websocket\r\n'
                 + '\r\n');
 
-            const statusLine = await readLine(socket);
-            const headers = await readHeaders(socket);
+            const statusLine = await readLine(sock);
+            const headers = await readHeaders(sock);
 
             expect(statusLine).to.equal('HTTP/1.1 101 Switching Protocols');
             expect(headers).to.include('Upgrade: websocket');
             expect(headers).to.include('Connection: Upgrade');
             expect(headers.join()).to.not.contain('Sec-WebSocket-Accept:');
+        }
+
+        it('can echo a text message through websocket', async () => {
+            await connectWebsocket(socket);
 
             const message = [0x81, 0x05, 0x41, 0x42, 0x43, 0x44, 0x45];
             await socket.write(Buffer.from(message));
