@@ -5,6 +5,8 @@ const childProcess = require('child_process');
 const requestPromise = require('request-promise');
 const WebSocket = require('ws');
 
+const fixedPort = process.env.TESTPORT;
+
 class Server {
     constructor(port) {
         this.port = port;
@@ -34,9 +36,26 @@ class Server {
 
     async stop() {
         return new Promise((resolve) => {
+            // this.process.on('exit', () => { console.log(this.output); resolve(); });
             this.process.on('exit', () => resolve());
             this.process.kill();
         });
+    }
+}
+
+class FakeServer {
+    constructor(port) {
+        this.port = port;
+        this.output = '';
+        this.isRunning = false;
+    }
+
+    async start() {
+        this.isRunning = true;
+    }
+
+    async stop() {
+        this.isRunning = false;
     }
 }
 
@@ -76,7 +95,12 @@ describe('HTTP server', () => {
     const host = 'localhost';
 
     beforeEach(async () => {
-        server = new Server(port);
+        if (fixedPort) {
+            port = fixedPort;
+            server = new FakeServer(port);
+        } else {
+            server = new Server(port);
+        }
         await server.start();
     });
 
