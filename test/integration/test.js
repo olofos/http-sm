@@ -279,9 +279,9 @@ describe('HTTP server', () => {
             expect(headers).to.include('Sec-WebSocket-Accept: AHbBmP6erNg7nxW8CJ+V7AHhT3Y=');
         });
 
-        async function connectWebsocket(sock) {
+        async function connectWebsocket(sock, path) {
             await sock.write(''
-                + 'GET /ws-echo HTTP/1.1\r\n'
+                + `GET ${path} HTTP/1.1\r\n`
                 + `Host: ${host}:${port}\r\n`
                 + 'Connection: Upgrade\r\n'
                 + 'Upgrade: websocket\r\n'
@@ -297,7 +297,7 @@ describe('HTTP server', () => {
         }
 
         it('can echo a text message through websocket', async () => {
-            await connectWebsocket(socket);
+            await connectWebsocket(socket, '/ws-echo');
 
             const message = [0x81, 0x05, 0x41, 0x42, 0x43, 0x44, 0x45];
             await socket.write(Buffer.from(message));
@@ -313,8 +313,8 @@ describe('HTTP server', () => {
             const anotherSocket = createSocket();
             await anotherSocket.connect({ host, port });
 
-            await connectWebsocket(socket);
-            await connectWebsocket(anotherSocket);
+            await connectWebsocket(socket, '/ws-echo');
+            await connectWebsocket(anotherSocket, '/ws-echo');
 
             const message1 = [0x81, 0x05, 0x41, 0x42, 0x43, 0x44, 0x45];
             const message2 = [0x82, 0x04, 0x01, 0x02, 0x03, 0x04];
