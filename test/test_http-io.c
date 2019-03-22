@@ -28,6 +28,11 @@ void websocket_flush(struct websocket_connection *conn)
 {
 }
 
+int websocket_is_readable(struct websocket_connection *conn)
+{
+    return 1;
+}
+
 // Helpers /////////////////////////////////////////////////////////////////////
 
 static void parse_header_helper(struct websocket_connection *conn, const uint8_t *s, int n)

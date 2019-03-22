@@ -224,6 +224,59 @@ void ws_echo_message(struct websocket_connection* conn)
     free(str);
 }
 
+struct websocket_connection* ws_in_conn = 0;
+struct websocket_connection* ws_out_conn = 0;
+
+int ws_in_open(struct websocket_connection* conn, struct http_request* request)
+{
+    if(ws_in_conn == 0) {
+        LOG("WS: new in connection %d", request->fd);
+        ws_in_conn = conn;
+        return 1;
+    }
+    return 0;
+}
+
+void ws_in_close(struct websocket_connection* conn)
+{
+    ws_in_conn = 0;
+}
+
+int ws_out_open(struct websocket_connection* conn, struct http_request* request)
+{
+    if(ws_out_conn == 0) {
+        LOG("WS: new out connection %d", request->fd);
+        ws_out_conn = conn;
+        return 1;
+    }
+    return 0;
+}
+
+void ws_out_close(struct websocket_connection* conn)
+{
+    ws_out_conn = 0;
+}
+
+void ws_in_message(struct websocket_connection* conn)
+{
+    uint8_t *str = malloc(conn->frame_length+1);
+    int n = websocket_read(conn, str, conn->frame_length);
+
+    if(n > 0) {
+        str[n] = 0;
+
+        if(ws_out_conn) {
+            websocket_send(ws_out_conn, str, n, conn->frame_opcode);
+        } else {
+            char *msg = "There is no out connection";
+            websocket_send(conn, msg, strlen(msg), WEBSOCKET_FRAME_OPCODE_TEXT | WEBSOCKET_FRAME_FIN);
+        }
+    }
+
+    free(str);
+}
+
+
 struct http_url_handler http_url_tab[] = {
     {"/simple", cgi_simple, NULL},
     {"/stream", cgi_stream, NULL},
@@ -237,6 +290,8 @@ struct http_url_handler http_url_tab[] = {
 struct websocket_url_handler websocket_url_tab[] = {
     {"/ws-echo", ws_echo_open, NULL, ws_echo_message, NULL},
     {"/ws-time", ws_time_open, ws_time_close, NULL, NULL},
+    {"/ws-in", ws_in_open, ws_in_close, ws_in_message, NULL},
+    {"/ws-out", ws_out_open, ws_out_close, NULL, NULL},
     {NULL, NULL, NULL, NULL, NULL}
 };
 

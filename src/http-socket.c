@@ -290,7 +290,8 @@ void websocket_flush(struct websocket_connection *conn)
     setsockopt(conn->fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
 }
 
-int websocket_is_readable(struct websocket_connection *conn) {
+int websocket_is_readable(struct websocket_connection *conn)
+{
     fd_set set;
     FD_ZERO(&set);
     FD_SET(conn->fd, &set);
@@ -302,10 +303,8 @@ int websocket_is_readable(struct websocket_connection *conn) {
     int ret = select(conn->fd + 1, &set, 0, 0, &t);
 
     if(FD_ISSET(conn->fd, &set)) {
-        // LOG("Readable");
         return ret > 0;
     } else {
-        // LOG("Not readable");
         return 0;
     }
 }

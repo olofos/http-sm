@@ -671,6 +671,7 @@ describe('HTTP server', () => {
 
             ws.on('error', (error) => {
                 expect(server.isRunning).to.be.true;
+                ws.close();
                 done(new Error(error));
             });
         });
@@ -703,6 +704,7 @@ describe('HTTP server', () => {
 
             ws.on('error', (error) => {
                 expect(server.isRunning).to.be.true;
+                ws.close();
                 done(new Error(error));
             });
         });
@@ -735,6 +737,7 @@ describe('HTTP server', () => {
 
             ws.on('error', (error) => {
                 expect(server.isRunning).to.be.true;
+                ws.close();
                 done(new Error(error));
             });
         });

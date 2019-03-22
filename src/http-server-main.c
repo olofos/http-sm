@@ -166,14 +166,6 @@ static void websocket_handle_message(struct websocket_connection *conn)
 {
     if(conn->handler->cb_message) {
         conn->handler->cb_message(conn);
-    } else {
-        int len = conn->frame_length - conn->frame_index;
-        int ret;
-        do {
-            char buf[32];
-            int to_read = (sizeof(buf) < len) ? sizeof(buf) : len;
-            ret = websocket_read(conn, buf, to_read);
-        } while(ret > 0);
     }
 }
 
@@ -233,8 +225,7 @@ static void websocket_handle_connection(struct websocket_connection *conn)
             websocket_parse_frame_header(conn, c);
         }
     }
-
-    if(conn->state == WEBSOCKET_STATE_BODY) {
+    if((conn->state == WEBSOCKET_STATE_BODY) && (conn->frame_length == 0 || websocket_is_readable(conn))) {
         switch(conn->frame_opcode & WEBSOCKET_FRAME_OPCODE) {
         case WEBSOCKET_FRAME_OPCODE_CONT:
         case WEBSOCKET_FRAME_OPCODE_BIN:
@@ -254,6 +245,22 @@ static void websocket_handle_connection(struct websocket_connection *conn)
             websocket_handle_ping(conn);
             break;
         }
+        }
+
+        if(conn->frame_index < conn->frame_length) {
+            int len = conn->frame_length - conn->frame_index;
+            int ret;
+
+            LOG("Handler did not consume the whole message. %d bytes remaining.", len);
+
+            do {
+                char buf[32];
+                int to_read = (sizeof(buf) < len) ? sizeof(buf) : len;
+                ret = websocket_read(conn, buf, to_read);
+            } while(ret > 0);
+        }
+        if(conn->frame_index == conn->frame_length) {
+            conn->state = WEBSOCKET_STATE_DONE;
         }
 
         if(conn->state == WEBSOCKET_STATE_DONE) {

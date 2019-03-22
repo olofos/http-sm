@@ -144,17 +144,24 @@ int websocket_read(struct websocket_connection *conn, void *buf_, size_t count)
         count = conn->frame_length - conn->frame_index;
     }
 
-    int n = http_read_all(conn->fd, buf, count);
+    if(websocket_is_readable(conn)) {
+        int n = http_read_all(conn->fd, buf, count);
 
-    for(int i = 0; i < n; i++) {
-        buf[i] ^= conn->frame_mask[(conn->frame_index++) % 4];
+        for(int i = 0; i < n; i++) {
+            buf[i] ^= conn->frame_mask[(conn->frame_index++) % 4];
+        }
+
+        if(n < 0) {
+            conn->state = WEBSOCKET_STATE_ERROR;
+        }
+
+        if(conn->frame_length == conn->frame_index || n == 0) {
+            conn->state = WEBSOCKET_STATE_DONE;
+        }
+
+        return n;
     }
-
-    if(conn->frame_length == conn->frame_index) {
-        conn->state = WEBSOCKET_STATE_DONE;
-    }
-
-    return n;
+    return 0;
 }
 
 int websocket_send(struct websocket_connection *conn, const void *buf, size_t count, enum websocket_frame_opcode opcode)

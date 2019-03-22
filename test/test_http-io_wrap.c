@@ -77,6 +77,12 @@ void websocket_flush(struct websocket_connection *conn)
     }
 }
 
+int websocket_is_readable(struct websocket_connection *conn)
+{
+    return 1;
+}
+
+
 // Tests ///////////////////////////////////////////////////////////////////////
 
 static void test__http_begin_request__returns_zero_if_out_of_memory(void **states)
