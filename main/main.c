@@ -209,11 +209,17 @@ int ws_echo_open(struct websocket_connection* conn, struct http_request* request
 void ws_echo_message(struct websocket_connection* conn)
 {
     char *str = malloc(conn->frame_length+1);
-    websocket_read(conn, str, conn->frame_length);
+    int n = websocket_read(conn, str, conn->frame_length);
+    str[n] = 0;
+    if(n < conn->frame_length) {
+        LOG("Expected %d bytes but received %d", conn->frame_length, n);
+    }
     websocket_send(conn, str, conn->frame_length, conn->frame_opcode);
-    str[conn->frame_length] = 0;
+
     if((conn->frame_opcode & WEBSOCKET_FRAME_OPCODE) == WEBSOCKET_FRAME_OPCODE_TEXT) {
-        LOG("%s", str);
+        LOG("Message: %s", str);
+    } else {
+        LOG("Binary message of length %d", conn->frame_length);
     }
     free(str);
 }

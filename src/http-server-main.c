@@ -28,13 +28,14 @@ static void http_write_error_response(struct http_request *request)
 {
     const char *message = http_status_string(request->error);
 
+    LOG("HTTP error: %s", message);
+
     http_begin_response(request, request->error, "text/plain");
     http_set_content_length(request, strlen(message));
     http_end_header(request);
     http_write_string(request, message);
     http_end_body(request);
 }
-
 
 static int http_server_read_headers(struct http_request *request)
 {
@@ -226,7 +227,7 @@ static void websocket_handle_connection(struct websocket_connection *conn)
             ERROR("Reading websocket");
             conn->state = WEBSOCKET_STATE_ERROR;
         } else if(ret == 0) {
-            LOG("Unexpected EOF");
+            LOG("Unexpected EOF in state %02x", conn->state);
             conn->state = WEBSOCKET_STATE_ERROR;
         } else {
             websocket_parse_frame_header(conn, c);
