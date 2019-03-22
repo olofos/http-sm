@@ -4,18 +4,39 @@ const net = require('net');
 const childProcess = require('child_process');
 const requestPromise = require('request-promise');
 const WebSocket = require('ws');
+const Portastic = require('portastic');
 
-const fixedPort = process.env.TESTPORT;
+async function findPort() {
+    for (let i = 0; i < 100; i++) {
+        const port = 1024 + Math.floor(Math.random() * (49151 - 1024));
+        const isFree = await Portastic.test(port);
+        if (isFree) {
+            return port;
+        }
+    }
+    return Promise.reject(new Error('Couldn\'t find a port after 100 tries. Giving up'));
+}
 
 class Server {
-    constructor(port) {
-        this.port = port;
+    constructor() {
         this.output = '';
         this.process = null;
         this.isRunning = false;
+        this.port = process.env.TESTPORT;
+        this.host = process.env.TESTHOST;
+
+        if (!this.host) {
+            this.host = 'localhost';
+        }
     }
 
     async start() {
+        if (this.port) {
+            this.isRunning = true;
+            return true;
+        }
+
+        this.port = await findPort();
         this.process = childProcess.spawn('../../bin/http-test', ['-s', `${this.port}`]);
 
         return new Promise((resolve, reject) => {
@@ -35,27 +56,18 @@ class Server {
     }
 
     async stop() {
-        return new Promise((resolve) => {
-            // this.process.on('exit', () => { console.log(this.output); resolve(); });
-            this.process.on('exit', () => resolve());
-            this.process.kill();
-        });
-    }
-}
-
-class FakeServer {
-    constructor(port) {
-        this.port = port;
-        this.output = '';
+        if (this.process) {
+            return new Promise((resolve) => {
+                this.port = null;
+                this.process.on('exit', () => {
+                    this.process = null;
+                    resolve();
+                });
+                this.process.kill();
+            });
+        }
         this.isRunning = false;
-    }
-
-    async start() {
-        this.isRunning = true;
-    }
-
-    async stop() {
-        this.isRunning = false;
+        return new Promise(resolve => resolve());
     }
 }
 
@@ -91,17 +103,14 @@ async function readHeaders(socket) {
 
 describe('HTTP server', () => {
     let server;
-    let port = 4000 + Math.floor(Math.random() * 4000);
-    const host = 'localhost';
+    let port;
+    let host;
 
     beforeEach(async () => {
-        if (fixedPort) {
-            port = fixedPort;
-            server = new FakeServer(port);
-        } else {
-            server = new Server(port);
-        }
+        server = new Server();
         await server.start();
+        port = server.port;
+        host = server.host;
     });
 
     afterEach(async () => {
@@ -111,8 +120,6 @@ describe('HTTP server', () => {
             console.error('Server is not running:');
             process.stdout.write(server.output);
         }
-
-        port += 1;
     });
 
     describe('requests through raw sockets', () => {

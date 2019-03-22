@@ -13,7 +13,20 @@ module.exports = {
         "no-unused-expressions": "off",
 
         "no-restricted-syntax": ["error", "ForInStatement", "LabeledStatement", "WithStatement"],
-        "no-param-reassign": ["error", { "props": false }]
+        "no-param-reassign": ["error", { "props": false }],
+
+        "prefer-destructuring": ["error", {
+            "VariableDeclarator": {
+                "array": false,
+                "object": true
+            },
+            "AssignmentExpression": {
+                "array": true,
+                "object": false
+            }
+        }, {
+                "enforceForRenamedProperties": false
+            }]
     },
 
     "parser": "babel-eslint",
