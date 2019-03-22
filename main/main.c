@@ -129,7 +129,10 @@ enum http_cgi_state cgi_post(struct http_request* request)
 
     while(request->state == HTTP_STATE_SERVER_READ_BODY) {
         int c = http_getc(request);
-        if(c && (len < sizeof(data) - 1)) {
+        if(c <= 0) {
+            break;
+        }
+        if(len < sizeof(data) - 1) {
             data[len++] = c;
         }
     }
@@ -164,7 +167,10 @@ enum http_cgi_state cgi_exit(struct http_request* request)
     usleep(10 * 1000);
 
     char c;
-    read(request->fd, &c, 1);
+    int ret = read(request->fd, &c, 1);
+    if(ret < 0) {
+        LOG("read failed");
+    }
 
     free(request->line);
     http_close(request);
@@ -193,7 +199,6 @@ void ws_time_close(struct websocket_connection* conn)
     ws_time_conn = 0;
     LOG("WS: closing %d", conn->fd);
 }
-
 
 
 int ws_echo_open(struct websocket_connection* conn, struct http_request* request)

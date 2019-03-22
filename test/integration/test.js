@@ -242,6 +242,106 @@ describe('HTTP server', () => {
             expect(anotherStatusLine).to.equal('HTTP/1.1 200 OK');
         });
 
+        it('can handle a POST', async () => {
+            const message = 'testtesttesttesttesttesttest';
+
+            await socket.write(''
+                + 'POST /post HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + `Content-Length: ${message.length}\r\n`
+                + 'Connection: close\r\n'
+                + '\r\n');
+
+            await socket.write(message);
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            const bodyRaw = await socket.readAll();
+            const body = bodyRaw.toString();
+
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+            expect(headers).to.include('Transfer-Encoding: chunked');
+            expect(body).to.contain('This is a response from \'cgi_post\'');
+            expect(body).to.contain(message);
+        });
+
+        it('can handle an early close in a POST request', async () => {
+            const message = 'testtesttesttesttesttesttest';
+
+            await socket.write(''
+                + 'POST /post HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + `Content-Length: ${message.length}\r\n`
+                + 'Connection: close\r\n'
+                + '\r\n');
+
+            await socket.write(message.slice(0, 2));
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            const bodyRaw = await socket.readAll();
+            const body = bodyRaw.toString();
+
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+            expect(headers).to.include('Transfer-Encoding: chunked');
+            expect(body).to.contain('This is a response from \'cgi_post\'');
+            expect(body).to.contain(`You posted: "${message.slice(0, 2)}`);
+        });
+
+        it('can handle a chunked POST', async () => {
+            const message = 'testtesttesttesttesttesttest';
+
+            await socket.write(''
+                + 'POST /post HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + 'Transfer-Encoding: chunked\r\n'
+                + 'Connection: close\r\n'
+                + '\r\n');
+
+            await socket.write(`${message.length.toString(16)}\r\n`);
+            await socket.write(`${message}\r\n`);
+            await socket.write('0\r\n\r\n');
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            const bodyRaw = await socket.readAll();
+            const body = bodyRaw.toString();
+
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+            expect(headers).to.include('Transfer-Encoding: chunked');
+            expect(body).to.contain('This is a response from \'cgi_post\'');
+            expect(body).to.contain(message);
+        });
+
+        it('can handle a POST with misformed chunk header and footer', async () => {
+            const message = 'testtesttesttesttest';
+
+            await socket.write(''
+                + 'POST /post HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + 'Transfer-Encoding: chunked\r\n'
+                + 'Connection: close\r\n'
+                + '\r\n');
+
+            await socket.write(`${message.length.toString(16)}X\rY\n`);
+            await socket.write(`${message}Z\rW\n`);
+            await socket.write('X\rY\nZ\rW\nS');
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            const bodyRaw = await socket.readAll();
+            const body = bodyRaw.toString();
+
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+            expect(headers).to.include('Transfer-Encoding: chunked');
+            expect(body).to.contain('This is a response from \'cgi_post\'');
+            expect(body).to.contain(message);
+        });
+
         it('performs websocket handshake without key', async () => {
             await socket.write(''
                 + 'GET /ws-echo HTTP/1.1\r\n'
