@@ -24,7 +24,10 @@ static int read_chunk_header(struct http_request *request)
             break;
         }
 
-        request->chunk_length = (request->chunk_length << 4) | http_hex_to_int(c);
+        uint8_t digit = http_hex_to_int(c);
+        if(digit > 0 || c == '0') {
+            request->chunk_length = (request->chunk_length << 4) | digit;
+        }
     }
 
     for(;;) {
@@ -45,19 +48,38 @@ static int read_chunk_header(struct http_request *request)
 
 static int read_chunk_footer(struct http_request *request)
 {
-    char buf[2];
-    int ret = http_read_all(request->fd, buf, 2);
-    if(ret < 0) {
-        ERROR("Read failed while reading chunk footer");
-        return -1;
-    } else if(ret == 0) {
-        LOG("Got EOF");
-        return 0;
+    char c;
+    int ret;
+
+    for(;;) {
+        ret = read(request->fd, &c, 1);
+        if(ret < 0) {
+            ERROR("Read failed in chunk header");
+            return -1;
+        } else if(ret == 0) {
+            LOG("Got EOF");
+            return 0;
+        }
+
+        if(c == '\r') {
+            break;
+        }
     }
 
-    if((ret < 2) || (buf[0] != '\r') || (buf[1] != '\n')) {
-        return -1;
+    for(;;) {
+        ret = read(request->fd, &c, 1);
+        if(ret < 0) {
+            ERROR("Read failed before newline");
+            return -1;
+        } else if(ret == 0) {
+            LOG("Got EOF");
+            return 0;
+        }
+        if(c == '\n') {
+            break;
+        }
     }
+
     return 1;
 }
 
