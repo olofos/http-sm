@@ -87,6 +87,7 @@ void http_free(struct http_request *request)
         free(request->query);
         free(request->query_list);
         free(request->websocket_key);
+        free(request->etag);
     } else {
         free(request->content_type);
     }
@@ -274,6 +275,7 @@ void http_response_init(struct http_request *request)
     request->cgi_arg = 0;
     request->cgi_data = 0;
     request->websocket_key = 0;
+    request->etag = 0;
 }
 
 void http_request_init(struct http_request *request)

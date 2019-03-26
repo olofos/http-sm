@@ -139,6 +139,7 @@ struct http_request
     int error;
 
     char *websocket_key;
+    char *etag;
 
     char *query;
     char **query_list;
