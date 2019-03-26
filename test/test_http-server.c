@@ -47,6 +47,7 @@ static void test__http_status_string__returns_non_empty_strings_for_all_known_st
 {
     assert_non_empty_string(http_status_string(HTTP_STATUS_OK));
     assert_non_empty_string(http_status_string(HTTP_STATUS_NO_CONTENT));
+    assert_non_empty_string(http_status_string(HTTP_STATUS_NOT_MODIFIED));
     assert_non_empty_string(http_status_string(HTTP_STATUS_BAD_REQUEST));
     assert_non_empty_string(http_status_string(HTTP_STATUS_NOT_FOUND));
     assert_non_empty_string(http_status_string(HTTP_STATUS_METHOD_NOT_ALLOWED));

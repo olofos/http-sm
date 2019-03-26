@@ -22,6 +22,9 @@ const char *http_status_string(enum http_status status)
     case HTTP_STATUS_NO_CONTENT:
         return "No Content";
 
+    case HTTP_STATUS_NOT_MODIFIED:
+        return "Not Modified";
+
     case HTTP_STATUS_BAD_REQUEST:
         return "Bad Request";
 
