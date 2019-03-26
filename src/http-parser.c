@@ -175,7 +175,7 @@ void http_parse_header(struct http_request *request, char c)
                         }
 
                         strcpy(request->websocket_key, val);
-                    } else if((val = cmp_str_prefix(request->line, "ETag: ")) != 0) {
+                    } else if((val = cmp_str_prefix(request->line, "If-None-Match: ")) != 0) {
                         if(*val++ == '\"') {
                             int len = strlen(val) - 1;
                             if(val[len] == '\"') {

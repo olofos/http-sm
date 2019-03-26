@@ -303,12 +303,12 @@ static void test__http_parse_header__can_parse_sec_websocket_key(void **state)
     free_request(&request);
 }
 
-static void test__http_parse_header__can_parse_etag(void **state)
+static void test__http_parse_header__can_parse_if_none_match(void **state)
 {
     struct http_request request;
     create_server_request(&request);
 
-    parse_header_helper(&request, "GET / HTTP/1.1\r\nETag: \"33a64df551425fcc55e4d42a148795d9f25f89d4\"\r\n");
+    parse_header_helper(&request, "GET / HTTP/1.1\r\nIf-None-Match: \"33a64df551425fcc55e4d42a148795d9f25f89d4\"\r\n");
 
     assert_non_null(request.etag);
     assert_string_equal("33a64df551425fcc55e4d42a148795d9f25f89d4", request.etag);
@@ -876,7 +876,7 @@ const struct CMUnitTest tests_for_http_parse_header[] = {
     cmocka_unit_test(test__http_parse_header__can_parse_content_length),
     cmocka_unit_test(test__http_parse_header__can_parse_upgrade_websocket),
     cmocka_unit_test(test__http_parse_header__can_parse_sec_websocket_key),
-    cmocka_unit_test(test__http_parse_header__can_parse_etag),
+    cmocka_unit_test(test__http_parse_header__can_parse_if_none_match),
     cmocka_unit_test(test__http_parse_header__unparseable_content_length_gives_error),
     cmocka_unit_test(test__http_parse_header__missing_newline_in_header_gives_error),
     cmocka_unit_test(test__http_parse_header__client_can_read_response),
