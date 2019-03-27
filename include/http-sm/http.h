@@ -4,17 +4,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "http-config.h"
+
 #ifndef HTTP_USER_AGENT
 #define HTTP_USER_AGENT "esp8266-http/0.1"
 #endif
-
-#define HTTP_SERVER_MAX_CONNECTIONS 3
-#define WEBSOCKET_SERVER_MAX_CONNECTIONS 3
-#define HTTP_LINE_LEN 64
-
-#define HTTP_SERVER_TIMEOUT_SECS  4
-#define HTTP_SERVER_TIMEOUT_USECS (500 * 1000)
-
 
 enum http_state
 {
