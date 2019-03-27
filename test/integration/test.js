@@ -343,10 +343,117 @@ describe('HTTP server', () => {
             const bodyRaw = await socket.readAll();
             const body = bodyRaw.toString();
 
+            expect(server.isRunning).to.be.true;
             expect(statusLine).to.equal('HTTP/1.1 200 OK');
             expect(headers).to.include('Transfer-Encoding: chunked');
             expect(body).to.contain('This is a response from \'cgi_post\'');
             expect(body).to.contain(message);
+        });
+
+        it('can transfer a simple file with gzip encoding', async () => {
+            await socket.write(''
+                + 'GET /simple.txt HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + 'Accept-Encoding: gzip\r\n'
+                + '\r\n');
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            expect(server.isRunning).to.be.true;
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+            expect(headers).to.include('Content-Encoding: gzip');
+        });
+
+        it('can transfer a simple file when gzip encoding is not accepted', async () => {
+            await socket.write(''
+                + 'GET /simple.txt HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + '\r\n');
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            expect(server.isRunning).to.be.true;
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+            expect(headers).to.not.include('Content-Encoding: gzip');
+        });
+
+        it('can transfer a file when gzip encoding is not available', async () => {
+            await socket.write(''
+                + 'GET /no-gzip.txt HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + 'Accept-Encoding: gzip\r\n'
+                + '\r\n');
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            expect(server.isRunning).to.be.true;
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+            expect(headers).to.not.include('Content-Encoding: gzip');
+        });
+
+        it('can transfer a simple with an ETag', async () => {
+            await socket.write(''
+                + 'GET /simple.txt HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + 'Accept-Encoding: gzip\r\n'
+                + '\r\n');
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            expect(server.isRunning).to.be.true;
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+            expect(headers).to.include('ETag: "76cfb6cad8170c70f014da2b201652911a4cff4d"');
+        });
+
+        it('it transfers the file when ETag does not match', async () => {
+            await socket.write(''
+                + 'GET /simple.txt HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + 'Accept-Encoding: gzip\r\n'
+                + 'If-None-Match: "XYZ"\r\n'
+                + '\r\n');
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            expect(server.isRunning).to.be.true;
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+            expect(headers).to.include('ETag: "76cfb6cad8170c70f014da2b201652911a4cff4d"');
+        });
+
+        it('it returns 304 when ETag does match', async () => {
+            await socket.write(''
+                + 'GET /simple.txt HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + 'Accept-Encoding: gzip\r\n'
+                + 'If-None-Match: "76cfb6cad8170c70f014da2b201652911a4cff4d"\r\n'
+                + '\r\n');
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            expect(server.isRunning).to.be.true;
+            expect(statusLine).to.equal('HTTP/1.1 304 Not Modified');
+            expect(headers).to.include('ETag: "76cfb6cad8170c70f014da2b201652911a4cff4d"');
+        });
+
+        it('it returns no ETag if there is no hash', async () => {
+            await socket.write(''
+                + 'GET /no-etag.txt HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + 'Accept-Encoding: gzip\r\n'
+                + '\r\n');
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            expect(server.isRunning).to.be.true;
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+            expect(headers.join(' ')).to.not.include('ETag');
         });
 
         it('performs websocket handshake without key', async () => {
@@ -616,6 +723,15 @@ describe('HTTP server', () => {
                     expect(response.statusCode).to.equal(200);
                     expect(response.body).to.contain('\'cgi_post\'');
                     expect(response.body).to.contain('You posted: "test"');
+                });
+        });
+
+        it('can find a response in a file', async () => {
+            await request('GET', '/simple.txt')
+                .then((response) => {
+                    expect(server.isRunning).to.be.true;
+                    expect(response.statusCode).to.equal(200);
+                    expect(response.body).to.contain('This is a simple file');
                 });
         });
     });

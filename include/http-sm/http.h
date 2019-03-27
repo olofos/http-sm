@@ -187,4 +187,6 @@ unsigned http_base64_decode_length(const char *buf, unsigned len);
 unsigned http_base64_encode(char *dest, const char *src, unsigned len);
 unsigned http_base64_decode(char *dest, const char *src, unsigned len);
 
+enum http_cgi_state cgi_fs(struct http_request* request);
+
 #endif

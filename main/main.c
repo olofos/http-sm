@@ -284,6 +284,7 @@ struct http_url_handler http_url_tab[] = {
     {"/post", cgi_post, NULL},
     {"/wildcard/*", cgi_simple, NULL},
     {"/exit", cgi_exit, NULL},
+    {"*", cgi_fs, NULL},
     {NULL, NULL, NULL}
 };
 

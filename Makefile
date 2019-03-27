@@ -2,7 +2,7 @@
 V?=@
 
 LIBSOURCES := http-parser.c http-io.c http-socket.c http-util.c http-server.c http-server-main.c http-client.c sha1.c \
-	websocket-io.c
+	websocket-io.c http-server-cgi.c
 
 BINSOURCES := main.c log.c
 
