@@ -109,6 +109,7 @@ enum http_cgi_state cgi_fs(struct http_request* request)
                     etag = NULL;
                 }
             }
+            close(fd);
         }
 
         if(etag && request->etag && (strncmp(etag+1, request->etag, HASH_LEN) == 0)) {
