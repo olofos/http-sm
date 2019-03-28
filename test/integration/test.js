@@ -425,6 +425,21 @@ describe('HTTP server', () => {
             expect(headers).to.include('ETag: "76cfb6cad8170c70f014da2b201652911a4cff4d"');
         });
 
+        it('it sends an X-Uncompressed-Content-Length header', async () => {
+            await socket.write(''
+                + 'GET /simple.txt HTTP/1.1\r\n'
+                + `Host: ${host}:${port}\r\n`
+                + 'Accept-Encoding: gzip\r\n'
+                + '\r\n');
+
+            const statusLine = await readLine(socket);
+            const headers = await readHeaders(socket);
+
+            expect(server.isRunning).to.be.true;
+            expect(statusLine).to.equal('HTTP/1.1 200 OK');
+            expect(headers).to.include('X-Uncompressed-Content-Length: 22');
+        });
+
         it('it returns 304 when ETag does match', async () => {
             await socket.write(''
                 + 'GET /simple.txt HTTP/1.1\r\n'

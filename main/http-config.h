@@ -8,6 +8,6 @@
 #define HTTP_SERVER_TIMEOUT_SECS  4
 #define HTTP_SERVER_TIMEOUT_USECS (500 * 1000)
 
-#define HTTP_WWW_DIR "www/"
+#define HTTP_WWW_DIR "www"
 
 #endif

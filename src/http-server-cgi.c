@@ -91,6 +91,7 @@ enum http_cgi_state cgi_fs(struct http_request* request)
         int fd = -1;
 
         char *etag = NULL;
+        long total_size = -1;
 
         strcat(filename, HASH_EXT);
 
@@ -99,7 +100,9 @@ enum http_cgi_state cgi_fs(struct http_request* request)
         if(fd >= 0) {
             etag = malloc(HASH_LEN + 3);
             if(etag) {
-                int n = read(fd, etag + 1, HASH_LEN);
+                int n;
+
+                n = read(fd, etag + 1, HASH_LEN);
                 if(n == HASH_LEN) {
                     etag[0] = '"';
                     etag[n+1] = '"';
@@ -108,13 +111,26 @@ enum http_cgi_state cgi_fs(struct http_request* request)
                     free(etag);
                     etag = NULL;
                 }
+                char c;
+
+                if(read(fd, &c, 1) > 0) {
+                    while((read(fd, &c, 1) > 0) && ('0' <= c) && (c <= '9')) {
+                        if(total_size < 0) {
+                            total_size = 0;
+                        }
+                        total_size = 10 * total_size + (c - '0');
+                    }
+                }
             }
+
             close(fd);
         }
 
         if(etag && request->etag && (strncmp(etag+1, request->etag, HASH_LEN) == 0)) {
+            LOG("Cache matches %s", filename);
+
             http_begin_response(request, 304, NULL);
-            http_write_header(request, "Cache-Control", "max-age=3600, must-revalidate");
+            http_write_header(request, "Cache-Control", "no-cache");
             http_set_content_length(request, 0);
 
             if(etag) {
@@ -185,11 +201,16 @@ enum http_cgi_state cgi_fs(struct http_request* request)
         resp->fd = fd;
 
         http_begin_response(request, 200, mime_type);
-        http_write_header(request, "Cache-Control", "max-age=3600, must-revalidate");
+        http_write_header(request, "Cache-Control", "no-cache");
         http_set_content_length(request, s.st_size);
 
         if(file_flag & HTTP_FLAG_ACCEPT_GZIP) {
             http_write_header(request, "Content-Encoding", "gzip");
+            if(total_size >= 0) {
+                char buf[32];
+                sprintf(buf, "%ld", total_size);
+                http_write_header(request, "X-Uncompressed-Content-Length", buf);
+            }
         }
 
         if(etag) {
